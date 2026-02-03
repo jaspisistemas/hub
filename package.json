@@ -1,19 +1,22 @@
 {
-  "name": "hub-marketplaces",
+  "name": "hub-integration-marketplaces",
   "private": true,
   "workspaces": [
-    "frontend",
     "backend",
-    "packages/shared"
+    "frontend",
+    "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "npm run start:dev -w backend",
-    "dev:frontend": "npm run dev -w frontend",
-    "build": "npm run build -w packages/shared && npm run build -w backend && npm run build -w frontend",
-    "build:shared": "npm run build -w packages/shared"
+    "bootstrap": "npm install",
+    "start:dev": "npm -w backend run start:dev & npm -w frontend run dev",
+    "build": "npm -w backend run build && npm -w frontend run build"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.1.12",
+    "@nestjs/core": "^11.1.12",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "@types/uuid": "^11.0.0"
   }
 }

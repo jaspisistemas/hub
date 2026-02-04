@@ -5,20 +5,32 @@ export class Product {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
+  @Column({ length: 255 })
   name!: string;
 
-  @Column({ unique: true })
+  @Column({ unique: true, length: 100 })
   sku!: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   price!: number;
 
-  @Column({ type: 'int' })
+  @Column({ type: 'int', default: 0 })
   quantity!: number;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, length: 100 })
   category?: string;
+
+  @Column({ default: true })
+  active!: boolean;
+
+  @Column({ type: 'text', nullable: true })
+  description?: string;
+
+  @Column({ type: 'simple-array', nullable: true })
+  imageUrls?: string[];
+
+  @Column({ nullable: true, length: 500 })
+  imageUrl?: string;
 
   @CreateDateColumn()
   createdAt!: Date;

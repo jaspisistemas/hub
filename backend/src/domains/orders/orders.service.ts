@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { OrderCreatedEvent, OrderIntegrationFailedEvent } from './events';
 import { Order } from './entities/order.entity';
+import { WebsocketGateway } from '../../infra/websocket/websocket.gateway';
 
 /**
  * OrdersService: contém APENAS regras de negócio.
@@ -15,6 +16,7 @@ export class OrdersService {
   constructor(
     @InjectRepository(Order)
     private readonly ordersRepository: Repository<Order>,
+    private readonly websocketGateway: WebsocketGateway,
   ) {}
 
   async createOrder(dto: CreateOrderDto) {
@@ -35,6 +37,13 @@ export class OrdersService {
       status: 'created',
       total: dto.total,
       rawData: dto.raw ? JSON.stringify(dto.raw) : undefined,
+      customerName: dto.customerName,
+      customerEmail: dto.customerEmail,
+      customerPhone: dto.customerPhone,
+      customerCity: dto.customerCity,
+      customerState: dto.customerState,
+      customerAddress: dto.customerAddress,
+      customerZipCode: dto.customerZipCode,
     });
 
     const saved = await this.ordersRepository.save(order);
@@ -64,7 +73,8 @@ export class OrdersService {
   }
 
   private emitOrderCreated(event: OrderCreatedEvent) {
-    // TODO: integrar com barramento de eventos / websocket / sistema de auditoria
+    // Emitir via WebSocket para clientes conectados
+    this.websocketGateway.emitOrderCreated(event);
     console.log('[event] order.created', event);
   }
 

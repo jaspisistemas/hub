@@ -1,17 +1,25 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { 
+  Column, 
+  CreateDateColumn, 
+  Entity, 
+  PrimaryGeneratedColumn, 
+  UpdateDateColumn,
+  OneToMany,
+} from 'typeorm';
+import { Order } from '../../orders/entities/order.entity';
 
 @Entity('stores')
 export class Store {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
+  @Column({ length: 255 })
   name!: string;
 
-  @Column()
+  @Column({ length: 50 })
   marketplace!: string;
 
-  @Column()
+  @Column({ default: 'active' })
   status!: string;
 
   @Column({ type: 'int', default: 0 })
@@ -22,6 +30,26 @@ export class Store {
 
   @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
   revenue!: number;
+
+  @Column({ default: true })
+  active!: boolean;
+
+  // Campos de integração com Mercado Livre
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  mlAccessToken?: string;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  mlRefreshToken?: string;
+
+  @Column({ type: 'bigint', nullable: true })
+  mlTokenExpiresAt?: number;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  mlUserId?: string;
+
+  // Relacionamentos
+  @OneToMany(() => Order, order => order.store)
+  orders?: Order[];
 
   @CreateDateColumn()
   createdAt!: Date;

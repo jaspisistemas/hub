@@ -10,12 +10,30 @@ export class MercadoLivreAdapter {
     const orderId = payload.id || payload.resource?.split('/').pop() || 'ml-unknown';
     const totalAmount = payload.total_amount || payload.paid_amount || 0;
     
-    return {
+    console.log('🔍 Mapeando pedido ML:', {
+      orderId,
+      hasBuyer: !!payload.buyer,
+      buyerData: payload.buyer,
+      hasShipping: !!payload.shipping,
+    });
+    
+    const result = {
       externalId: orderId.toString(),
       marketplace: 'mercadolivre',
       total: Number(totalAmount),
+      customerName: payload.buyer?.nickname || payload.buyer?.first_name || 'Cliente ML',
+      customerEmail: payload.buyer?.email || `ml-${orderId}@marketplace.com`,
+      customerPhone: payload.buyer?.phone?.number,
+      customerCity: payload.shipping?.receiver_address?.city?.name,
+      customerState: payload.shipping?.receiver_address?.state?.id,
+      customerAddress: payload.shipping?.receiver_address?.address_line,
+      customerZipCode: payload.shipping?.receiver_address?.zip_code,
       raw: payload,
     };
+    
+    console.log('📦 DTO criado:', result);
+    
+    return result;
   }
 
   /**
@@ -27,6 +45,13 @@ export class MercadoLivreAdapter {
       externalId: orderData.id?.toString() || 'ml-unknown',
       marketplace: 'mercadolivre',
       total: Number(orderData.total_amount) || 0,
+      customerName: orderData.buyer?.nickname || orderData.buyer?.first_name || 'Cliente ML',
+      customerEmail: orderData.buyer?.email || `ml-${orderData.id}@marketplace.com`,
+      customerPhone: orderData.buyer?.phone?.number,
+      customerCity: orderData.shipping?.receiver_address?.city?.name,
+      customerState: orderData.shipping?.receiver_address?.state?.id,
+      customerAddress: orderData.shipping?.receiver_address?.address_line,
+      customerZipCode: orderData.shipping?.receiver_address?.zip_code,
       raw: {
         status: orderData.status,
         date_created: orderData.date_created,

@@ -14,12 +14,22 @@ import {
   DialogActions,
   CircularProgress,
   Alert,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  IconButton,
+  Snackbar,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Sync as SyncIcon,
   Settings as SettingsIcon,
   Storefront as StorefrontIcon,
+  Close as CloseIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { storesService, Store } from '../../services/storesService';
 
@@ -28,6 +38,14 @@ export default function StoresPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [notification, setNotification] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    marketplace: '',
+    status: 'pending',
+  });
 
   useEffect(() => {
     loadStores();
@@ -43,6 +61,78 @@ export default function StoresPage() {
       setError(err instanceof Error ? err.message : 'Erro ao carregar lojas');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOpenCreate = () => {
+    setEditingId(null);
+    setFormData({
+      name: '',
+      marketplace: '',
+      status: 'pending',
+    });
+    setOpenDialog(true);
+  };
+
+  const handleOpenEdit = (store: Store) => {
+    setEditingId(store.id);
+    setFormData({
+      name: store.name,
+      marketplace: store.marketplace,
+      status: store.status,
+    });
+    setOpenDialog(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setEditingId(null);
+  };
+
+  const handleInputChange = (field: string) => (
+    e: React.ChangeEvent<HTMLInputElement | { value: unknown }>
+  ) => {
+    setFormData(prev => ({ ...prev, [field]: e.target.value }));
+  };
+
+  const handleSaveStore = async () => {
+    try {
+      if (!formData.name || !formData.marketplace) {
+        setError('Por favor, preencha todos os campos obrigatórios');
+        return;
+      }
+
+      setSaving(true);
+      
+      if (editingId) {
+        await storesService.update(editingId, formData);
+        setNotification('Loja atualizada com sucesso!');
+      } else {
+        await storesService.create(formData);
+        setNotification('Loja criada com sucesso!');
+      }
+      
+      await loadStores();
+      handleCloseDialog();
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao salvar loja');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteStore = async (id: string) => {
+    if (!window.confirm('Tem certeza que deseja excluir esta loja?')) {
+      return;
+    }
+
+    try {
+      await storesService.delete(id);
+      setNotification('Loja excluída com sucesso!');
+      await loadStores();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao excluir loja');
     }
   };
 
@@ -91,7 +181,7 @@ export default function StoresPage() {
           variant="contained"
           color="primary"
           startIcon={<AddIcon />}
-          onClick={() => setOpenDialog(true)}
+          onClick={handleOpenCreate}
         >
           Conectar Loja
         </Button>
@@ -178,20 +268,19 @@ export default function StoresPage() {
                     size="small"
                     variant="outlined"
                     color="primary"
-                    startIcon={<SyncIcon />}
-                    fullWidth
+                    startIcon={<EditIcon />}
+                    onClick={() => handleOpenEdit(store)}
+                    sx={{ flex: 1 }}
                   >
-                    Sincronizar
+                    Editar
                   </Button>
-                  <Button
+                  <IconButton
                     size="small"
-                    variant="outlined"
-                    color="primary"
-                    startIcon={<SettingsIcon />}
-                    fullWidth
+                    color="error"
+                    onClick={() => handleDeleteStore(store.id)}
                   >
-                    Config
-                  </Button>
+                    <DeleteIcon />
+                  </IconButton>
                 </Box>
               </CardContent>
             </Card>
@@ -199,28 +288,82 @@ export default function StoresPage() {
         ))}
       </Grid>
 
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 600 }}>Conectar Nova Loja</DialogTitle>
-        <DialogContent sx={{ mt: 2 }}>
-          <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-            Selecione o marketplace que deseja conectar:
+      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            {editingId ? 'Editar Loja' : 'Conectar Nova Loja'}
           </Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            <Button variant="outlined" color="primary" fullWidth sx={{ p: 2, textAlign: 'left' }}>
-              MercadoLivre
-            </Button>
-            <Button variant="outlined" color="primary" fullWidth sx={{ p: 2, textAlign: 'left' }}>
-              Shopee
-            </Button>
-            <Button variant="outlined" color="primary" fullWidth sx={{ p: 2, textAlign: 'left' }}>
-              Amazon
-            </Button>
-          </Box>
+          <IconButton onClick={handleCloseDialog} size="small">
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Nome da Loja"
+                required
+                value={formData.name}
+                onChange={handleInputChange('name')}
+                placeholder="Ex: Minha Loja MercadoLivre"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <FormControl fullWidth required>
+                <InputLabel>Marketplace</InputLabel>
+                <Select
+                  value={formData.marketplace}
+                  onChange={(e) => setFormData(prev => ({ ...prev, marketplace: e.target.value }))}
+                  label="Marketplace"
+                >
+                  <MenuItem value="MercadoLivre">MercadoLivre</MenuItem>
+                  <MenuItem value="Shopee">Shopee</MenuItem>
+                  <MenuItem value="Amazon">Amazon</MenuItem>
+                  <MenuItem value="Magalu">Magalu</MenuItem>
+                  <MenuItem value="Outro">Outro</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={formData.status}
+                  onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))}
+                  label="Status"
+                >
+                  <MenuItem value="active">Ativa</MenuItem>
+                  <MenuItem value="inactive">Inativa</MenuItem>
+                  <MenuItem value="pending">Pendente</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setOpenDialog(false)}>Cancelar</Button>
+        <DialogActions>
+          <Button onClick={handleCloseDialog} disabled={saving}>
+            Cancelar
+          </Button>
+          <Button 
+            onClick={handleSaveStore} 
+            variant="contained" 
+            color="primary"
+            disabled={saving}
+          >
+            {saving ? <CircularProgress size={24} /> : editingId ? 'Salvar' : 'Criar'}
+          </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Notificações */}
+      <Snackbar
+        open={!!notification}
+        autoHideDuration={3000}
+        onClose={() => setNotification(null)}
+        message={notification}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      />
     </Box>
   );
 }

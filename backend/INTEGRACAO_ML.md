@@ -1,5 +1,30 @@
 # Integração com Mercado Livre
 
+## Status do Desenvolvimento
+
+### ✅ Concluído
+- [x] Estrutura de pastas do módulo marketplace criada
+- [x] Controller do Marketplace implementado com endpoints de teste
+- [x] Serviço do Marketplace com métodos de teste
+- [x] Modulo marketplace integrado ao app principal
+- [x] Documentação de endpoints e fluxos criada
+- [x] Adapter base para mapeamento de dados do ML para o sistema
+- [x] Endpoints funcionando localmente:
+  - `GET /marketplace/mercadolivre/auth` - Inicia fluxo OAuth
+  - `POST /marketplace/mercadolivre/webhook` - Recebe webhooks do ML
+  - `POST /marketplace/mercadolivre/test-order` - Cria pedido de teste
+- [x] **Implementação completa do fluxo OAuth (troca de code por token)**
+- [x] **Persistência de tokens no banco de dados**
+- [x] **Buscar dados completos do pedido via API do ML**
+- [x] **Refresh token automatizado**
+- [x] **Integração Store com tokens do Mercado Livre**
+
+### ⏳ Pendente
+- [ ] Sincronização de status de pedidos
+- [ ] Sincronização de produtos com ML
+- [ ] Criação de anúncios no ML
+- [ ] Tratamento de erros de autenticação
+
 ## Configuração
 
 ### 1. Criar aplicação no Mercado Livre
@@ -131,10 +156,40 @@ curl -X POST http://localhost:3000/marketplace/mercadolivre/test-order \
 
 ## Próximos Passos
 
-- [ ] Implementar troca de code por access_token
-- [ ] Salvar tokens de acesso no banco
-- [ ] Implementar refresh token
-- [ ] Buscar dados completos do pedido via API após webhook
+- [x] ~~Implementar troca de code por access_token~~ ✅
+- [x] ~~Salvar tokens de acesso no banco~~ ✅
+- [x] ~~Implementar refresh token~~ ✅
+- [x] ~~Buscar dados completos do pedido via API após webhook~~ ✅
 - [ ] Sincronizar status de pedidos
 - [ ] Sincronizar produtos com o ML
 - [ ] Implementar criação de anúncios no ML
+- [ ] Tratamento avançado de erros e retry logic
+- [ ] Dashboard de monitoramento de integrações
+
+## Funcionalidades Implementadas
+
+### 1. OAuth 2.0 Completo
+- Troca automática de `code` por `access_token`
+- Persistência segura de tokens no banco de dados
+- Refresh token automático quando expira em menos de 1 hora
+- Criação ou atualização automática de lojas no callback
+
+### 2. Webhook com Busca de Dados Completos
+- Recebe notificações do ML em tempo real
+- Busca automaticamente os dados completos do pedido via API
+- Verifica e renova token antes de fazer requisições
+- Associa pedidos à loja correta via `mlUserId`
+
+### 3. Entidade Store Atualizada
+Novos campos para integração ML:
+- `mlAccessToken`: Token de acesso à API
+- `mlRefreshToken`: Token para renovação
+- `mlTokenExpiresAt`: Timestamp de expiração
+- `mlUserId`: ID do usuário no Mercado Livre
+
+### 4. Métodos de Serviço
+- `exchangeMercadoLivreCode()`: Troca code por tokens
+- `refreshMercadoLivreToken()`: Renova token expirado
+- `getMercadoLivreOrder()`: Busca pedido completo
+- `isTokenExpiring()`: Verifica se token precisa renovação
+- `findOrCreateMercadoLivreStore()`: Gerencia lojas ML

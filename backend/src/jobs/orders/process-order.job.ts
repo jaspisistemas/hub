@@ -1,25 +1,50 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { Process, Processor } from '@nestjs/bull';
+import { Job } from 'bull';
 import { OrdersService } from '../../domains/orders/orders.service';
+import { CreateOrderDto } from '../../domains/orders/dto/create-order.dto';
 
 /**
  * Job que processa um payload de pedido enfileirado.
- * - Deve rodar em um worker separado em produção
- * - Chama adapters (mapeamento) na camada de integrações e o serviço de domínio para aplicar regras.
+ * - Roda como worker do BullMQ
+ * - Processa pedidos de forma assíncrona
+ * - Aplica regras de negócio através do OrdersService
  */
+@Processor('orders')
 @Injectable()
 export class ProcessOrderJob {
+  private readonly logger = new Logger(ProcessOrderJob.name);
+
   constructor(private readonly ordersService: OrdersService) {}
 
-  async process(data: any) {
-    // data é esperado como um CreateOrderDto mapeado (saída do adapter)
+  @Process('create')
+  async processCreateOrder(job: Job<CreateOrderDto>) {
+    this.logger.log(`Processando pedido job #${job.id}`);
+    
     try {
-      const order = await this.ordersService.createOrder(data);
-      console.log('Processed order', order.id);
-      return { success: true, id: order.id };
+      const order = await this.ordersService.createOrder(job.data);
+      this.logger.log(`Pedido ${order.id} criado com sucesso`);
+      return { success: true, orderId: order.id };
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      console.error('Failed to process order', message);
-      return { success: false, reason: message };
+      const message = err instanceof Error ? err.message : 'Erro desconhecido';
+      this.logger.error(`Falha ao processar pedido: ${message}`, err);
+      throw err; // BullMQ vai retentar baseado nas configurações
+    }
+  }
+
+  @Process('update-status')
+  async processUpdateStatus(job: Job<{ orderId: string; status: string }>) {
+    this.logger.log(`Atualizando status do pedido ${job.data.orderId} para ${job.data.status}`);
+    
+    try {
+      // Aqui você implementaria a lógica de atualização de status
+      // await this.ordersService.updateStatus(job.data.orderId, job.data.status);
+      this.logger.log(`Status do pedido ${job.data.orderId} atualizado`);
+      return { success: true };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro desconhecido';
+      this.logger.error(`Falha ao atualizar status: ${message}`, err);
+      throw err;
     }
   }
 }

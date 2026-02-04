@@ -4,7 +4,6 @@
 import { DataSource } from 'typeorm';
 import { User } from './src/domains/auth/entities/user.entity';
 import { Product } from './src/domains/products/entities/product.entity';
-import { Customer } from './src/domains/customers/entities/customer.entity';
 import { Store } from './src/domains/stores/entities/store.entity';
 import { Order } from './src/domains/orders/entities/order.entity';
 import * as bcrypt from 'bcrypt';
@@ -12,7 +11,7 @@ import * as bcrypt from 'bcrypt';
 const AppDataSource = new DataSource({
   type: 'sqlite',
   database: 'jaspi_hub.db',
-  entities: [User, Product, Customer, Store, Order],
+  entities: [User, Product, Store, Order],
   synchronize: true,
 });
 
@@ -21,7 +20,6 @@ async function seed() {
 
   const userRepository = AppDataSource.getRepository(User);
   const productRepository = AppDataSource.getRepository(Product);
-  const customerRepository = AppDataSource.getRepository(Customer);
   const storeRepository = AppDataSource.getRepository(Store);
   const orderRepository = AppDataSource.getRepository(Order);
 
@@ -52,20 +50,6 @@ async function seed() {
   }
   console.log('✅ 5 Produtos criados');
 
-  // Criar clientes
-  const customers = [
-    { name: 'João Silva', email: 'joao@example.com', phone: '(11) 98765-4321', city: 'São Paulo', state: 'SP' },
-    { name: 'Maria Santos', email: 'maria@example.com', phone: '(21) 99876-5432', city: 'Rio de Janeiro', state: 'RJ' },
-    { name: 'Carlos Mendes', email: 'carlos@example.com', phone: '(31) 98765-1234', city: 'Belo Horizonte', state: 'MG' },
-    { name: 'Ana Costa', email: 'ana@example.com', phone: '(85) 98765-5678', city: 'Fortaleza', state: 'CE' },
-  ];
-
-  for (const customerData of customers) {
-    const customer = customerRepository.create(customerData);
-    await customerRepository.save(customer);
-  }
-  console.log('✅ 4 Clientes criados');
-
   // Criar lojas
   const stores = [
     { name: 'Loja MercadoLivre', marketplace: 'MercadoLivre', status: 'active', productsCount: 250, ordersCount: 1245, revenue: 15780.50 },
@@ -78,12 +62,56 @@ async function seed() {
   }
   console.log('✅ 2 Lojas criadas');
 
-  // Criar pedidos
+  // Criar pedidos com dados de cliente embutidos
   const orders = [
-    { externalId: 'ML001', marketplace: 'MercadoLivre', status: 'delivered', total: 1299.99, rawData: '{}' },
-    { externalId: 'ML002', marketplace: 'MercadoLivre', status: 'shipped', total: 2450.00, rawData: '{}' },
-    { externalId: 'SP001', marketplace: 'Shopee', status: 'processing', total: 599.99, rawData: '{}' },
-    { externalId: 'SP002', marketplace: 'Shopee', status: 'pending', total: 889.99, rawData: '{}' },
+    { 
+      externalId: 'ML001', 
+      marketplace: 'MercadoLivre', 
+      status: 'delivered', 
+      total: 1299.99, 
+      customerName: 'João Silva',
+      customerEmail: 'joao@example.com',
+      customerPhone: '(11) 98765-4321',
+      customerCity: 'São Paulo',
+      customerState: 'SP',
+      rawData: '{}' 
+    },
+    { 
+      externalId: 'ML002', 
+      marketplace: 'MercadoLivre', 
+      status: 'shipped', 
+      total: 2450.00, 
+      customerName: 'Maria Santos',
+      customerEmail: 'maria@example.com',
+      customerPhone: '(21) 99876-5432',
+      customerCity: 'Rio de Janeiro',
+      customerState: 'RJ',
+      rawData: '{}' 
+    },
+    { 
+      externalId: 'SP001', 
+      marketplace: 'Shopee', 
+      status: 'processing', 
+      total: 599.99, 
+      customerName: 'Carlos Mendes',
+      customerEmail: 'carlos@example.com',
+      customerPhone: '(31) 98765-1234',
+      customerCity: 'Belo Horizonte',
+      customerState: 'MG',
+      rawData: '{}' 
+    },
+    { 
+      externalId: 'SP002', 
+      marketplace: 'Shopee', 
+      status: 'pending', 
+      total: 889.99, 
+      customerName: 'Ana Costa',
+      customerEmail: 'ana@example.com',
+      customerPhone: '(85) 98765-5678',
+      customerCity: 'Fortaleza',
+      customerState: 'CE',
+      rawData: '{}' 
+    },
   ];
 
   for (const orderData of orders) {

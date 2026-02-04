@@ -4,17 +4,24 @@ import { Repository } from 'typeorm';
 import { Product } from './entities/product.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { WebsocketGateway } from '../../infra/websocket/websocket.gateway';
 
 @Injectable()
 export class ProductsService {
   constructor(
     @InjectRepository(Product)
     private readonly productsRepository: Repository<Product>,
+    private readonly websocketGateway: WebsocketGateway,
   ) {}
 
   async create(dto: CreateProductDto) {
     const product = this.productsRepository.create(dto);
-    return this.productsRepository.save(product);
+    const saved = await this.productsRepository.save(product);
+    
+    // Emitir evento via WebSocket
+    this.websocketGateway.emitProductCreated(saved);
+    
+    return saved;
   }
 
   async findAll() {
@@ -34,7 +41,12 @@ export class ProductsService {
     if (!result.affected) {
       throw new NotFoundException('Produto não encontrado');
     }
-    return this.findOne(id);
+    const updated = await this.findOne(id);
+    
+    // Emitir evento via WebSocket
+    this.websocketGateway.emitProductUpdated(updated);
+    
+    return updated;
   }
 
   async remove(id: string) {
@@ -42,6 +54,10 @@ export class ProductsService {
     if (!result.affected) {
       throw new NotFoundException('Produto não encontrado');
     }
+    
+    // Emitir evento via WebSocket
+    this.websocketGateway.emitProductDeleted({ id });
+    
     return { deleted: true };
   }
 }

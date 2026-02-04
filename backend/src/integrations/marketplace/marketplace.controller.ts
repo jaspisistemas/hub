@@ -2,6 +2,7 @@ import { Controller, Post, Body, Get, Query, Res, HttpStatus } from '@nestjs/com
 import { Response } from 'express';
 import { MarketplaceService } from './marketplace.service';
 import { OrdersService } from '../../domains/orders/orders.service';
+import { StoresService } from '../../domains/stores/stores.service';
 
 /**
  * Controller para receber webhooks e gerenciar integrações com marketplaces
@@ -11,6 +12,7 @@ export class MarketplaceController {
   constructor(
     private readonly marketplaceService: MarketplaceService,
     private readonly ordersService: OrdersService,
+    private readonly storesService: StoresService,
   ) {}
 
   /**
@@ -26,11 +28,69 @@ export class MarketplaceController {
       // Para pedidos: topic = "orders_v2" e resource = "/orders/{order_id}"
       
       if (payload.topic === 'orders_v2' || payload.topic === 'orders') {
-        // Mapear o payload usando o adapter
-        const mappedOrder = this.marketplaceService.handleMercadoLivreWebhook(payload);
+        const userId = payload.user_id?.toString();
+        const orderId = payload.resource?.split('/').pop();
+
+        if (!userId || !orderId) {
+          console.warn('⚠️ Webhook ML sem user_id ou order_id');
+          return {
+            success: true,
+            message: 'Webhook recebido mas dados incompletos',
+          };
+        }
+
+        // Buscar a loja pelo userId do ML
+        const store = await this.storesService.findByMercadoLivreUserId(userId);
+        
+        if (!store || !store.mlAccessToken) {
+          console.warn(`⚠️ Loja não encontrada ou sem token para user ${userId}`);
+          return {
+            success: false,
+            message: 'Loja não autorizada',
+          };
+        }
+
+        // Verificar se o token precisa ser renovado
+        let accessToken = store.mlAccessToken;
+        if (
+          store.mlTokenExpiresAt &&
+          this.marketplaceService.isTokenExpiring(Number(store.mlTokenExpiresAt))
+        ) {
+          console.log('🔄 Token ML expirando, renovando...');
+          
+          if (!store.mlRefreshToken) {
+            console.error('❌ Refresh token não encontrado');
+            return {
+              success: false,
+              message: 'Token expirado e refresh token não disponível',
+            };
+          }
+
+          const newTokenData = await this.marketplaceService.refreshMercadoLivreToken(
+            store.mlRefreshToken,
+          );
+
+          await this.storesService.updateMercadoLivreTokens(store.id, {
+            accessToken: newTokenData.accessToken,
+            refreshToken: newTokenData.refreshToken,
+            expiresIn: newTokenData.expiresIn,
+            userId: store.mlUserId!,
+          });
+
+          accessToken = newTokenData.accessToken;
+          console.log('✅ Token ML renovado com sucesso');
+        }
+
+        // Buscar dados completos do pedido na API do ML
+        const orderData = await this.marketplaceService.getMercadoLivreOrder(
+          orderId,
+          accessToken,
+        );
         
         // Criar o pedido no sistema
-        const order = await this.ordersService.createOrder(await mappedOrder);
+        const order = await this.ordersService.createOrder(orderData);
+        
+        console.log(`✅ Pedido ML ${orderId} processado com sucesso`);
         
         return {
           success: true,
@@ -89,13 +149,23 @@ export class MarketplaceController {
         });
       }
 
-      // Aqui você trocaria o code por um access_token
-      // const tokenData = await this.marketplaceService.exchangeMercadoLivreCode(code);
+      // Trocar code por access_token
+      const tokenData = await this.marketplaceService.exchangeMercadoLivreCode(code);
       
-      console.log('✅ Autorização ML recebida, code:', code);
+      // Salvar ou atualizar loja com os tokens
+      const store = await this.storesService.findOrCreateMercadoLivreStore(
+        tokenData.userId,
+        {
+          accessToken: tokenData.accessToken,
+          refreshToken: tokenData.refreshToken,
+          expiresIn: tokenData.expiresIn,
+        },
+      );
+
+      console.log('✅ Loja ML autorizada com sucesso:', store.name);
       
       // Redirecionar para o frontend com sucesso
-      return res.redirect(`http://localhost:5174/stores?ml_auth=success`);
+      return res.redirect(`http://localhost:5174/stores?ml_auth=success&store_id=${store.id}`);
     } catch (error) {
       console.error('❌ Erro no callback ML:', error);
       return res.redirect(`http://localhost:5174/stores?ml_auth=error`);
@@ -130,7 +200,24 @@ export class MarketplaceController {
       status: customData?.status || 'paid',
       buyer: {
         id: 123456,
-        nickname: 'TESTUSER',
+        nickname: customData?.customer_name || 'TESTUSER',
+        first_name: customData?.customer_name || 'Cliente Teste',
+        email: customData?.customer_email || 'teste@example.com',
+        phone: {
+          number: customData?.customer_phone || '11999999999',
+        },
+      },
+      shipping: {
+        receiver_address: {
+          city: {
+            name: customData?.customer_city || 'São Paulo',
+          },
+          state: {
+            id: customData?.customer_state || 'SP',
+          },
+          address_line: customData?.customer_address || 'Rua Teste, 123',
+          zip_code: customData?.customer_zipcode || '01234-567',
+        },
       },
       items: [
         {

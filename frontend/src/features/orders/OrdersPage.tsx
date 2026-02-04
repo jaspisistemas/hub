@@ -23,25 +23,65 @@ import {
   DialogContent,
   DialogActions,
   Divider,
+  Snackbar,
+  IconButton,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import {
   Search as SearchIcon,
   Info as InfoIcon,
   TrendingUp as TrendingUpIcon,
   Close as CloseIcon,
+  Person as PersonIcon,
 } from '@mui/icons-material';
 import { ordersService, Order } from '../../services/ordersService';
+import { storesService, Store } from '../../services/storesService';
+import * as websocket from '../../services/websocket';
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [notification, setNotification] = useState<string | null>(null);
 
   useEffect(() => {
     loadOrders();
+    loadStores();
+    
+    // Conectar ao WebSocket
+    websocket.connect();
+    
+    // Escutar eventos de pedidos
+    websocket.onOrderCreated((order) => {
+      console.log('Novo pedido recebido:', order);
+      setOrders((prev) => [order.orderId ? { id: order.orderId, ...order } : order, ...prev]);
+      setNotification('Novo pedido criado!');
+    });
+    
+    websocket.onOrderUpdated((order) => {
+      console.log('Pedido atualizado:', order);
+      setOrders((prev) => 
+        prev.map((o) => (o.id === order.id ? { ...o, ...order } : o))
+      );
+      setNotification('Pedido atualizado!');
+    });
+    
+    websocket.onOrderDeleted((payload) => {
+      console.log('Pedido removido:', payload);
+      setOrders((prev) => prev.filter((o) => o.id !== payload.id));
+      setNotification('Pedido removido!');
+    });
+    
+    return () => {
+      websocket.disconnect();
+    };
   }, []);
 
   const loadOrders = async () => {
@@ -54,6 +94,15 @@ export default function OrdersPage() {
       setError(err instanceof Error ? err.message : 'Erro ao carregar pedidos');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadStores = async () => {
+    try {
+      const data = await storesService.getAll();
+      setStores(data);
+    } catch (err) {
+      console.error('Erro ao carregar lojas:', err);
     }
   };
 
@@ -114,12 +163,10 @@ export default function OrdersPage() {
             Pedidos
           </Typography>
           <Typography variant="body2" color="textSecondary">
-            Acompanhe e gerencie todos os pedidos
+            Acompanhe e gerencie todos os pedidos sincronizados dos marketplaces
           </Typography>
         </Box>
-        <Button variant="contained" color="primary">
-          Exportar
-        </Button>
+
       </Box>
 
       <Grid container spacing={2} sx={{ mb: 3 }}>
@@ -362,6 +409,81 @@ export default function OrdersPage() {
                 )}
               </Grid>
 
+              {/* Dados do Cliente */}
+              {(selectedOrder.customerName || selectedOrder.customerEmail) && (
+                <Box sx={{ mt: 3 }}>
+                  <Divider sx={{ mb: 2 }} />
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                    <PersonIcon sx={{ color: '#0099FF' }} />
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      Dados do Cliente
+                    </Typography>
+                  </Box>
+                  <Grid container spacing={2}>
+                    {selectedOrder.customerName && (
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
+                          Nome
+                        </Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          {selectedOrder.customerName}
+                        </Typography>
+                      </Grid>
+                    )}
+                    {selectedOrder.customerEmail && (
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
+                          Email
+                        </Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          {selectedOrder.customerEmail}
+                        </Typography>
+                      </Grid>
+                    )}
+                    {selectedOrder.customerPhone && (
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
+                          Telefone
+                        </Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          {selectedOrder.customerPhone}
+                        </Typography>
+                      </Grid>
+                    )}
+                    {(selectedOrder.customerCity || selectedOrder.customerState) && (
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
+                          Cidade/Estado
+                        </Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          {selectedOrder.customerCity}, {selectedOrder.customerState}
+                        </Typography>
+                      </Grid>
+                    )}
+                    {selectedOrder.customerAddress && (
+                      <Grid item xs={12}>
+                        <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
+                          Endereço
+                        </Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          {selectedOrder.customerAddress}
+                        </Typography>
+                      </Grid>
+                    )}
+                    {selectedOrder.customerZipCode && (
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
+                          CEP
+                        </Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          {selectedOrder.customerZipCode}
+                        </Typography>
+                      </Grid>
+                    )}
+                  </Grid>
+                </Box>
+              )}
+
               {selectedOrder.rawData && (
                 <>
                   <Divider sx={{ my: 3 }} />
@@ -393,6 +515,15 @@ export default function OrdersPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Notificações em tempo real */}
+      <Snackbar
+        open={!!notification}
+        autoHideDuration={3000}
+        onClose={() => setNotification(null)}
+        message={notification}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      />
     </Box>
   );
 }

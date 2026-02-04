@@ -1,27 +1,34 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Container, Box } from '@mui/material';
+import { ThemeContextProvider } from './contexts/ThemeContext';
+import { SidebarContextProvider } from './contexts/SidebarContext';
+import { useSidebar } from './contexts/SidebarContext';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './features/auth/LoginPage';
+import DashboardPage from './features/dashboard/DashboardPage';
 import OrdersPage from './features/orders/OrdersPage';
 import ProductsPage from './features/products/ProductsPage';
-import CustomersPage from './features/customers/CustomersPage';
 import StoresPage from './features/stores/StoresPage';
+import SupportPage from './features/support/SupportPage';
 
 function AppLayout({ children }: { children: React.ReactNode }) {
+  const { isCollapsed } = useSidebar();
+  const sidebarWidth = isCollapsed ? '80px' : '260px';
+
   return (
     <Box display="flex" height="100vh">
       <Sidebar />
-      <Box flexGrow={1} ml="260px" display="flex" flexDirection="column">
+      <Box flexGrow={1} ml={sidebarWidth} display="flex" flexDirection="column" sx={{ transition: 'margin-left 0.3s ease' }}>
         <Topbar />
         <Box
           component="main"
           sx={{
             flex: 1,
             overflow: 'auto',
-            backgroundColor: '#f8fafc',
+            bgcolor: 'background.default',
             p: 3,
           }}
         >
@@ -34,16 +41,29 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
+    <ThemeContextProvider>
+      <SidebarContextProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
 
         <Route
           path="/"
           element={
             <ProtectedRoute>
               <AppLayout>
-                <OrdersPage />
+                <DashboardPage />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <DashboardPage />
               </AppLayout>
             </ProtectedRoute>
           }
@@ -72,17 +92,6 @@ export default function App() {
         />
 
         <Route
-          path="/clientes"
-          element={
-            <ProtectedRoute>
-              <AppLayout>
-                <CustomersPage />
-              </AppLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
           path="/lojas"
           element={
             <ProtectedRoute>
@@ -92,7 +101,20 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/atendimento"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <SupportPage />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
+  </SidebarContextProvider>
+  </ThemeContextProvider>
   );
 }

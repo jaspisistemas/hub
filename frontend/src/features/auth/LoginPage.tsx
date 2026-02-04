@@ -8,9 +8,11 @@ import {
   Typography,
   Alert,
   InputAdornment,
+  Grid,
+  Avatar,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { Email as EmailIcon, Lock as LockIcon } from '@mui/icons-material';
+import { Email as EmailIcon, Lock as LockIcon, Person as PersonIcon } from '@mui/icons-material';
 import { authService } from '../../services/authService';
 
 export default function LoginPage() {
@@ -20,29 +22,38 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [name, setName] = useState('');
+  const [showAnimation, setShowAnimation] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    
+    // Validação rápida
+    if (!email || !password) {
+      setError('Por favor, preencha todos os campos');
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError('Email inválido');
+      return;
+    }
+
+    if (isRegistering && !name) {
+      setError('Por favor, informe seu nome');
+      return;
+    }
+
+    // Inicia animação
     setIsLoading(true);
+    setShowAnimation(true);
 
     try {
-      if (!email || !password) {
-        setError('Por favor, preencha todos os campos');
-        return;
-      }
-
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        setError('Email inválido');
-        return;
-      }
+      // Aguarda no mínimo 3 segundos para exibir a animação
+      await new Promise(resolve => setTimeout(resolve, 3000));
 
       if (isRegistering) {
-        if (!name) {
-          setError('Por favor, informe seu nome');
-          return;
-        }
         const response = await authService.register({ email, password, name });
         authService.setToken(response.accessToken);
         localStorage.setItem('user', JSON.stringify(response.user));
@@ -61,7 +72,7 @@ export default function LoginPage() {
             ? 'Erro ao registrar. Tente novamente.'
             : 'Erro ao fazer login. Tente novamente.'
       );
-    } finally {
+      setShowAnimation(false);
       setIsLoading(false);
     }
   };
@@ -73,36 +84,62 @@ export default function LoginPage() {
         alignItems: 'center',
         justifyContent: 'center',
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0099FF 0%, #1a3d5c 100%)',
+        bgcolor: 'background.default',
+        background: (theme) => theme.palette.mode === 'dark' 
+          ? 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)'
+          : 'linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%)',
+        p: 2,
       }}
     >
-      <Container maxWidth="sm">
-        <Paper
-          elevation={10}
-          sx={{
-            p: 4,
-            borderRadius: 2,
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
-          }}
-        >
-          <Box sx={{ textAlign: 'center', mb: 4 }}>
-            <Typography
-              variant="h4"
+      <Container maxWidth={false} sx={{ maxWidth: '1100px' }}>
+        <Grid container spacing={0} alignItems="center">
+          {/* Formulário de Login - Lado Esquerdo */}
+          <Grid item xs={12} md={6}>
+            <Paper
+              elevation={0}
               sx={{
-                fontWeight: 700,
-                background: 'linear-gradient(135deg, #0099FF 0%, #1a3d5c 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                mb: 1,
+                p: 6,
+                borderRadius: { xs: 2, md: '16px 0 0 16px' },
+                height: '700px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
               }}
             >
-              JASPI HUB
-            </Typography>
-            <Typography variant="body2" color="textSecondary">
-              {isRegistering ? 'Crie sua conta' : 'Sistema de Gerenciamento de Marketplaces'}
-            </Typography>
-          </Box>
+              <Box sx={{ width: '100%', maxWidth: '400px' }}>
+              <Box sx={{ textAlign: 'center', mb: 4 }}>
+                <Avatar
+                  sx={{
+                    width: 80,
+                    height: 80,
+                    bgcolor: '#0099FF',
+                    margin: '0 auto',
+                    mb: 2,
+                  }}
+                >
+                  <PersonIcon sx={{ fontSize: 50 }} />
+                </Avatar>
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontWeight: 700,
+                    background: 'linear-gradient(135deg, #0099FF 0%, #667eea 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                    mb: 1,
+                  }}
+                >
+                  {isRegistering ? 'Sign up' : 'Log In'}
+                </Typography>
+                <Typography variant="body2" color="textSecondary">
+                  Sistema para gerenciamento de marketplaces
+                </Typography>
+                <Typography variant="body2" color="textSecondary">
+                  {isRegistering ? 'Crie sua conta' : 'Bem-vindo de volta!'}
+                </Typography>
+              </Box>
 
           {error && (
             <Alert severity="error" sx={{ mb: 3, borderRadius: 1.5 }}>
@@ -200,39 +237,142 @@ export default function LoginPage() {
                   : 'Entrar'}
             </Button>
 
-            <Button
-              fullWidth
-              variant="text"
-              sx={{
-                textTransform: 'none',
-                color: '#0099FF',
-                '&:hover': {
-                  backgroundColor: 'rgba(0, 153, 255, 0.05)',
-                },
-              }}
-              onClick={() => {
-                setIsRegistering(!isRegistering);
-                setError('');
-                setName('');
-              }}
-            >
-              {isRegistering
-                ? 'Já tem uma conta? Faça login'
-                : 'Não tem conta? Crie uma agora'}
-            </Button>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+              <Button
+                variant="text"
+                sx={{
+                  textTransform: 'none',
+                  color: '#0099FF',
+                  '&:hover': {
+                    backgroundColor: 'rgba(0, 153, 255, 0.05)',
+                  },
+                }}
+                onClick={() => {
+                  alert('Funcionalidade de recuperação de senha em breve');
+                }}
+              >
+                Esqueci a senha
+              </Button>
+              
+              <Button
+                variant="text"
+                sx={{
+                  textTransform: 'none',
+                  color: '#0099FF',
+                  '&:hover': {
+                    backgroundColor: 'rgba(0, 153, 255, 0.05)',
+                  },
+                }}
+                onClick={() => {
+                  setIsRegistering(!isRegistering);
+                  setError('');
+                  setName('');
+                }}
+              >
+                {isRegistering ? 'Fazer login' : 'Criar conta'}
+              </Button>
+            </Box>
           </form>
 
-          {!isRegistering && (
-            <Box sx={{ textAlign: 'center', mt: 3 }}>
-              <Typography variant="caption" color="textSecondary">
-                Credenciais de demonstração:
-              </Typography>
-              <Typography variant="caption" color="textSecondary" display="block" sx={{ mt: 0.5 }}>
-                Email: demo@example.com | Senha: demo123
-              </Typography>
-            </Box>
-          )}
-        </Paper>
+              {!isRegistering && (
+                <Box sx={{ textAlign: 'center', mt: 3 }}>
+                  <Typography variant="caption" color="textSecondary">
+                    Credenciais de demonstração:
+                  </Typography>
+                  <Typography variant="caption" color="textSecondary" display="block" sx={{ mt: 0.5 }}>
+                    demo@example.com | demo123
+                  </Typography>
+                </Box>
+              )}
+              </Box>
+            </Paper>
+          </Grid>
+
+          {/* Mascote - Lado Direito */}
+          <Grid item xs={12} md={6} sx={{ display: { xs: 'none', md: 'block' } }}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 4,
+                borderRadius: '0 16px 16px 0',
+                bgcolor: 'background.paper',
+                height: '700px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              <Box
+                sx={{
+                  position: 'relative',
+                  zIndex: 2,
+                  textAlign: 'center',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '100%',
+                }}
+              >
+                {showAnimation ? (
+                  <Box
+                    component="video"
+                    autoPlay
+                    onEnded={() => setShowAnimation(false)}
+                    sx={{
+                      width: '100%',
+                      maxWidth: '400px',
+                      height: 'auto',
+                      filter: 'drop-shadow(0 10px 20px rgba(0, 0, 0, 0.1))',
+                    }}
+                  >
+                    <source src="/jaspi-animation.mp4" type="video/mp4" />
+                  </Box>
+                ) : (
+                  <Box
+                    component="img"
+                    src="/jaspi-mascot.png"
+                    alt="Jaspi Mascot"
+                    sx={{
+                      width: '100%',
+                      maxWidth: '400px',
+                      height: 'auto',
+                      filter: 'drop-shadow(0 10px 20px rgba(0, 0, 0, 0.1))',
+                    }}
+                  />
+                )}
+              </Box>
+
+              {/* Círculos decorativos */}
+              <Box
+                sx={{
+                  position: 'absolute',
+                  width: '200px',
+                  height: '200px',
+                  borderRadius: '50%',
+                  background: 'rgba(102, 126, 234, 0.1)',
+                  top: '-50px',
+                  right: '-50px',
+                  zIndex: 1,
+                }}
+              />
+              <Box
+                sx={{
+                  position: 'absolute',
+                  width: '150px',
+                  height: '150px',
+                  borderRadius: '50%',
+                  background: 'rgba(0, 153, 255, 0.1)',
+                  bottom: '-30px',
+                  left: '-30px',
+                  zIndex: 1,
+                }}
+              />
+            </Paper>
+          </Grid>
+        </Grid>
       </Container>
     </Box>
   );

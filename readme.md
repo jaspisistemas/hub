@@ -270,14 +270,6 @@ npm run preview        # Preview do build
 - [Integração com Mercado Livre](backend/INTEGRACAO_ML.md)
 - [Implementações Realizadas](IMPLEMENTACOES.md)
 
-## 🤝 Contribuindo
-
-1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/MinhaFeature`)
-3. Commit suas mudanças (`git commit -m 'feat: Minha nova feature'`)
-4. Push para a branch (`git push origin feature/MinhaFeature`)
-5. Abra um Pull Request
-
 ## 📄 Licença
 
 Este projeto está sob a licença MIT.

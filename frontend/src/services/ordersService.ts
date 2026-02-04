@@ -9,6 +9,14 @@ export interface Order {
   rawData?: string;
   createdAt?: string;
   updatedAt?: string;
+  // Dados do cliente
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  customerCity?: string;
+  customerState?: string;
+  customerAddress?: string;
+  customerZipCode?: string;
 }
 
 export interface CreateOrderInput {

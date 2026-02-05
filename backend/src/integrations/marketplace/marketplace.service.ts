@@ -372,32 +372,6 @@ export class MarketplaceService {
    * Buscar categorias principais do Mercado Livre Brasil
    */
   async getMercadoLivreCategories() {
-    // Categorias principais do Mercado Livre Brasil (fallback)
-    const fallbackCategories = [
-      { id: 'MLB1051', name: 'Celulares e Telefones' },
-      { id: 'MLB1000', name: 'Eletrônicos, Áudio e Vídeo' },
-      { id: 'MLB1648', name: 'Computação' },
-      { id: 'MLB1144', name: 'Consoles e Video Games' },
-      { id: 'MLB1196', name: 'Música, Filmes e Seriados' },
-      { id: 'MLB1132', name: 'Brinquedos e Hobbies' },
-      { id: 'MLB1430', name: 'Roupas e Calçados' },
-      { id: 'MLB1384', name: 'Bebês' },
-      { id: 'MLB1246', name: 'Esportes e Fitness' },
-      { id: 'MLB1367', name: 'Beleza e Cuidado Pessoal' },
-      { id: 'MLB1574', name: 'Casa, Móveis e Decoração' },
-      { id: 'MLB1039', name: 'Câmeras e Acessórios' },
-      { id: 'MLB1540', name: 'Veículos' },
-      { id: 'MLB1499', name: 'Indústria e Comércio' },
-      { id: 'MLB1459', name: 'Imóveis' },
-      { id: 'MLB1403', name: 'Ferramentas' },
-      { id: 'MLB3937', name: 'Construção' },
-      { id: 'MLB1071', name: 'Animais' },
-      { id: 'MLB1182', name: 'Livros, Revistas e Comics' },
-      { id: 'MLB1168', name: 'Alimentos e Bebidas' },
-      { id: 'MLB1276', name: 'Serviços' },
-      { id: 'MLB1953', name: 'Mais Categorias' },
-    ];
-
     try {
       console.log('🔍 Buscando categorias do ML...');
       const response = await fetch('https://api.mercadolibre.com/sites/MLB/categories', {
@@ -410,8 +384,12 @@ export class MarketplaceService {
       console.log('📡 Response status:', response.status);
       
       if (!response.ok) {
-        console.warn('⚠️ API do ML retornou erro, usando categorias estáticas');
-        return fallbackCategories;
+        const errorText = await response.text();
+        console.error('❌ Erro na resposta do ML:', errorText);
+        throw new HttpException(
+          `Erro ao buscar categorias do Mercado Livre: ${response.status}`,
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
       const categories = await response.json();
@@ -423,8 +401,16 @@ export class MarketplaceService {
         name: cat.name,
       }));
     } catch (error) {
-      console.warn('⚠️ Erro ao buscar categorias ML, usando fallback:', error instanceof Error ? error.message : error);
-      return fallbackCategories;
+      console.error('❌ Erro ao buscar categorias ML:', error);
+      
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      
+      throw new HttpException(
+        'Erro ao buscar categorias',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 

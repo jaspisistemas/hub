@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3000';
+const API_URL = 'https://uneducated-georgiann-personifiant.ngrok-free.dev';
 
 export interface LoginResponse {
   accessToken: string;

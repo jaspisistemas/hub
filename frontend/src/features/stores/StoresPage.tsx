@@ -30,6 +30,7 @@ import {
   Close as CloseIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
+  Link as LinkIcon,
 } from '@mui/icons-material';
 import { storesService, Store } from '../../services/storesService';
 
@@ -49,6 +50,22 @@ export default function StoresPage() {
 
   useEffect(() => {
     loadStores();
+    
+    // Verificar se veio do callback do ML
+    const params = new URLSearchParams(window.location.search);
+    const mlAuth = params.get('ml_auth');
+    const storeId = params.get('store_id');
+    const reason = params.get('reason');
+    
+    if (mlAuth === 'success') {
+      setNotification(`✅ Mercado Livre conectado com sucesso! Loja ID: ${storeId}`);
+      // Limpar URL
+      window.history.replaceState({}, '', '/lojas');
+    } else if (mlAuth === 'error') {
+      setError(`❌ Erro ao conectar Mercado Livre: ${reason || 'Desconhecido'}`);
+      // Limpar URL
+      window.history.replaceState({}, '', '/lojas');
+    }
   }, []);
 
   const loadStores = async () => {
@@ -136,6 +153,10 @@ export default function StoresPage() {
     }
   };
 
+  const handleConnectMercadoLivre = () => {
+    storesService.connectMercadoLivre();
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
@@ -177,14 +198,31 @@ export default function StoresPage() {
             Gerenciar integrações com marketplaces
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<AddIcon />}
-          onClick={handleOpenCreate}
-        >
-          Conectar Loja
-        </Button>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button
+            variant="outlined"
+            startIcon={<LinkIcon />}
+            onClick={handleConnectMercadoLivre}
+            sx={{ 
+              borderColor: '#FFE600',
+              color: '#333',
+              '&:hover': { 
+                borderColor: '#FFD000',
+                bgcolor: '#FFF9E6'
+              }
+            }}
+          >
+            Conectar Mercado Livre
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<AddIcon />}
+            onClick={handleOpenCreate}
+          >
+            Conectar Loja
+          </Button>
+        </Box>
       </Box>
 
       {error && (

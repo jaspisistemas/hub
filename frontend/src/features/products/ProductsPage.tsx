@@ -35,6 +35,7 @@ import {
   List,
   ListItem,
   ListItemText,
+  Autocomplete,
 } from '@mui/material';
 import {
   Add as AddIcon, 
@@ -45,6 +46,7 @@ import {
   CloudUpload as CloudUploadIcon,
   Upload as UploadIcon,
   DeleteOutline as DeleteOutlineIcon,
+  Sync as SyncIcon,
 } from '@mui/icons-material';
 import { productsService, Product, CreateProductInput } from '../../services/productsService';
 import { storesService, Store } from '../../services/storesService';
@@ -61,18 +63,24 @@ export default function ProductsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-  const [exportDialogOpen, setExportDialogOpen] = useState(false);
-  const [exportStep, setExportStep] = useState(0);
+  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+  const [publishStep, setPublishStep] = useState(0);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [selectedMarketplace, setSelectedMarketplace] = useState('');
-  const [exporting, setExporting] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [stores, setStores] = useState<Store[]>([]);
+  const [syncDialogOpen, setSyncDialogOpen] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMarketplace, setSyncMarketplace] = useState('');
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
   const [formData, setFormData] = useState<CreateProductInput>({
     sku: '',
     name: '',
     price: 0,
     quantity: 0,
     category: '',
+    description: '',
   });
 
   useEffect(() => {
@@ -130,6 +138,19 @@ export default function ProductsPage() {
     }
   };
 
+  const loadCategories = async () => {
+    try {
+      setLoadingCategories(true);
+      const data = await productsService.getMercadoLivreCategories();
+      setCategories(data);
+    } catch (err) {
+      console.error('Erro ao carregar categorias:', err);
+      setError('Erro ao carregar categorias do Mercado Livre');
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
   const handleOpenDialog = () => {
     setEditingId(null);
     setImageFiles([]);
@@ -140,23 +161,31 @@ export default function ProductsPage() {
       price: 0,
       quantity: 0,
       category: '',
+      brand: '',
+      model: '',
+      description: '',
     });
     setDialogOpen(true);
+    loadCategories(); // Carregar categorias ao abrir o diálogo
   };
 
   const handleEditProduct = (product: Product) => {
     setEditingId(product.id);
     setImageFiles([]);
     const productImageUrls = product.imageUrls || (product.imageUrl ? [product.imageUrl] : []);
-    setImagePreviews(productImageUrls.map(url => `http://localhost:3000${url}`));
+    setImagePreviews(productImageUrls.map(url => `https://uneducated-georgiann-personifiant.ngrok-free.dev${url}`));
     setFormData({
       sku: product.sku,
       name: product.name,
       price: product.price,
       quantity: product.quantity,
       category: product.category,
+      brand: product.brand || '',
+      model: product.model || '',
+      description: product.description || '',
     });
     setDialogOpen(true);
+    loadCategories(); // Carregar categorias ao editar também
   };
 
   const handleCloseDialog = () => {
@@ -219,6 +248,18 @@ export default function ProductsPage() {
       formDataToSend.append('quantity', formData.quantity.toString());
       formDataToSend.append('category', formData.category);
       
+      if (formData.brand) {
+        formDataToSend.append('brand', formData.brand);
+      }
+      
+      if (formData.model) {
+        formDataToSend.append('model', formData.model);
+      }
+      
+      if (formData.description) {
+        formDataToSend.append('description', formData.description);
+      }
+      
       // Adicionar múltiplas imagens
       imageFiles.forEach((file, index) => {
         formDataToSend.append('images', file);
@@ -256,17 +297,17 @@ export default function ProductsPage() {
     }
   };
 
-  // Funções de exportação
-  const handleOpenExportDialog = () => {
-    setExportDialogOpen(true);
-    setExportStep(0);
+  // Funções de publicação
+  const handleOpenPublishDialog = () => {
+    setPublishDialogOpen(true);
+    setPublishStep(0);
     setSelectedProducts([]);
     setSelectedMarketplace('');
   };
 
-  const handleCloseExportDialog = () => {
-    setExportDialogOpen(false);
-    setExportStep(0);
+  const handleClosePublishDialog = () => {
+    setPublishDialogOpen(false);
+    setPublishStep(0);
     setSelectedProducts([]);
     setSelectedMarketplace('');
   };
@@ -288,37 +329,68 @@ export default function ProductsPage() {
   };
 
   const handleNextStep = () => {
-    if (exportStep === 0 && selectedProducts.length === 0) {
-      setError('Selecione pelo menos um produto para exportar');
+    if (publishStep === 0 && selectedProducts.length === 0) {
+      setError('Selecione pelo menos um produto para publicar');
       return;
     }
-    if (exportStep === 1 && !selectedMarketplace) {
+    if (publishStep === 1 && !selectedMarketplace) {
       setError('Selecione um marketplace para continuar');
       return;
     }
-    setExportStep(prev => prev + 1);
+    setPublishStep(prev => prev + 1);
   };
 
   const handleBackStep = () => {
-    setExportStep(prev => prev - 1);
+    setPublishStep(prev => prev - 1);
   };
 
-  const handleExportProducts = async () => {
+  const handlePublishProducts = async () => {
     if (!selectedMarketplace) {
       setError('Selecione um marketplace');
       return;
     }
 
     try {
-      setExporting(true);
-      await productsService.exportToMarketplace(selectedProducts, selectedMarketplace);
-      setNotification(`${selectedProducts.length} produto(s) exportado(s) para ${selectedMarketplace} com sucesso!`);
-      handleCloseExportDialog();
-      setError(null);
+      setPublishing(true);
+      await productsService.publishToMarketplace(selectedProducts, selectedMarketplace);
+      setNotification(`${selectedProducts.length} produto(s) publicado(s) em ${selectedMarketplace} com sucesso!`);
+      handleClosePublishDialog();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao exportar produtos');
+      setError(err instanceof Error ? err.message : 'Erro ao publicar produtos');
     } finally {
-      setExporting(false);
+      setPublishing(false);
+    }
+  };
+
+  const handleSyncProducts = async () => {
+    if (!syncMarketplace) {
+      setError('Selecione um marketplace');
+      return;
+    }
+
+    try {
+      setSyncing(true);
+      // Chama endpoint de sincronização
+      const response = await fetch(`https://uneducated-georgiann-personifiant.ngrok-free.dev/marketplace/${syncMarketplace.toLowerCase()}/sync-products`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Falha ao sincronizar produtos');
+      }
+
+      const data = await response.json();
+      setNotification(`${data.count || 0} produtos sincronizados com sucesso!`);
+      setSyncDialogOpen(false);
+      loadProducts();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao sincronizar produtos');
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -349,11 +421,19 @@ export default function ProductsPage() {
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Button 
             variant="outlined" 
+            color="success" 
+            startIcon={<SyncIcon />} 
+            onClick={() => setSyncDialogOpen(true)}
+          >
+            Sincronizar Produtos
+          </Button>
+          <Button 
+            variant="outlined" 
             color="primary" 
             startIcon={<UploadIcon />} 
-            onClick={handleOpenExportDialog}
+            onClick={handleOpenPublishDialog}
           >
-            Exportar Produtos
+            Publicar Produtos
           </Button>
           <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleOpenDialog}>
             Novo Produto
@@ -419,7 +499,7 @@ export default function ProductsPage() {
               >
                 <TableCell>
                   <Avatar
-                    src={product.imageUrls?.[0] || product.imageUrl ? `http://localhost:3000${product.imageUrls?.[0] || product.imageUrl}` : undefined}
+                    src={product.imageUrls?.[0] || product.imageUrl ? `https://uneducated-georgiann-personifiant.ngrok-free.dev${product.imageUrls?.[0] || product.imageUrl}` : undefined}
                     alt={product.name}
                     variant="rounded"
                     sx={{ width: 50, height: 50 }}
@@ -474,10 +554,8 @@ export default function ProductsPage() {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            {editingId ? 'Editar Produto' : 'Novo Produto'}
-          </Typography>
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 600 }}>
+          {editingId ? 'Editar Produto' : 'Novo Produto'}
           <Button onClick={handleCloseDialog} color="inherit" size="small">
             <CloseIcon />
           </Button>
@@ -582,13 +660,64 @@ export default function ProductsPage() {
               />
             </Grid>
             <Grid item xs={12}>
+              <Autocomplete
+                fullWidth
+                options={categories}
+                getOptionLabel={(option) => `${option.name} (${option.id})`}
+                value={categories.find(c => c.id === formData.category) || null}
+                onChange={(_, newValue) => {
+                  setFormData(prev => ({ ...prev, category: newValue?.id || '' }));
+                }}
+                loading={loadingCategories}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Categoria"
+                    required
+                    placeholder="Selecione a categoria do Mercado Livre"
+                    helperText="Escolha a categoria que melhor descreve seu produto"
+                    InputProps={{
+                      ...params.InputProps,
+                      endAdornment: (
+                        <>
+                          {loadingCategories ? <CircularProgress color="inherit" size={20} /> : null}
+                          {params.InputProps.endAdornment}
+                        </>
+                      ),
+                    }}
+                  />
+                )}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
-                label="Categoria"
-                value={formData.category}
-                onChange={handleInputChange('category')}
-                required
-                placeholder="Ex: Eletrônicos"
+                label="Marca"
+                value={formData.brand || ''}
+                onChange={handleInputChange('brand')}
+                placeholder="Ex: Samsung, Apple, Xiaomi"
+                helperText="Obrigatório para Mercado Livre"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Modelo"
+                value={formData.model || ''}
+                onChange={handleInputChange('model')}
+                placeholder="Ex: Galaxy S21, iPhone 13"
+                helperText="Obrigatório para Mercado Livre"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Descrição do Produto"
+                value={formData.description || ''}
+                onChange={handleInputChange('description')}
+                multiline
+                rows={4}
+                placeholder="Descreva as características e detalhes do produto..."
               />
             </Grid>
           </Grid>
@@ -607,23 +736,21 @@ export default function ProductsPage() {
         </DialogActions>
       </Dialog>
 
-      {/* Dialog de exportação de produtos */}
+      {/* Dialog de publicação de produtos */}
       <Dialog 
-        open={exportDialogOpen} 
-        onClose={handleCloseExportDialog}
+        open={publishDialogOpen} 
+        onClose={handleClosePublishDialog}
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Exportar Produtos para Marketplace
-          </Typography>
-          <IconButton onClick={handleCloseExportDialog} size="small">
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 600 }}>
+          Publicar Produtos no Marketplace
+          <IconButton onClick={handleClosePublishDialog} size="small">
             <CloseIcon />
           </IconButton>
         </DialogTitle>
         <DialogContent dividers>
-          <Stepper activeStep={exportStep} sx={{ mb: 3 }}>
+          <Stepper activeStep={publishStep} sx={{ mb: 3 }}>
             <Step>
               <StepLabel>Selecionar Produtos</StepLabel>
             </Step>
@@ -635,11 +762,11 @@ export default function ProductsPage() {
             </Step>
           </Stepper>
 
-          {exportStep === 0 && (
+          {publishStep === 0 && (
             <Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                  Selecione os produtos para exportar
+                  Selecione os produtos para publicar
                 </Typography>
                 <Button 
                   size="small" 
@@ -666,7 +793,7 @@ export default function ProductsPage() {
                         disableRipple
                       />
                       <Avatar
-                        src={product.imageUrl ? `http://localhost:3000${product.imageUrl}` : undefined}
+                        src={product.imageUrl ? `https://uneducated-georgiann-personifiant.ngrok-free.dev${product.imageUrl}` : undefined}
                         alt={product.name}
                         variant="rounded"
                         sx={{ width: 40, height: 40, mr: 2 }}
@@ -687,11 +814,11 @@ export default function ProductsPage() {
             </Box>
           )}
 
-          {exportStep === 1 && (
+          {publishStep === 1 && (
             <Box>
-              {stores.filter(s => s.active).length === 0 ? (
+              {stores.filter(s => s.status === 'active').length === 0 ? (
                 <Alert severity="warning">
-                  Nenhum marketplace conectado. Configure uma loja na seção de Lojas para poder exportar produtos.
+                  Nenhum marketplace conectado. Configure uma loja na seção de Lojas para poder publicar produtos.
                 </Alert>
               ) : (
                 <FormControl component="fieldset">
@@ -702,8 +829,8 @@ export default function ProductsPage() {
                     value={selectedMarketplace}
                     onChange={(e) => setSelectedMarketplace(e.target.value)}
                   >
-                    {Array.from(new Set(stores.filter(s => s.active).map(s => s.marketplace))).map((marketplace) => {
-                      const storesCount = stores.filter(s => s.active && s.marketplace === marketplace).length;
+                    {Array.from(new Set(stores.filter(s => s.status === 'active').map(s => s.marketplace))).map((marketplace) => {
+                      const storesCount = stores.filter(s => s.status === 'active' && s.marketplace === marketplace).length;
                       return (
                         <FormControlLabel 
                           key={marketplace}
@@ -728,10 +855,10 @@ export default function ProductsPage() {
             </Box>
           )}
 
-          {exportStep === 2 && (
+          {publishStep === 2 && (
             <Box>
               <Alert severity="info" sx={{ mb: 3 }}>
-                Revise as informações antes de confirmar a exportação
+                Revise as informações antes de confirmar a publicação
               </Alert>
               <Grid container spacing={2}>
                 <Grid item xs={12}>
@@ -763,15 +890,15 @@ export default function ProductsPage() {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseExportDialog} disabled={exporting}>
+          <Button onClick={handleClosePublishDialog} disabled={publishing}>
             Cancelar
           </Button>
-          {exportStep > 0 && (
-            <Button onClick={handleBackStep} disabled={exporting}>
+          {publishStep > 0 && (
+            <Button onClick={handleBackStep} disabled={publishing}>
               Voltar
             </Button>
           )}
-          {exportStep < 2 ? (
+          {publishStep < 2 ? (
             <Button 
               onClick={handleNextStep} 
               variant="contained"
@@ -780,13 +907,81 @@ export default function ProductsPage() {
             </Button>
           ) : (
             <Button 
-              onClick={handleExportProducts} 
+              onClick={handlePublishProducts} 
               variant="contained"
-              disabled={exporting}
+              disabled={publishing}
             >
-              {exporting ? <CircularProgress size={24} /> : 'Confirmar Exportação'}
+              {publishing ? <CircularProgress size={24} /> : 'Confirmar Publicação'}
             </Button>
           )}
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog de Sincronização */}
+      <Dialog open={syncDialogOpen} onClose={() => setSyncDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600 }}>
+          <SyncIcon color="success" />
+          Sincronizar Produtos do Marketplace
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ py: 2 }}>
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
+              Esta ação irá buscar todos os produtos do marketplace selecionado e importá-los para o sistema.
+            </Typography>
+            <FormControl fullWidth>
+              <FormLabel sx={{ mb: 2, fontWeight: 600 }}>Selecione o Marketplace</FormLabel>
+              <RadioGroup
+                value={syncMarketplace}
+                onChange={(e) => setSyncMarketplace(e.target.value)}
+              >
+                <FormControlLabel 
+                  value="MercadoLivre" 
+                  control={<Radio />} 
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography>Mercado Livre</Typography>
+                      {stores.some(s => s.marketplace === 'MercadoLivre') && (
+                        <Chip label="Conectado" size="small" color="success" />
+                      )}
+                    </Box>
+                  }
+                  disabled={!stores.some(s => s.marketplace === 'MercadoLivre')}
+                />
+                <FormControlLabel 
+                  value="Shopee" 
+                  control={<Radio />} 
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography>Shopee</Typography>
+                      {stores.some(s => s.marketplace === 'Shopee') && (
+                        <Chip label="Conectado" size="small" color="success" />
+                      )}
+                    </Box>
+                  }
+                  disabled={!stores.some(s => s.marketplace === 'Shopee')}
+                />
+              </RadioGroup>
+            </FormControl>
+            {!stores.some(s => s.marketplace === 'MercadoLivre' || s.marketplace === 'Shopee') && (
+              <Alert severity="warning" sx={{ mt: 2 }}>
+                Nenhum marketplace conectado. Configure uma loja primeiro.
+              </Alert>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSyncDialogOpen(false)} disabled={syncing}>
+            Cancelar
+          </Button>
+          <Button 
+            onClick={handleSyncProducts} 
+            variant="contained"
+            color="success"
+            disabled={syncing || !syncMarketplace}
+            startIcon={syncing ? <CircularProgress size={20} /> : <SyncIcon />}
+          >
+            {syncing ? 'Sincronizando...' : 'Sincronizar'}
+          </Button>
         </DialogActions>
       </Dialog>
 

@@ -22,7 +22,6 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [name, setName] = useState('');
-  const [showAnimation, setShowAnimation] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,14 +44,9 @@ export default function LoginPage() {
       return;
     }
 
-    // Inicia animação
     setIsLoading(true);
-    setShowAnimation(true);
 
     try {
-      // Aguarda no mínimo 3 segundos para exibir a animação
-      await new Promise(resolve => setTimeout(resolve, 3000));
-
       if (isRegistering) {
         const response = await authService.register({ email, password, name });
         authService.setToken(response.accessToken);
@@ -72,7 +66,6 @@ export default function LoginPage() {
             ? 'Erro ao registrar. Tente novamente.'
             : 'Erro ao fazer login. Tente novamente.'
       );
-      setShowAnimation(false);
       setIsLoading(false);
     }
   };
@@ -316,33 +309,17 @@ export default function LoginPage() {
                   height: '100%',
                 }}
               >
-                {showAnimation ? (
-                  <Box
-                    component="video"
-                    autoPlay
-                    onEnded={() => setShowAnimation(false)}
-                    sx={{
-                      width: '100%',
-                      maxWidth: '400px',
-                      height: 'auto',
-                      filter: 'drop-shadow(0 10px 20px rgba(0, 0, 0, 0.1))',
-                    }}
-                  >
-                    <source src="/jaspi-animation.mp4" type="video/mp4" />
-                  </Box>
-                ) : (
-                  <Box
-                    component="img"
-                    src="/jaspi-mascot.png"
-                    alt="Jaspi Mascot"
-                    sx={{
-                      width: '100%',
-                      maxWidth: '400px',
-                      height: 'auto',
-                      filter: 'drop-shadow(0 10px 20px rgba(0, 0, 0, 0.1))',
-                    }}
-                  />
-                )}
+                <Box
+                  component="img"
+                  src="/jaspi-mascot.png"
+                  alt="Jaspi Mascot"
+                  sx={{
+                    width: '100%',
+                    maxWidth: '400px',
+                    height: 'auto',
+                    filter: 'drop-shadow(0 10px 20px rgba(0, 0, 0, 0.1))',
+                  }}
+                />
               </Box>
 
               {/* Círculos decorativos */}

@@ -49,4 +49,9 @@ export const storesService = {
       method: 'DELETE',
     });
   },
+
+  connectMercadoLivre: () => {
+    // Redireciona para o endpoint de autorização OAuth do backend
+    window.location.href = 'https://uneducated-georgiann-personifiant.ngrok-free.dev/marketplace/mercadolivre/auth';
+  },
 };

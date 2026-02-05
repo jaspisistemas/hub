@@ -1,6 +1,6 @@
 import { authService } from './authService';
 
-const API_URL = 'http://localhost:3000';
+const API_URL = 'https://uneducated-georgiann-personifiant.ngrok-free.dev';
 
 export interface FetchOptions extends RequestInit {
   needsAuth?: boolean;
@@ -14,6 +14,7 @@ export async function apiFetch<T = any>(
 
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'true',
     ...fetchOptions.headers,
   };
 

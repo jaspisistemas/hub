@@ -276,4 +276,5 @@ Este projeto está sob a licença MIT.
 
 ## 👥 Equipe
 
-Desenvolvido por [Jaspi Team]
+Desenvolvido por [Jaspi Team] <img width="1080" height="720" alt="jaspi-logo png" src="https://github.com/user-attachments/assets/46387307-8e64-474b-8d6b-702051258d52" />
+

@@ -60,4 +60,8 @@ export class ProductsService {
     
     return { deleted: true };
   }
+
+  async findBySku(sku: string) {
+    return this.productsRepository.findOne({ where: { sku } });
+  }
 }

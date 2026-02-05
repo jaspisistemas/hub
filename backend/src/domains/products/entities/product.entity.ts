@@ -20,6 +20,12 @@ export class Product {
   @Column({ nullable: true, length: 100 })
   category?: string;
 
+  @Column({ nullable: true, length: 100 })
+  brand?: string;
+
+  @Column({ nullable: true, length: 100 })
+  model?: string;
+
   @Column({ default: true })
   active!: boolean;
 
@@ -31,6 +37,12 @@ export class Product {
 
   @Column({ nullable: true, length: 500 })
   imageUrl?: string;
+
+  @Column({ nullable: true, length: 100 })
+  externalId?: string;
+
+  @Column({ nullable: true, length: 50 })
+  marketplace?: string;
 
   @CreateDateColumn()
   createdAt!: Date;

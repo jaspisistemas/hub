@@ -5,9 +5,10 @@ import { MercadoLivreAdapter } from './adapters/mercadolivre.adapter';
 import { ShopeeAdapter } from './adapters/shopee.adapter';
 import { OrdersModule } from '../../domains/orders/orders.module';
 import { StoresModule } from '../../domains/stores/stores.module';
+import { ProductsModule } from '../../domains/products/products.module';
 
 @Module({
-  imports: [OrdersModule, StoresModule],
+  imports: [OrdersModule, StoresModule, ProductsModule],
   controllers: [MarketplaceController],
   providers: [MarketplaceService, MercadoLivreAdapter, ShopeeAdapter],
   exports: [MarketplaceService],

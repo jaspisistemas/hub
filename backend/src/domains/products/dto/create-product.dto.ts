@@ -26,7 +26,26 @@ export class CreateProductDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(100)
+  brand?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  model?: string;
+
+  @IsOptional()
+  @IsString()
   description?: string;
 
   @IsOptional()
-  imageUrls?: string[];}
+  imageUrls?: string[];
+
+  @IsOptional()
+  @IsString()
+  externalId?: string;
+
+  @IsOptional()
+  @IsString()
+  marketplace?: string;
+}

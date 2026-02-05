@@ -6,7 +6,13 @@ import { join } from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { 
-    cors: true 
+    cors: {
+      origin: [
+        'http://localhost:5173',
+        'https://panel-joshua-norfolk-molecular.trycloudflare.com',
+      ],
+      credentials: true,
+    }
   });
   
   // Servir arquivos estáticos da pasta uploads

@@ -181,4 +181,299 @@ export class MarketplaceService {
     const oneHour = 60 * 60 * 1000;
     return expiresAt - now < oneHour;
   }
+
+  /**
+   * Sincroniza produtos do Mercado Livre para o sistema
+   */
+  async syncMercadoLivreProducts(userId: string, accessToken: string) {
+    try {
+      // Buscar produtos ativos do vendedor
+      const response = await fetch(
+        `https://api.mercadolibre.com/users/${userId}/items/search?status=active&limit=50`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error('❌ Erro ao buscar produtos do ML:', error);
+        throw new HttpException(
+          'Erro ao buscar produtos do Mercado Livre',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const data = await response.json();
+      const itemIds = data.results || [];
+
+      // Buscar detalhes de cada produto
+      const products = [];
+      for (const itemId of itemIds) {
+        try {
+          const itemResponse = await fetch(
+            `https://api.mercadolibre.com/items/${itemId}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+              },
+            },
+          );
+
+          if (itemResponse.ok) {
+            const item = await itemResponse.json();
+            products.push({
+              sku: item.id,
+              name: item.title,
+              price: item.price,
+              quantity: item.available_quantity,
+              category: item.category_id,
+              imageUrl: item.pictures?.[0]?.url || null,
+              externalId: item.id,
+              marketplace: 'mercadolivre',
+            });
+          }
+        } catch (error) {
+          console.error(`Erro ao buscar produto ${itemId}:`, error);
+        }
+      }
+
+      return products;
+    } catch (error) {
+      console.error('❌ Erro ao sincronizar produtos do ML:', error);
+      throw new HttpException(
+        'Erro ao sincronizar produtos do Mercado Livre',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Cria um produto no Mercado Livre
+   */
+  async createMercadoLivreProduct(product: any, accessToken: string) {
+    try {
+      // Montar payload no formato do ML
+      const listing = {
+        title: product.name.substring(0, 60), // ML limita a 60 caracteres
+        category_id: product.category || 'MLB1051', // Usar categoria do produto ou padrão
+        price: product.price,
+        currency_id: 'BRL',
+        available_quantity: product.quantity,
+        buying_mode: 'buy_it_now',
+        condition: 'new',
+        listing_type_id: 'gold_special', // free, bronze, silver, gold_special, gold_premium, gold_pro
+        description: {
+          plain_text: product.description || `${product.name}\n\nSKU: ${product.sku}`,
+        },
+        pictures: [] as Array<{ source: string }>,
+        attributes: [] as Array<{ id: string; value_name: string }>,
+        shipping: {
+          mode: 'me2', // Mercado Envios
+          local_pick_up: false,
+          free_shipping: false,
+        },
+      };
+
+      // Adicionar imagens (ML aceita URLs públicas)
+      if (product.imageUrls && product.imageUrls.length > 0) {
+        listing.pictures = product.imageUrls
+          .filter((url: string) => url.startsWith('http'))
+          .map((url: string) => ({ source: url }))
+          .slice(0, 10); // ML limita a 10 imagens
+      }
+
+      // Adicionar atributos básicos
+      if (product.sku) {
+        listing.attributes.push({
+          id: 'SELLER_SKU',
+          value_name: product.sku,
+        });
+      }
+
+      // Adicionar marca (obrigatório para algumas categorias)
+      if (product.brand) {
+        listing.attributes.push({
+          id: 'BRAND',
+          value_name: product.brand,
+        });
+      } else {
+        // Valor padrão se não informado
+        listing.attributes.push({
+          id: 'BRAND',
+          value_name: 'Genérico',
+        });
+      }
+
+      // Adicionar modelo (obrigatório para algumas categorias)
+      if (product.model) {
+        listing.attributes.push({
+          id: 'MODEL',
+          value_name: product.model,
+        });
+      } else {
+        // Valor padrão se não informado
+        listing.attributes.push({
+          id: 'MODEL',
+          value_name: product.sku || 'Padrão',
+        });
+      }
+
+      const response = await fetch('https://api.mercadolibre.com/items', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(listing),
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        console.error('❌ Erro ao criar produto no ML:', responseData);
+        
+        // Mensagem de erro mais específica
+        let errorMessage = 'Erro ao criar produto no Mercado Livre';
+        if (responseData.message) {
+          errorMessage += `: ${responseData.message}`;
+        }
+        if (responseData.cause && responseData.cause.length > 0) {
+          errorMessage += ` - ${responseData.cause.map((c: any) => c.message).join(', ')}`;
+        }
+        
+        throw new HttpException(errorMessage, HttpStatus.BAD_REQUEST);
+      }
+
+      console.log('✅ Produto criado no ML:', responseData.id);
+      
+      return {
+        externalId: responseData.id,
+        permalink: responseData.permalink,
+        status: responseData.status,
+      };
+    } catch (error) {
+      console.error('❌ Erro ao criar produto no ML:', error);
+      
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      
+      throw new HttpException(
+        'Erro ao criar produto no Mercado Livre',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Buscar categorias principais do Mercado Livre Brasil
+   */
+  async getMercadoLivreCategories() {
+    // Categorias principais do Mercado Livre Brasil (fallback)
+    const fallbackCategories = [
+      { id: 'MLB1051', name: 'Celulares e Telefones' },
+      { id: 'MLB1000', name: 'Eletrônicos, Áudio e Vídeo' },
+      { id: 'MLB1648', name: 'Computação' },
+      { id: 'MLB1144', name: 'Consoles e Video Games' },
+      { id: 'MLB1196', name: 'Música, Filmes e Seriados' },
+      { id: 'MLB1132', name: 'Brinquedos e Hobbies' },
+      { id: 'MLB1430', name: 'Roupas e Calçados' },
+      { id: 'MLB1384', name: 'Bebês' },
+      { id: 'MLB1246', name: 'Esportes e Fitness' },
+      { id: 'MLB1367', name: 'Beleza e Cuidado Pessoal' },
+      { id: 'MLB1574', name: 'Casa, Móveis e Decoração' },
+      { id: 'MLB1039', name: 'Câmeras e Acessórios' },
+      { id: 'MLB1540', name: 'Veículos' },
+      { id: 'MLB1499', name: 'Indústria e Comércio' },
+      { id: 'MLB1459', name: 'Imóveis' },
+      { id: 'MLB1403', name: 'Ferramentas' },
+      { id: 'MLB3937', name: 'Construção' },
+      { id: 'MLB1071', name: 'Animais' },
+      { id: 'MLB1182', name: 'Livros, Revistas e Comics' },
+      { id: 'MLB1168', name: 'Alimentos e Bebidas' },
+      { id: 'MLB1276', name: 'Serviços' },
+      { id: 'MLB1953', name: 'Mais Categorias' },
+    ];
+
+    try {
+      console.log('🔍 Buscando categorias do ML...');
+      const response = await fetch('https://api.mercadolibre.com/sites/MLB/categories', {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Accept': 'application/json',
+        },
+      });
+      
+      console.log('📡 Response status:', response.status);
+      
+      if (!response.ok) {
+        console.warn('⚠️ API do ML retornou erro, usando categorias estáticas');
+        return fallbackCategories;
+      }
+
+      const categories = await response.json();
+      console.log(`✅ ${categories.length} categorias encontradas`);
+      
+      // Retornar categorias formatadas
+      return categories.map((cat: any) => ({
+        id: cat.id,
+        name: cat.name,
+      }));
+    } catch (error) {
+      console.warn('⚠️ Erro ao buscar categorias ML, usando fallback:', error instanceof Error ? error.message : error);
+      return fallbackCategories;
+    }
+  }
+
+  /**
+   * Buscar subcategorias de uma categoria específica do ML
+   */
+  async getMercadoLivreSubcategories(categoryId: string) {
+    try {
+      const response = await fetch(`https://api.mercadolibre.com/categories/${categoryId}`, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Accept': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new HttpException(
+          'Erro ao buscar subcategorias do Mercado Livre',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const categoryData = await response.json();
+      
+      // Se não tiver filhos, retornar a própria categoria
+      if (!categoryData.children_categories || categoryData.children_categories.length === 0) {
+        return [{
+          id: categoryData.id,
+          name: categoryData.name,
+        }];
+      }
+      
+      // Retornar subcategorias formatadas
+      return categoryData.children_categories.map((cat: any) => ({
+        id: cat.id,
+        name: cat.name,
+      }));
+    } catch (error) {
+      console.error('❌ Erro ao buscar subcategorias ML:', error);
+      
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      
+      throw new HttpException(
+        'Erro ao buscar subcategorias',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }
+

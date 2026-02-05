@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { UpdateOrderDto } from './dto/update-order.dto';
 import { OrderCreatedEvent, OrderIntegrationFailedEvent } from './events';
 import { Order } from './entities/order.entity';
 import { WebsocketGateway } from '../../infra/websocket/websocket.gateway';
@@ -70,6 +71,32 @@ export class OrdersService {
 
   async listOrders() {
     return this.ordersRepository.find();
+  }
+
+  async updateOrder(id: string, dto: UpdateOrderDto) {
+    const order = await this.getOrderById(id);
+    
+    const updated = Object.assign(order, {
+      status: dto.status || order.status,
+      customerName: dto.customerName || order.customerName,
+      customerEmail: dto.customerEmail || order.customerEmail,
+      customerPhone: dto.customerPhone || order.customerPhone,
+      customerCity: dto.customerCity || order.customerCity,
+      customerState: dto.customerState || order.customerState,
+      customerAddress: dto.customerAddress || order.customerAddress,
+      customerZipCode: dto.customerZipCode || order.customerZipCode,
+      total: dto.total !== undefined ? dto.total : order.total,
+    });
+
+    const saved = await this.ordersRepository.save(updated);
+
+    // Emitir evento de atualização
+    this.websocketGateway.emitOrderUpdated({
+      id: saved.id,
+      status: saved.status,
+    });
+
+    return saved;
   }
 
   private emitOrderCreated(event: OrderCreatedEvent) {

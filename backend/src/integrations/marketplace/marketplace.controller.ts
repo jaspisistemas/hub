@@ -3,6 +3,7 @@ import { Response } from 'express';
 import { MarketplaceService } from './marketplace.service';
 import { OrdersService } from '../../domains/orders/orders.service';
 import { StoresService } from '../../domains/stores/stores.service';
+import { ProductsService } from '../../domains/products/products.service';
 
 /**
  * Controller para receber webhooks e gerenciar integrações com marketplaces
@@ -13,6 +14,7 @@ export class MarketplaceController {
     private readonly marketplaceService: MarketplaceService,
     private readonly ordersService: OrdersService,
     private readonly storesService: StoresService,
+    private readonly productsService: ProductsService,
   ) {}
 
   /**
@@ -141,18 +143,21 @@ export class MarketplaceController {
     @Query('state') state: string,
     @Res() res: Response,
   ) {
+    console.log('🔄 Callback ML recebido:', { code: code ? 'presente' : 'ausente', state });
+    
     try {
       if (!code) {
-        return res.status(HttpStatus.BAD_REQUEST).json({
-          success: false,
-          message: 'Código de autorização não fornecido',
-        });
+        console.error('❌ Code não fornecido no callback');
+        return res.redirect(`https://panel-joshua-norfolk-molecular.trycloudflare.com/stores?ml_auth=error&reason=no_code`);
       }
 
+      console.log('🔄 Trocando code por token...');
       // Trocar code por access_token
       const tokenData = await this.marketplaceService.exchangeMercadoLivreCode(code);
+      console.log('✅ Token obtido, userId:', tokenData.userId);
       
       // Salvar ou atualizar loja com os tokens
+      console.log('🔄 Salvando loja no banco...');
       const store = await this.storesService.findOrCreateMercadoLivreStore(
         tokenData.userId,
         {
@@ -162,13 +167,16 @@ export class MarketplaceController {
         },
       );
 
-      console.log('✅ Loja ML autorizada com sucesso:', store.name);
+      console.log('✅ Loja ML autorizada com sucesso:', store.name, 'ID:', store.id);
       
       // Redirecionar para o frontend com sucesso
-      return res.redirect(`http://localhost:5174/stores?ml_auth=success&store_id=${store.id}`);
+      const redirectUrl = `https://panel-joshua-norfolk-molecular.trycloudflare.com/lojas?ml_auth=success&store_id=${store.id}`;
+      console.log('🔄 Redirecionando para:', redirectUrl);
+      return res.redirect(redirectUrl);
     } catch (error) {
       console.error('❌ Erro no callback ML:', error);
-      return res.redirect(`http://localhost:5174/stores?ml_auth=error`);
+      const errorMsg = error instanceof Error ? error.message : 'unknown';
+      return res.redirect(`https://panel-joshua-norfolk-molecular.trycloudflare.com/lojas?ml_auth=error&reason=${encodeURIComponent(errorMsg)}`);
     }
   }
 
@@ -187,6 +195,152 @@ export class MarketplaceController {
     const authUrl = `https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${APP_ID}&redirect_uri=${REDIRECT_URI}`;
     
     return res.redirect(authUrl);
+  }
+
+  /**
+   * Sincronizar produtos do Mercado Livre
+   */
+  @Post('mercadolivre/sync-products')
+  async syncMercadoLivreProducts() {
+    try {
+      // Buscar lojas do Mercado Livre conectadas
+      const stores = await this.storesService.findAll();
+      const mlStores = stores.filter(s => s.marketplace === 'MercadoLivre' && s.mlAccessToken);
+
+      if (mlStores.length === 0) {
+        return {
+          success: false,
+          message: 'Nenhuma loja do Mercado Livre conectada',
+          count: 0,
+        };
+      }
+
+      let totalProducts = 0;
+
+      // Sincronizar produtos de cada loja
+      for (const store of mlStores) {
+        console.log(`🔄 Sincronizando produtos da loja: ${store.name}`);
+        
+        if (!store.mlUserId || !store.mlAccessToken) {
+          console.warn(`⚠️ Loja ${store.name} sem credenciais válidas`);
+          continue;
+        }
+        
+        const products = await this.marketplaceService.syncMercadoLivreProducts(
+          store.mlUserId,
+          store.mlAccessToken,
+        );
+
+        // Salvar ou atualizar cada produto
+        for (const productData of products) {
+          try {
+            // Verificar se produto já existe pelo SKU
+            const existing = await this.productsService.findBySku(productData.sku);
+            
+            if (existing) {
+              await this.productsService.update(existing.id, productData);
+            } else {
+              await this.productsService.create(productData);
+            }
+            totalProducts++;
+          } catch (error) {
+            console.error(`Erro ao salvar produto ${productData.sku}:`, error);
+          }
+        }
+      }
+
+      return {
+        success: true,
+        message: `${totalProducts} produtos sincronizados com sucesso`,
+        count: totalProducts,
+      };
+    } catch (error) {
+      console.error('❌ Erro ao sincronizar produtos ML:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Falha ao sincronizar produtos',
+        count: 0,
+      };
+    }
+  }
+
+  /**
+   * Publicar produtos no Mercado Livre
+   */
+  @Post('mercadolivre/publish-products')
+  async publishProductsToMercadoLivre(@Body() body: { productIds: string[] }) {
+    try {
+      const { productIds } = body;
+
+      if (!productIds || productIds.length === 0) {
+        return {
+          success: false,
+          message: 'Nenhum produto selecionado',
+          count: 0,
+        };
+      }
+
+      // Buscar lojas do Mercado Livre conectadas
+      const stores = await this.storesService.findAll();
+      const mlStores = stores.filter(s => s.marketplace === 'MercadoLivre' && s.mlAccessToken);
+
+      if (mlStores.length === 0) {
+        return {
+          success: false,
+          message: 'Nenhuma loja do Mercado Livre conectada',
+          count: 0,
+        };
+      }
+
+      // Usar a primeira loja conectada (pode ser melhorado para escolher)
+      const store = mlStores[0];
+
+      if (!store.mlAccessToken) {
+        return {
+          success: false,
+          message: 'Token de acesso inválido',
+          count: 0,
+        };
+      }
+
+      let publishedCount = 0;
+
+      // Publicar cada produto
+      for (const productId of productIds) {
+        try {
+          const product = await this.productsService.findOne(productId);
+          
+          // Criar produto no ML
+          const mlProduct = await this.marketplaceService.createMercadoLivreProduct(
+            product,
+            store.mlAccessToken,
+          );
+
+          // Atualizar produto local com ID externo
+          await this.productsService.update(productId, {
+            externalId: mlProduct.externalId,
+          });
+
+          publishedCount++;
+          console.log(`✅ Produto ${product.name} publicado no ML`);
+        } catch (error) {
+          console.error(`❌ Erro ao publicar produto ${productId}:`, error);
+        }
+      }
+
+      return {
+        success: true,
+        message: `${publishedCount} produto(s) publicado(s) no Mercado Livre`,
+        count: publishedCount,
+      };
+    } catch (error) {
+      console.error('❌ Erro ao publicar produtos no ML:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Falha ao publicar produtos',
+        count: 0,
+      };
+    }
   }
 
   /**
@@ -238,5 +392,52 @@ export class MarketplaceController {
       message: 'Pedido de teste criado com sucesso',
       order,
     };
+  }
+
+  /**
+   * Buscar categorias principais do Mercado Livre
+   */
+  @Get('mercadolivre/categories')
+  async getMercadoLivreCategories() {
+    try {
+      const categories = await this.marketplaceService.getMercadoLivreCategories();
+      return {
+        success: true,
+        categories,
+      };
+    } catch (error) {
+      console.error('❌ Erro ao buscar categorias:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Erro ao buscar categorias',
+      };
+    }
+  }
+
+  /**
+   * Buscar subcategorias de uma categoria específica
+   */
+  @Get('mercadolivre/categories/:categoryId')
+  async getMercadoLivreSubcategories(@Query('categoryId') categoryId: string) {
+    try {
+      if (!categoryId) {
+        return {
+          success: false,
+          message: 'ID da categoria não fornecido',
+        };
+      }
+
+      const subcategories = await this.marketplaceService.getMercadoLivreSubcategories(categoryId);
+      return {
+        success: true,
+        subcategories,
+      };
+    } catch (error) {
+      console.error('❌ Erro ao buscar subcategorias:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Erro ao buscar subcategorias',
+      };
+    }
   }
 }

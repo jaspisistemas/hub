@@ -2,7 +2,7 @@ import { io, Socket } from 'socket.io-client';
 
 let socket: Socket | null = null;
 
-export const connect = (url = 'http://localhost:3000') => {
+export const connect = (url = 'https://uneducated-georgiann-personifiant.ngrok-free.dev') => {
   if (!socket) {
     socket = io(url);
     

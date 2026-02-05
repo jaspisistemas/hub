@@ -5,5 +5,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
+     allowedHosts: [ 'panel-joshua-norfolk-molecular.trycloudflare.com',],
+     
+      
   },
 });

@@ -29,6 +29,7 @@ import {
   Select,
   FormControl,
   InputLabel,
+  TablePagination,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -50,6 +51,10 @@ export default function OrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [marketplaceFilter, setMarketplaceFilter] = useState<string>('all');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   useEffect(() => {
     loadOrders();
@@ -119,6 +124,7 @@ export default function OrdersPage() {
 
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
+      created: 'Criado',
       pending: 'Pendente',
       processing: 'Processando',
       shipped: 'Enviado',
@@ -143,10 +149,37 @@ export default function OrdersPage() {
     setSelectedOrder(null);
   };
 
-  const filteredOrders = orders.filter((o) =>
-    o.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    o.marketplace?.toLowerCase().includes(searchTerm.toLowerCase())
+  const handleUpdateStatus = async (orderId: string, newStatus: string) => {
+    try {
+      await ordersService.update(orderId, { status: newStatus });
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
+      );
+      setNotification(`Status atualizado para: ${getStatusLabel(newStatus)}`);
+      if (selectedOrder?.id === orderId) {
+        setSelectedOrder({ ...selectedOrder, status: newStatus });
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao atualizar status');
+    }
+  };
+
+  const filteredOrders = orders
+    .filter((o) => {
+      const matchesSearch = o.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        o.marketplace?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        o.customerName?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || o.status === statusFilter;
+      const matchesMarketplace = marketplaceFilter === 'all' || o.marketplace === marketplaceFilter;
+      return matchesSearch && matchesStatus && matchesMarketplace;
+    });
+
+  const paginatedOrders = filteredOrders.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
   );
+
+  const uniqueMarketplaces = Array.from(new Set(orders.map((o) => o.marketplace).filter(Boolean)));
 
   // Estatísticas
   const stats = {
@@ -248,24 +281,64 @@ export default function OrdersPage() {
       </Grid>
 
       <Paper sx={{ mb: 3, p: 2 }}>
-        <TextField
-          fullWidth
-          placeholder="Buscar por ID do pedido ou marketplace..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon sx={{ color: '#555555' }} />
-              </InputAdornment>
-            ),
-          }}
-          sx={{
-            '& .MuiOutlinedInput-root': {
-              borderRadius: 2,
-            },
-          }}
-        />
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              placeholder="Buscar por ID, marketplace ou nome do cliente..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: '#555555' }} />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                },
+              }}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={statusFilter}
+                label="Status"
+                onChange={(e) => setStatusFilter(e.target.value)}
+                sx={{ borderRadius: 2 }}
+              >
+                <MenuItem value="all">Todos</MenuItem>
+                <MenuItem value="pending">Pendente</MenuItem>
+                <MenuItem value="processing">Processando</MenuItem>
+                <MenuItem value="shipped">Enviado</MenuItem>
+                <MenuItem value="delivered">Entregue</MenuItem>
+                <MenuItem value="cancelled">Cancelado</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth>
+              <InputLabel>Marketplace</InputLabel>
+              <Select
+                value={marketplaceFilter}
+                label="Marketplace"
+                onChange={(e) => setMarketplaceFilter(e.target.value)}
+                sx={{ borderRadius: 2 }}
+              >
+                <MenuItem value="all">Todos</MenuItem>
+                {uniqueMarketplaces.map((mp) => (
+                  <MenuItem key={mp} value={mp}>
+                    {mp}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
       </Paper>
 
       {error && (
@@ -295,14 +368,14 @@ export default function OrdersPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredOrders.length === 0 ? (
+              {paginatedOrders.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
                     <Typography color="textSecondary">Nenhum pedido encontrado</Typography>
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredOrders.map((o) => (
+                paginatedOrders.map((o) => (
                   <TableRow
                     key={o.id}
                     sx={{
@@ -324,9 +397,36 @@ export default function OrdersPage() {
                       R$ {(o.total || 0).toFixed(2)}
                     </TableCell>
                     <TableCell align="center">
-                      <Button size="small" color="primary" onClick={() => handleOpenDetails(o)}>
-                        Ver Detalhes
-                      </Button>
+                      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          color="primary"
+                          onClick={() => handleOpenDetails(o)}
+                        >
+                          Detalhes
+                        </Button>
+                        {o.status === 'pending' && (
+                          <Button
+                            size="small"
+                            variant="contained"
+                            color="info"
+                            onClick={() => handleUpdateStatus(o.id, 'processing')}
+                          >
+                            Processar
+                          </Button>
+                        )}
+                        {o.status === 'processing' && (
+                          <Button
+                            size="small"
+                            variant="contained"
+                            color="primary"
+                            onClick={() => handleUpdateStatus(o.id, 'shipped')}
+                          >
+                            Enviar
+                          </Button>
+                        )}
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))
@@ -334,6 +434,19 @@ export default function OrdersPage() {
             </TableBody>
           </Table>
         )}
+        <TablePagination
+          component="div"
+          count={filteredOrders.length}
+          page={page}
+          onPageChange={(e, newPage) => setPage(newPage)}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={(e) => {
+            setRowsPerPage(parseInt(e.target.value, 10));
+            setPage(0);
+          }}
+          labelRowsPerPage="Linhas por página:"
+          labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`}
+        />
       </TableContainer>
 
       {/* Dialog de detalhes do pedido */}
@@ -380,14 +493,26 @@ export default function OrdersPage() {
                   </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
+                  <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
                     Status
                   </Typography>
-                  <Chip
-                    label={getStatusLabel(selectedOrder.status)}
-                    color={getStatusColor(selectedOrder.status)}
-                    size="small"
-                  />
+                  <FormControl fullWidth>
+                    <InputLabel id="status-label">Atualizar Status</InputLabel>
+                    <Select
+                      labelId="status-label"
+                      id="status-select"
+                      value={selectedOrder.status || ''}
+                      label="Atualizar Status"
+                      onChange={(e) => handleUpdateStatus(selectedOrder.id, e.target.value as string)}
+                    >
+                      <MenuItem value="created">Criado</MenuItem>
+                      <MenuItem value="pending">Pendente</MenuItem>
+                      <MenuItem value="processing">Processando</MenuItem>
+                      <MenuItem value="shipped">Enviado</MenuItem>
+                      <MenuItem value="delivered">Entregue</MenuItem>
+                      <MenuItem value="cancelled">Cancelado</MenuItem>
+                    </Select>
+                  </FormControl>
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>

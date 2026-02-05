@@ -7,8 +7,13 @@ export interface Product {
   price: number;
   quantity: number;
   category: string;
+  brand?: string;
+  model?: string;
+  description?: string;
   imageUrl?: string;
   imageUrls?: string[];
+  externalId?: string;
+  marketplace?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -19,6 +24,9 @@ export interface CreateProductInput {
   price: number;
   quantity: number;
   category: string;
+  brand?: string;
+  model?: string;
+  description?: string;
   imageUrl?: string;
   imageUrls?: string[];
 }
@@ -41,7 +49,7 @@ export const productsService = {
 
   createWithImage: async (formData: FormData): Promise<Product> => {
     const token = localStorage.getItem('authToken');
-    const response = await fetch('http://localhost:3000/products', {
+    const response = await fetch('https://uneducated-georgiann-personifiant.ngrok-free.dev/products', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -54,7 +62,7 @@ export const productsService = {
 
   updateWithImage: async (id: string, formData: FormData): Promise<Product> => {
     const token = localStorage.getItem('authToken');
-    const response = await fetch(`http://localhost:3000/products/${id}`, {
+    const response = await fetch(`https://uneducated-georgiann-personifiant.ngrok-free.dev/products/${id}`, {
       method: 'PATCH',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -78,10 +86,28 @@ export const productsService = {
     });
   },
 
-  exportToMarketplace: async (productIds: string[], marketplace: string): Promise<any> => {
-    return apiFetch<any>('/products/export', {
+  publishToMarketplace: async (productIds: string[], marketplace: string): Promise<any> => {
+    const endpoint = marketplace === 'MercadoLivre' 
+      ? '/marketplace/mercadolivre/publish-products'
+      : '/marketplace/shopee/publish-products';
+    
+    return apiFetch<any>(endpoint, {
       method: 'POST',
-      body: JSON.stringify({ productIds, marketplace }),
+      body: JSON.stringify({ productIds }),
     });
+  },
+
+  getMercadoLivreCategories: async (): Promise<{ id: string; name: string }[]> => {
+    const response = await apiFetch<{ success: boolean; categories: { id: string; name: string }[] }>(
+      '/marketplace/mercadolivre/categories'
+    );
+    return response.categories || [];
+  },
+
+  getMercadoLivreSubcategories: async (categoryId: string): Promise<{ id: string; name: string }[]> => {
+    const response = await apiFetch<{ success: boolean; subcategories: { id: string; name: string }[] }>(
+      `/marketplace/mercadolivre/categories/${categoryId}?categoryId=${categoryId}`
+    );
+    return response.subcategories || [];
   },
 };

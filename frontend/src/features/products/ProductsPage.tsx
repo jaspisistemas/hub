@@ -511,7 +511,7 @@ export default function ProductsPage() {
                 <TableCell sx={{ color: '#555555' }}>{product.sku}</TableCell>
                 <TableCell align="right">
                   <Typography sx={{ fontWeight: 600, color: '#1a1a1a' }}>
-                    R$ {product.price.toFixed(2)}
+                    R$ {Number(product.price).toFixed(2)}
                   </Typography>
                 </TableCell>
                 <TableCell align="center">
@@ -802,7 +802,7 @@ export default function ProductsPage() {
                       </Avatar>
                       <ListItemText
                         primary={product.name}
-                        secondary={`SKU: ${product.sku} | R$ ${product.price.toFixed(2)} | Estoque: ${product.quantity}`}
+                        secondary={`SKU: ${product.sku} | R$ ${Number(product.price).toFixed(2)} | Estoque: ${product.quantity}`}
                       />
                     </ListItem>
                   ))}

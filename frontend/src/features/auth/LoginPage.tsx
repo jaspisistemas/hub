@@ -326,12 +326,36 @@ export default function LoginPage() {
               <Box
                 sx={{
                   position: 'absolute',
-                  width: '200px',
-                  height: '200px',
+                  width: '180px',
+                  height: '180px',
                   borderRadius: '50%',
-                  background: 'rgba(102, 126, 234, 0.1)',
-                  top: '-50px',
-                  right: '-50px',
+                  background: 'rgba(102, 126, 234, 0.15)',
+                  top: '5%',
+                  left: '5%',
+                  zIndex: 1,
+                }}
+              />
+              <Box
+                sx={{
+                  position: 'absolute',
+                  width: '220px',
+                  height: '220px',
+                  borderRadius: '50%',
+                  background: 'rgba(0, 153, 255, 0.1)',
+                  bottom: '5%',
+                  right: '5%',
+                  zIndex: 1,
+                }}
+              />
+              <Box
+                sx={{
+                  position: 'absolute',
+                  width: '120px',
+                  height: '120px',
+                  borderRadius: '50%',
+                  background: 'rgba(102, 126, 234, 0.12)',
+                  top: '15%',
+                  right: '10%',
                   zIndex: 1,
                 }}
               />
@@ -341,9 +365,33 @@ export default function LoginPage() {
                   width: '150px',
                   height: '150px',
                   borderRadius: '50%',
-                  background: 'rgba(0, 153, 255, 0.1)',
-                  bottom: '-30px',
-                  left: '-30px',
+                  background: 'rgba(0, 153, 255, 0.08)',
+                  bottom: '20%',
+                  left: '8%',
+                  zIndex: 1,
+                }}
+              />
+              <Box
+                sx={{
+                  position: 'absolute',
+                  width: '100px',
+                  height: '100px',
+                  borderRadius: '50%',
+                  background: 'rgba(102, 126, 234, 0.1)',
+                  top: '50%',
+                  left: '15%',
+                  zIndex: 1,
+                }}
+              />
+              <Box
+                sx={{
+                  position: 'absolute',
+                  width: '130px',
+                  height: '130px',
+                  borderRadius: '50%',
+                  background: 'rgba(0, 153, 255, 0.12)',
+                  top: '25%',
+                  left: '30%',
                   zIndex: 1,
                 }}
               />

@@ -51,7 +51,25 @@ export const storesService = {
   },
 
   connectMercadoLivre: () => {
-    // Redireciona para o endpoint de autorização OAuth do backend
-    window.location.href = 'https://uneducated-georgiann-personifiant.ngrok-free.dev/marketplace/mercadolivre/auth';
+    // Pegar o userId do usuário logado
+    const userStr = localStorage.getItem('user');
+    console.log('User no localStorage:', userStr);
+    
+    if (!userStr) {
+      throw new Error('Usuário não autenticado');
+    }
+    
+    const user = JSON.parse(userStr);
+    console.log('User parseado:', user);
+    console.log('User ID:', user.id);
+    
+    if (!user.id) {
+      throw new Error('ID do usuário não encontrado');
+    }
+    
+    // Redireciona para o endpoint de autorização OAuth do backend passando o userId
+    const authUrl = `https://uneducated-georgiann-personifiant.ngrok-free.dev/marketplace/mercadolivre/auth?userId=${user.id}`;
+    console.log('Redirecionando para:', authUrl);
+    window.location.href = authUrl;
   },
 };

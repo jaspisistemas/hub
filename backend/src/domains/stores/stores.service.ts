@@ -75,7 +75,7 @@ export class StoresService {
   /**
    * Busca ou cria uma loja para o usuário do Mercado Livre
    */
-  async findOrCreateMercadoLivreStore(mlUserId: string, tokenData: {
+  async findOrCreateMercadoLivreStore(mlUserId: string, userId: string, tokenData: {
     accessToken: string;
     refreshToken: string;
     expiresIn: number;
@@ -105,6 +105,7 @@ export class StoresService {
       name: `Loja Mercado Livre - ${mlUserId}`,
       marketplace: 'MercadoLivre',
       status: 'active',
+      userId,
       mlAccessToken: tokenData.accessToken,
       mlRefreshToken: tokenData.refreshToken,
       mlTokenExpiresAt: expiresAt,

@@ -158,8 +158,17 @@ export class MarketplaceController {
       
       // Salvar ou atualizar loja com os tokens
       console.log('🔄 Salvando loja no banco...');
+      
+      // O state contém o userId que foi passado na URL de autenticação
+      const userId = state;
+      
+      if (!userId) {
+        throw new Error('userId não encontrado no state');
+      }
+      
       const store = await this.storesService.findOrCreateMercadoLivreStore(
         tokenData.userId,
+        userId,
         {
           accessToken: tokenData.accessToken,
           refreshToken: tokenData.refreshToken,
@@ -184,15 +193,24 @@ export class MarketplaceController {
    * Iniciar processo de autorização OAuth com Mercado Livre
    */
   @Get('mercadolivre/auth')
-  async mercadoLivreAuth(@Res() res: Response) {
+  async mercadoLivreAuth(@Query('userId') userId: string, @Res() res: Response) {
+    console.log('🔄 Auth ML chamado, userId recebido:', userId);
+    
+    if (!userId) {
+      console.error('❌ userId não fornecido');
+      return res.status(400).json({ error: 'userId é obrigatório' });
+    }
+    
     // Credenciais do Mercado Livre (em produção, usar variáveis de ambiente)
     const APP_ID = process.env.ML_APP_ID || 'YOUR_APP_ID';
     const REDIRECT_URI = encodeURIComponent(
       process.env.ML_REDIRECT_URI || 'http://localhost:3000/marketplace/mercadolivre/callback'
     );
     
-    // URL de autorização do Mercado Livre
-    const authUrl = `https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${APP_ID}&redirect_uri=${REDIRECT_URI}`;
+    console.log('✅ Redirecionando para ML com state:', userId);
+    
+    // URL de autorização do Mercado Livre (passando userId no state)
+    const authUrl = `https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${APP_ID}&redirect_uri=${REDIRECT_URI}&state=${userId}`;
     
     return res.redirect(authUrl);
   }

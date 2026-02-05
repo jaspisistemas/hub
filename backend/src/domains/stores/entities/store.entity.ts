@@ -5,8 +5,12 @@ import {
   PrimaryGeneratedColumn, 
   UpdateDateColumn,
   OneToMany,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Order } from '../../orders/entities/order.entity';
+import { Product } from '../../products/entities/product.entity';
+import { User } from '../../auth/entities/user.entity';
 
 @Entity('stores')
 export class Store {
@@ -47,9 +51,20 @@ export class Store {
   @Column({ type: 'varchar', length: 100, nullable: true })
   mlUserId?: string;
 
+  // Chave estrangeira para User
+  @Column({ type: 'uuid' })
+  userId!: string;
+
   // Relacionamentos
+  @ManyToOne(() => User, user => user.stores, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'userId' })
+  user!: User;
+
   @OneToMany(() => Order, order => order.store)
   orders?: Order[];
+
+  @OneToMany(() => Product, product => product.store)
+  products?: Product[];
 
   @CreateDateColumn()
   createdAt!: Date;

@@ -1,4 +1,5 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Store } from '../../stores/entities/store.entity';
 
 @Entity('products')
 export class Product {
@@ -43,6 +44,15 @@ export class Product {
 
   @Column({ nullable: true, length: 50 })
   marketplace?: string;
+
+  // Chave estrangeira para Store
+  @Column({ type: 'uuid', nullable: true })
+  storeId?: string;
+
+  // Relacionamento
+  @ManyToOne(() => Store, store => store.products, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'storeId' })
+  store?: Store;
 
   @CreateDateColumn()
   createdAt!: Date;

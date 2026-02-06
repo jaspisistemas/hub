@@ -14,8 +14,16 @@ export class ProductsService {
     private readonly websocketGateway: WebsocketGateway,
   ) {}
 
-  async create(dto: CreateProductDto) {
-    const product = this.productsRepository.create(dto);
+  async create(dto: CreateProductDto, userId: string) {
+    // Buscar a primeira loja do usuário ou criar uma padrão
+    const store = await this.productsRepository.manager.findOne('stores', {
+      where: { userId },
+    });
+    
+    const product = this.productsRepository.create({
+      ...dto,
+      storeId: store?.id,
+    });
     const saved = await this.productsRepository.save(product);
     
     // Emitir evento via WebSocket
@@ -28,12 +36,29 @@ export class ProductsService {
     return this.productsRepository.find();
   }
 
+  async findAllByUser(userId: string) {
+    return this.productsRepository
+      .createQueryBuilder('product')
+      .leftJoin('product.store', 'store')
+      .where('store.userId = :userId', { userId })
+      .orderBy('product.createdAt', 'DESC')
+      .getMany();
+  }
+
   async findOne(id: string) {
-    const product = await this.productsRepository.findOne({ where: { id } });
-    if (!product) {
-      throw new NotFoundException('Produto não encontrado');
+    try {
+      const product = await this.productsRepository.findOne({ where: { id } });
+      if (!product) {
+        throw new NotFoundException(`Produto com ID ${id} não encontrado`);
+      }
+      return product;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      console.error('Erro ao buscar produto:', error);
+      throw new NotFoundException(`Erro ao buscar produto com ID ${id}`);
     }
-    return product;
   }
 
   async update(id: string, dto: UpdateProductDto) {

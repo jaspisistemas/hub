@@ -73,6 +73,15 @@ export class OrdersService {
     return this.ordersRepository.find();
   }
 
+  async listOrdersByUser(userId: string) {
+    return this.ordersRepository
+      .createQueryBuilder('order')
+      .leftJoin('order.store', 'store')
+      .where('store.userId = :userId', { userId })
+      .orderBy('order.createdAt', 'DESC')
+      .getMany();
+  }
+
   async updateOrder(id: string, dto: UpdateOrderDto) {
     const order = await this.getOrderById(id);
     

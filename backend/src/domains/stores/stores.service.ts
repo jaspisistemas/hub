@@ -21,6 +21,13 @@ export class StoresService {
     return this.storesRepository.find();
   }
 
+  async findAllByUser(userId: string) {
+    return this.storesRepository.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   async findOne(id: string) {
     const store = await this.storesRepository.findOne({ where: { id } });
     if (!store) {
@@ -88,6 +95,11 @@ export class StoresService {
     const expiresAt = Date.now() + tokenData.expiresIn * 1000;
 
     if (store) {
+      // Verificar se a loja pertence a outro usuário
+      if (store.userId !== userId) {
+        throw new Error('Esta loja do Mercado Livre já está conectada a outra conta');
+      }
+      
       // Atualizar tokens
       await this.storesRepository.update(
         { id: store.id },

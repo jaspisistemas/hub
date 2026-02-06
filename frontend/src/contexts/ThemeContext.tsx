@@ -34,47 +34,56 @@ export function ThemeContextProvider({ children }: { children: React.ReactNode }
         palette: {
           mode: isDarkMode ? 'dark' : 'light',
           primary: {
-            main: isDarkMode ? '#3B82F6' : '#0099FF',
-            dark: isDarkMode ? '#2563EB' : '#0066CC',
-            light: isDarkMode ? '#60A5FA' : '#33AAFF',
+            main: '#42A5F5',
+            dark: '#1E88E5',
+            light: '#64B5F6',
           },
           secondary: {
             main: '#8b5cf6',
           },
           success: {
-            main: '#10B981',
-            light: 'rgba(16, 185, 129, 0.15)',
+            main: isDarkMode ? '#22C55E' : '#10B981',
+            light: 'rgba(34, 197, 94, 0.15)',
           },
           warning: {
-            main: '#F59E0B',
-            light: 'rgba(245, 158, 11, 0.15)',
+            main: isDarkMode ? '#FFA726' : '#F59E0B',
+            light: 'rgba(255, 167, 38, 0.15)',
           },
           error: {
-            main: '#EF4444',
-            light: 'rgba(239, 68, 68, 0.15)',
+            main: isDarkMode ? '#EF5350' : '#EF4444',
+            light: 'rgba(239, 83, 80, 0.15)',
           },
           background: {
-            default: isDarkMode ? '#0A0E1A' : '#f8fafc',
-            paper: isDarkMode ? '#111827' : '#ffffff',
+            default: isDarkMode ? '#0f172a' : '#f8fafc',
+            paper: isDarkMode ? '#1e293b' : '#ffffff',
           },
           ...(isDarkMode && {
-            divider: 'rgba(100, 116, 139, 0.2)',
+            divider: 'rgba(148, 163, 184, 0.12)',
             text: {
-              primary: '#FFFFFF',
-              secondary: '#E2E8F0',
-              disabled: '#94A3B8',
+              primary: '#f1f5f9',
+              secondary: '#cbd5e1',
+              disabled: '#64748b',
             },
             action: {
-              active: '#FFFFFF',
+              active: '#f1f5f9',
               hover: 'rgba(148, 163, 184, 0.08)',
-              selected: 'rgba(59, 130, 246, 0.12)',
-              disabled: '#94A3B8',
+              selected: 'rgba(66, 165, 245, 0.16)',
+              disabled: '#64748b',
               disabledBackground: 'rgba(100, 116, 139, 0.12)',
             },
           }),
         },
         typography: {
           fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+          h4: {
+            fontWeight: 700,
+          },
+          h5: {
+            fontWeight: 700,
+          },
+          h6: {
+            fontWeight: 600,
+          },
         },
         components: {
           MuiButton: {
@@ -83,6 +92,13 @@ export function ThemeContextProvider({ children }: { children: React.ReactNode }
                 textTransform: 'none',
                 borderRadius: 8,
                 fontWeight: 500,
+                padding: '8px 16px',
+              },
+              contained: {
+                boxShadow: 'none',
+                '&:hover': {
+                  boxShadow: '0 2px 8px rgba(66, 165, 245, 0.25)',
+                },
               },
             },
           },
@@ -90,11 +106,13 @@ export function ThemeContextProvider({ children }: { children: React.ReactNode }
             styleOverrides: {
               root: {
                 borderRadius: 12,
-                ...(isDarkMode && {
-                  backgroundColor: '#111827',
+                ...(isDarkMode ? {
+                  backgroundColor: '#1e293b',
                   backgroundImage: 'none',
-                  border: '1px solid rgba(100, 116, 139, 0.15)',
-                  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.3)',
+                  border: '1px solid rgba(148, 163, 184, 0.1)',
+                  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.5)',
+                } : {
+                  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
                 }),
               },
             },

@@ -30,6 +30,9 @@ import {
   FormControl,
   InputLabel,
   TablePagination,
+  Menu,
+  ListItemIcon,
+  useTheme,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -37,12 +40,22 @@ import {
   TrendingUp as TrendingUpIcon,
   Close as CloseIcon,
   Person as PersonIcon,
+  MoreVert as MoreVertIcon,
+  Visibility as VisibilityIcon,
+  CheckCircle as CheckCircleIcon,
+  LocalShipping as LocalShippingIcon,
+  ShoppingBag as ShoppingBagIcon,
+  FilterList as FilterListIcon,
 } from '@mui/icons-material';
 import { ordersService, Order } from '../../services/ordersService';
+import PageHeader from '../../components/PageHeader';
+import StatusBadge from '../../components/StatusBadge';
+import EmptyState from '../../components/EmptyState';
 import { storesService, Store } from '../../services/storesService';
 import * as websocket from '../../services/websocket';
 
 export default function OrdersPage() {
+  const theme = useTheme();
   const [orders, setOrders] = useState<Order[]>([]);
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,6 +68,8 @@ export default function OrdersPage() {
   const [marketplaceFilter, setMarketplaceFilter] = useState<string>('all');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedOrderForMenu, setSelectedOrderForMenu] = useState<Order | null>(null);
 
   useEffect(() => {
     loadOrders();
@@ -164,6 +179,37 @@ export default function OrdersPage() {
     }
   };
 
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, order: Order) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedOrderForMenu(order);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setSelectedOrderForMenu(null);
+  };
+
+  const handleMenuViewDetails = () => {
+    if (selectedOrderForMenu) {
+      handleOpenDetails(selectedOrderForMenu);
+    }
+    handleMenuClose();
+  };
+
+  const handleMenuProcessOrder = () => {
+    if (selectedOrderForMenu && selectedOrderForMenu.status === 'pending') {
+      handleUpdateStatus(selectedOrderForMenu.id, 'processing');
+    }
+    handleMenuClose();
+  };
+
+  const handleMenuShipOrder = () => {
+    if (selectedOrderForMenu && selectedOrderForMenu.status === 'processing') {
+      handleUpdateStatus(selectedOrderForMenu.id, 'shipped');
+    }
+    handleMenuClose();
+  };
+
   const filteredOrders = orders
     .filter((o) => {
       const matchesSearch = o.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -189,29 +235,47 @@ export default function OrdersPage() {
   };
 
   return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Box>
-          <Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5 }}>
-            Pedidos
-          </Typography>
-          <Typography variant="body2" color="textSecondary">
-            Acompanhe e gerencie todos os pedidos sincronizados dos marketplaces
-          </Typography>
-        </Box>
+    <Box sx={{ bgcolor: theme.palette.background.default, minHeight: '100vh', p: 3 }}>
+      {/* Page Header */}
+      <PageHeader 
+        title="Pedidos"
+        subtitle="Acompanhe e gerencie todos os pedidos sincronizados dos marketplaces"
+      />
 
-      </Box>
-
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
+      {/* Stats Cards */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} sm={6} md={4}>
+          <Card
+            sx={{
+              borderRadius: 3,
+              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+              },
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
-                  <Typography color="textSecondary" variant="body2" sx={{ mb: 0.5 }}>
+                  <Typography 
+                    sx={{ 
+                      color: theme.palette.text.secondary,
+                      fontSize: '0.875rem',
+                      fontWeight: 500,
+                      mb: 1.5,
+                    }}
+                  >
                     Total de Pedidos
                   </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+                  <Typography 
+                    variant="h4" 
+                    sx={{ 
+                      fontWeight: 700, 
+                      color: theme.palette.text.primary,
+                      fontSize: '1.875rem',
+                    }}
+                  >
                     {stats.total}
                   </Typography>
                 </Box>
@@ -219,60 +283,106 @@ export default function OrdersPage() {
                   sx={{
                     p: 1.5,
                     bgcolor: '#dbeafe',
-                    borderRadius: 1.5,
+                    borderRadius: 2.5,
                   }}
                 >
-                  <InfoIcon sx={{ color: '#0099FF' }} />
+                  <ShoppingBagIcon sx={{ color: '#3b82f6', fontSize: '2rem' }} />
                 </Box>
               </Box>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
+        <Grid item xs={12} sm={6} md={4}>
+          <Card
+            sx={{
+              borderRadius: 3,
+              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+              },
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
-                  <Typography color="textSecondary" variant="body2" sx={{ mb: 0.5 }}>
+                  <Typography 
+                    sx={{ 
+                      color: theme.palette.text.secondary,
+                      fontSize: '0.875rem',
+                      fontWeight: 500,
+                      mb: 1.5,
+                    }}
+                  >
                     Pendentes
                   </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+                  <Typography 
+                    variant="h4" 
+                    sx={{ 
+                      fontWeight: 700, 
+                      color: theme.palette.text.primary,
+                      fontSize: '1.875rem',
+                    }}
+                  >
                     {stats.pending}
                   </Typography>
                 </Box>
                 <Box
                   sx={{
                     p: 1.5,
-                    bgcolor: '#fef08a',
-                    borderRadius: 1.5,
+                    bgcolor: '#fef3c7',
+                    borderRadius: 2.5,
                   }}
                 >
-                  <TrendingUpIcon sx={{ color: '#f59e0b' }} />
+                  <InfoIcon sx={{ color: '#f59e0b', fontSize: '2rem' }} />
                 </Box>
               </Box>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
+        <Grid item xs={12} sm={6} md={4}>
+          <Card
+            sx={{
+              borderRadius: 3,
+              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+              },
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
-                  <Typography color="textSecondary" variant="body2" sx={{ mb: 0.5 }}>
+                  <Typography 
+                    sx={{ 
+                      color: theme.palette.text.secondary,
+                      fontSize: '0.875rem',
+                      fontWeight: 500,
+                      mb: 1.5,
+                    }}
+                  >
                     Receita Total
                   </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+                  <Typography 
+                    variant="h4" 
+                    sx={{ 
+                      fontWeight: 700, 
+                      color: theme.palette.text.primary,
+                      fontSize: '1.875rem',
+                    }}
+                  >
                     R$ {stats.revenue.toFixed(2)}
                   </Typography>
                 </Box>
                 <Box
                   sx={{
                     p: 1.5,
-                    bgcolor: '#dcfce7',
-                    borderRadius: 1.5,
+                    bgcolor: '#d1fae5',
+                    borderRadius: 2.5,
                   }}
                 >
-                  <TrendingUpIcon sx={{ color: '#10b981' }} />
+                  <TrendingUpIcon sx={{ color: '#10b981', fontSize: '2rem' }} />
                 </Box>
               </Box>
             </CardContent>
@@ -280,7 +390,15 @@ export default function OrdersPage() {
         </Grid>
       </Grid>
 
-      <Paper sx={{ mb: 3, p: 2 }}>
+      {/* Search and Filters */}
+      <Paper 
+        sx={{ 
+          mb: 3, 
+          p: 3,
+          borderRadius: 3,
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+        }}
+      >
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} md={6}>
             <TextField
@@ -291,13 +409,24 @@ export default function OrdersPage() {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon sx={{ color: '#555555' }} />
+                    <SearchIcon sx={{ color: '#9ca3af' }} />
                   </InputAdornment>
                 ),
               }}
               sx={{
+                bgcolor: 'white',
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2,
+                  height: 48,
+                  '& fieldset': {
+                    borderColor: '#e5e7eb',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#3b82f6',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#3b82f6',
+                  },
                 },
               }}
             />
@@ -309,7 +438,11 @@ export default function OrdersPage() {
                 value={statusFilter}
                 label="Status"
                 onChange={(e) => setStatusFilter(e.target.value)}
-                sx={{ borderRadius: 2 }}
+                sx={{ 
+                  borderRadius: 2,
+                  height: 48,
+                  bgcolor: 'white',
+                }}
               >
                 <MenuItem value="all">Todos</MenuItem>
                 <MenuItem value="pending">Pendente</MenuItem>
@@ -327,7 +460,11 @@ export default function OrdersPage() {
                 value={marketplaceFilter}
                 label="Marketplace"
                 onChange={(e) => setMarketplaceFilter(e.target.value)}
-                sx={{ borderRadius: 2 }}
+                sx={{ 
+                  borderRadius: 2,
+                  height: 48,
+                  bgcolor: 'white',
+                }}
               >
                 <MenuItem value="all">Todos</MenuItem>
                 {uniqueMarketplaces.map((mp) => (
@@ -347,107 +484,215 @@ export default function OrdersPage() {
         </Alert>
       )}
 
-      <TableContainer component={Paper}>
+      <TableContainer 
+        component={Paper}
+        sx={{
+          borderRadius: 3,
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+          overflow: 'hidden',
+        }}
+      >
         {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 4 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 8 }}>
             <CircularProgress />
           </Box>
+        ) : paginatedOrders.length === 0 ? (
+          <Box
+            sx={{
+              p: 8,
+              textAlign: 'center',
+            }}
+          >
+            <Box
+              sx={{
+                width: 120,
+                height: 120,
+                mx: 'auto',
+                mb: 3,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(100, 116, 139, 0.1)' : '#f3f4f6',
+                borderRadius: 3,
+              }}
+            >
+              <ShoppingBagIcon sx={{ fontSize: 60, color: theme.palette.mode === 'dark' ? '#64748b' : '#9ca3af' }} />
+            </Box>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 600,
+                color: theme.palette.text.primary,
+                mb: 1,
+              }}
+            >
+              Nenhum pedido encontrado
+            </Typography>
+            <Typography
+              variant="body1"
+              sx={{
+                color: theme.palette.text.secondary,
+                mb: 0,
+              }}
+            >
+              Os pedidos sincronizados dos marketplaces aparecerão aqui.
+            </Typography>
+          </Box>
         ) : (
-          <Table>
-            <TableHead>
-              <TableRow sx={{ backgroundColor: '#f5f7fa' }}>
-                <TableCell sx={{ fontWeight: 600, color: '#1a1a1a' }}>ID Pedido</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#1a1a1a' }}>Marketplace</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#1a1a1a' }}>Status</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
-                  Total
-                </TableCell>
-                <TableCell align="center" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
-                  Ações
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {paginatedOrders.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
-                    <Typography color="textSecondary">Nenhum pedido encontrado</Typography>
+          <>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ bgcolor: '#f9fafb' }}>
+                  <TableCell sx={{ fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>ID Pedido</TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>Marketplace</TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>Status</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>
+                    Total
+                  </TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>
+                    Ações
                   </TableCell>
                 </TableRow>
-              ) : (
-                paginatedOrders.map((o) => (
+              </TableHead>
+              <TableBody>
+                {paginatedOrders.map((o) => (
                   <TableRow
                     key={o.id}
                     sx={{
-                      '&:hover': { backgroundColor: '#f5f7fa' },
-                      borderBottom: '1px solid #e8eef5',
+                      '&:hover': { 
+                        bgcolor: '#f9fafb',
+                        cursor: 'pointer'
+                      },
+                      transition: 'background-color 0.2s',
                     }}
                   >
-                    <TableCell sx={{ fontWeight: 500 }}>{o.id}</TableCell>
-                    <TableCell>{o.marketplace}</TableCell>
                     <TableCell>
-                      <Chip
-                        label={getStatusLabel(o.status)}
-                        color={getStatusColor(o.status)}
-                        size="small"
-                        variant="filled"
-                      />
+                      <Typography sx={{ fontWeight: 600, color: theme.palette.text.primary, fontSize: '0.9375rem' }}>
+                        {o.id}
+                      </Typography>
                     </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
-                      R$ {(o.total || 0).toFixed(2)}
+                    <TableCell>
+                      <Typography sx={{ color: theme.palette.text.secondary, fontSize: '0.875rem' }}>
+                        {o.marketplace}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={o.status} size="small" />
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography sx={{ fontWeight: 700, color: theme.palette.text.primary, fontSize: '1rem' }}>
+                        R$ {(o.total || 0).toFixed(2)}
+                      </Typography>
                     </TableCell>
                     <TableCell align="center">
-                      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          color="primary"
-                          onClick={() => handleOpenDetails(o)}
-                        >
-                          Detalhes
-                        </Button>
-                        {o.status === 'pending' && (
-                          <Button
-                            size="small"
-                            variant="contained"
-                            color="info"
-                            onClick={() => handleUpdateStatus(o.id, 'processing')}
-                          >
-                            Processar
-                          </Button>
-                        )}
-                        {o.status === 'processing' && (
-                          <Button
-                            size="small"
-                            variant="contained"
-                            color="primary"
-                            onClick={() => handleUpdateStatus(o.id, 'shipped')}
-                          >
-                            Enviar
-                          </Button>
-                        )}
-                      </Box>
+                      <IconButton 
+                        size="small" 
+                        onClick={(e) => handleMenuOpen(e, o)}
+                        sx={{
+                          color: '#6b7280',
+                          '&:hover': {
+                            bgcolor: '#f3f4f6',
+                          }
+                        }}
+                      >
+                        <MoreVertIcon />
+                      </IconButton>
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ))}
+              </TableBody>
+            </Table>
+            <TablePagination
+              component="div"
+              count={filteredOrders.length}
+              page={page}
+              onPageChange={(e, newPage) => setPage(newPage)}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={(e) => {
+                setRowsPerPage(parseInt(e.target.value, 10));
+                setPage(0);
+              }}
+              labelRowsPerPage="Linhas por página:"
+              labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`}
+            />
+          </>
         )}
-        <TablePagination
-          component="div"
-          count={filteredOrders.length}
-          page={page}
-          onPageChange={(e, newPage) => setPage(newPage)}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={(e) => {
-            setRowsPerPage(parseInt(e.target.value, 10));
-            setPage(0);
-          }}
-          labelRowsPerPage="Linhas por página:"
-          labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`}
-        />
       </TableContainer>
+
+      {/* Kebab Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        PaperProps={{
+          sx: {
+            mt: 1,
+            minWidth: 180,
+            borderRadius: 2,
+            boxShadow: (theme) => theme.palette.mode === 'dark'
+              ? '0 8px 24px rgba(0, 0, 0, 0.4)'
+              : '0 8px 24px rgba(0, 0, 0, 0.12)',
+          }
+        }}
+      >
+        <MenuItem 
+          onClick={handleMenuViewDetails} 
+          sx={{ 
+            py: 1.5,
+            gap: 1.5,
+            '&:hover': {
+              bgcolor: (theme) => theme.palette.mode === 'dark'
+                ? 'rgba(255, 255, 255, 0.08)'
+                : 'rgba(0, 0, 0, 0.04)',
+            },
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: 'auto' }}>
+            <VisibilityIcon fontSize="small" sx={{ color: '#3b82f6' }} />
+          </ListItemIcon>
+          <Typography variant="body2">Ver Detalhes</Typography>
+        </MenuItem>
+        {selectedOrderForMenu?.status === 'pending' && (
+          <MenuItem 
+            onClick={handleMenuProcessOrder} 
+            sx={{ 
+              py: 1.5,
+              gap: 1.5,
+              '&:hover': {
+                bgcolor: (theme) => theme.palette.mode === 'dark'
+                  ? 'rgba(255, 255, 255, 0.08)'
+                  : 'rgba(0, 0, 0, 0.04)',
+              },
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: 'auto' }}>
+              <CheckCircleIcon fontSize="small" sx={{ color: '#10b981' }} />
+            </ListItemIcon>
+            <Typography variant="body2">Processar</Typography>
+          </MenuItem>
+        )}
+        {selectedOrderForMenu?.status === 'processing' && (
+          <MenuItem 
+            onClick={handleMenuShipOrder} 
+            sx={{ 
+              py: 1.5,
+              gap: 1.5,
+              '&:hover': {
+                bgcolor: (theme) => theme.palette.mode === 'dark'
+                  ? 'rgba(255, 255, 255, 0.08)'
+                  : 'rgba(0, 0, 0, 0.04)',
+              },
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: 'auto' }}>
+              <LocalShippingIcon fontSize="small" sx={{ color: '#3b82f6' }} />
+            </ListItemIcon>
+            <Typography variant="body2">Enviar</Typography>
+          </MenuItem>
+        )}
+      </Menu>
 
       {/* Dialog de detalhes do pedido */}
       <Dialog 
@@ -455,16 +700,46 @@ export default function OrdersPage() {
         onClose={handleCloseDetails}
         maxWidth="md"
         fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: (theme) => theme.palette.mode === 'dark' 
+              ? '0 8px 32px rgba(0, 0, 0, 0.4)'
+              : '0 8px 32px rgba(0, 0, 0, 0.12)',
+          }
+        }}
       >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Detalhes do Pedido
-          </Typography>
-          <Button onClick={handleCloseDetails} color="inherit" size="small">
+        <DialogTitle sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          pb: 2,
+          px: 3,
+          pt: 3,
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{
+              width: 40,
+              height: 40,
+              borderRadius: 2,
+              bgcolor: (theme) => theme.palette.mode === 'dark' 
+                ? 'rgba(66, 165, 245, 0.15)'
+                : 'rgba(66, 165, 245, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <ShoppingBagIcon sx={{ color: '#42A5F5', fontSize: 24 }} />
+            </Box>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Detalhes do Pedido
+            </Typography>
+          </Box>
+          <IconButton onClick={handleCloseDetails} size="small" sx={{ color: 'text.secondary' }}>
             <CloseIcon />
-          </Button>
+          </IconButton>
         </DialogTitle>
-        <DialogContent dividers>
+        <DialogContent sx={{ px: 3, py: 3 }}>
           {selectedOrder && (
             <Box>
               <Grid container spacing={3}>

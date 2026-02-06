@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppBar, Toolbar, Typography, Box, Avatar, Menu, MenuItem, IconButton, Tooltip, Badge, Dialog, DialogTitle, DialogContent, DialogActions, Button, Divider, Switch, FormControlLabel, List, ListItem, ListItemText, ListItemAvatar, Paper } from '@mui/material';
+import { AppBar, Toolbar, Typography, Box, Avatar, Menu, MenuItem, IconButton, Tooltip, Badge, Dialog, DialogTitle, DialogContent, DialogActions, Button, Divider, Switch, FormControlLabel, List, ListItem, ListItemText, ListItemAvatar, Paper, ListItemIcon } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { 
   ExpandMore as ExpandMoreIcon,
@@ -9,6 +9,8 @@ import {
   Settings as SettingsIcon,
   Notifications as NotificationsIcon,
   NotificationsNone as NotificationsNoneIcon,
+  Logout as LogoutIcon,
+  Person as PersonIcon,
 } from '@mui/icons-material';
 import { useThemeMode } from '../contexts/ThemeContext';
 
@@ -98,16 +100,80 @@ export default function Topbar() {
             onClose={handleSettingsClose}
             anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
             transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            slotProps={{
+              paper: {
+                sx: {
+                  mt: 1.5,
+                  minWidth: 200,
+                  borderRadius: 2,
+                  boxShadow: (theme) => theme.palette.mode === 'dark'
+                    ? '0 8px 24px rgba(0, 0, 0, 0.4)'
+                    : '0 8px 24px rgba(0, 0, 0, 0.12)',
+                  overflow: 'visible',
+                  '&:before': {
+                    content: '""',
+                    display: 'block',
+                    position: 'absolute',
+                    top: 0,
+                    right: 20,
+                    width: 10,
+                    height: 10,
+                    bgcolor: 'background.paper',
+                    transform: 'translateY(-50%) rotate(45deg)',
+                    zIndex: 0,
+                  },
+                }
+              }
+            }}
           >
-            <MenuItem onClick={() => {
-              setPreferencesOpen(true);
-              handleSettingsClose();
-            }}>Preferências</MenuItem>
-            <MenuItem onClick={handleSettingsClose}>Privacidade</MenuItem>
-            <MenuItem onClick={() => {
-              setAboutOpen(true);
-              handleSettingsClose();
-            }}>Sobre</MenuItem>
+            <MenuItem 
+              onClick={() => {
+                setPreferencesOpen(true);
+                handleSettingsClose();
+              }}
+              sx={{
+                py: 1.5,
+                px: 2,
+                '&:hover': {
+                  bgcolor: (theme) => theme.palette.mode === 'dark'
+                    ? 'rgba(255, 255, 255, 0.08)'
+                    : 'rgba(0, 0, 0, 0.04)',
+                },
+              }}
+            >
+              Preferências
+            </MenuItem>
+            <MenuItem 
+              onClick={handleSettingsClose}
+              sx={{
+                py: 1.5,
+                px: 2,
+                '&:hover': {
+                  bgcolor: (theme) => theme.palette.mode === 'dark'
+                    ? 'rgba(255, 255, 255, 0.08)'
+                    : 'rgba(0, 0, 0, 0.04)',
+                },
+              }}
+            >
+              Privacidade
+            </MenuItem>
+            <MenuItem 
+              onClick={() => {
+                setAboutOpen(true);
+                handleSettingsClose();
+              }}
+              sx={{
+                py: 1.5,
+                px: 2,
+                '&:hover': {
+                  bgcolor: (theme) => theme.palette.mode === 'dark'
+                    ? 'rgba(255, 255, 255, 0.08)'
+                    : 'rgba(0, 0, 0, 0.04)',
+                },
+              }}
+            >
+              Sobre
+            </MenuItem>
           </Menu>
 
           <Tooltip title="Notificações">
@@ -248,8 +314,87 @@ export default function Topbar() {
             </Box>
             <ExpandMoreIcon sx={{ fontSize: '1.2rem' }} />
           </Box>
-          <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
-            <MenuItem onClick={handleLogout}>Sair</MenuItem>
+          <Menu 
+            anchorEl={anchorEl} 
+            open={Boolean(anchorEl)} 
+            onClose={handleClose}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            slotProps={{
+              paper: {
+                sx: {
+                  mt: 1.5,
+                  minWidth: 200,
+                  borderRadius: 2,
+                  boxShadow: (theme) => theme.palette.mode === 'dark'
+                    ? '0 8px 24px rgba(0, 0, 0, 0.4)'
+                    : '0 8px 24px rgba(0, 0, 0, 0.12)',
+                  overflow: 'visible',
+                  '&:before': {
+                    content: '""',
+                    display: 'block',
+                    position: 'absolute',
+                    top: 0,
+                    right: 20,
+                    width: 10,
+                    height: 10,
+                    bgcolor: 'background.paper',
+                    transform: 'translateY(-50%) rotate(45deg)',
+                    zIndex: 0,
+                  },
+                }
+              }
+            }}
+          >
+            <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem', mb: 0.5 }}>
+                Conectado como
+              </Typography>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {user.email}
+              </Typography>
+            </Box>
+            
+            <MenuItem 
+              onClick={handleClose}
+              sx={{
+                py: 1.5,
+                px: 2,
+                gap: 1.5,
+                '&:hover': {
+                  bgcolor: (theme) => theme.palette.mode === 'dark'
+                    ? 'rgba(255, 255, 255, 0.08)'
+                    : 'rgba(0, 0, 0, 0.04)',
+                },
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 'auto' }}>
+                <PersonIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
+              </ListItemIcon>
+              <Typography variant="body2">Meu Perfil</Typography>
+            </MenuItem>
+            
+            <Divider sx={{ my: 0.5 }} />
+            
+            <MenuItem 
+              onClick={handleLogout}
+              sx={{
+                py: 1.5,
+                px: 2,
+                gap: 1.5,
+                color: '#ef4444',
+                '&:hover': {
+                  bgcolor: (theme) => theme.palette.mode === 'dark'
+                    ? 'rgba(239, 68, 68, 0.12)'
+                    : 'rgba(239, 68, 68, 0.08)',
+                },
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 'auto' }}>
+                <LogoutIcon sx={{ fontSize: 20, color: '#ef4444' }} />
+              </ListItemIcon>
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>Sair</Typography>
+            </MenuItem>
           </Menu>
         </Box>
       </Toolbar>
@@ -299,32 +444,194 @@ export default function Topbar() {
       </Dialog>
 
       {/* Dialog de Preferências */}
-      <Dialog open={preferencesOpen} onClose={() => setPreferencesOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Preferências</DialogTitle>
-        <DialogContent dividers>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <FormControlLabel
-              control={<Switch checked={isDarkMode} onChange={toggleTheme} />}
-              label="Modo Escuro"
-            />
-            <Divider />
-            <FormControlLabel
-              control={<Switch defaultChecked />}
-              label="Notificações de novos pedidos"
-            />
-            <FormControlLabel
-              control={<Switch defaultChecked />}
-              label="Notificações por e-mail"
-            />
-            <FormControlLabel
-              control={<Switch />}
-              label="Sincronização automática"
-            />
+      <Dialog 
+        open={preferencesOpen} 
+        onClose={() => setPreferencesOpen(false)} 
+        maxWidth="sm" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: (theme) => theme.palette.mode === 'dark' 
+              ? '0 8px 32px rgba(0, 0, 0, 0.4)'
+              : '0 8px 32px rgba(0, 0, 0, 0.12)',
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          pb: 2,
+          px: 3,
+          pt: 3,
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{
+              width: 40,
+              height: 40,
+              borderRadius: 2,
+              bgcolor: (theme) => theme.palette.mode === 'dark' 
+                ? 'rgba(66, 165, 245, 0.15)'
+                : 'rgba(66, 165, 245, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <SettingsIcon sx={{ color: '#42A5F5', fontSize: 24 }} />
+            </Box>
+            <Typography variant="h6" fontWeight={600}>
+              Preferências
+            </Typography>
+          </Box>
+        </DialogTitle>
+        
+        <DialogContent sx={{ px: 3, py: 3 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            {/* Seção: Aparência */}
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: 'text.secondary', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Aparência
+              </Typography>
+              
+              <Paper 
+                variant="outlined" 
+                sx={{ 
+                  p: 2.5,
+                  borderRadius: 2,
+                  bgcolor: (theme) => theme.palette.mode === 'dark' 
+                    ? 'rgba(66, 165, 245, 0.05)'
+                    : 'rgba(66, 165, 245, 0.03)',
+                  borderColor: (theme) => theme.palette.mode === 'dark' 
+                    ? 'rgba(66, 165, 245, 0.2)'
+                    : 'rgba(66, 165, 245, 0.3)',
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 2,
+                      bgcolor: (theme) => theme.palette.mode === 'dark' 
+                        ? 'rgba(66, 165, 245, 0.15)'
+                        : 'rgba(66, 165, 245, 0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      {isDarkMode ? (
+                        <DarkModeIcon sx={{ color: '#42A5F5', fontSize: 20 }} />
+                      ) : (
+                        <LightModeIcon sx={{ color: '#42A5F5', fontSize: 20 }} />
+                      )}
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.25 }}>
+                        Modo Escuro
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {isDarkMode ? 'Tema escuro ativado' : 'Tema claro ativado'}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Switch 
+                    checked={isDarkMode} 
+                    onChange={toggleTheme}
+                    sx={{
+                      '& .MuiSwitch-switchBase.Mui-checked': {
+                        color: '#42A5F5',
+                      },
+                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                        backgroundColor: '#42A5F5',
+                      },
+                    }}
+                  />
+                </Box>
+              </Paper>
+            </Box>
+
+            <Divider sx={{ mb: 3 }} />
+
+            {/* Seção: Notificações */}
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: 'text.secondary', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Notificações
+              </Typography>
+              
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1 }}>
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.25 }}>
+                      Novos pedidos
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Receba alertas de novos pedidos
+                    </Typography>
+                  </Box>
+                  <Switch defaultChecked />
+                </Box>
+                
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1 }}>
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.25 }}>
+                      Notificações por e-mail
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Enviar resumos diários por e-mail
+                    </Typography>
+                  </Box>
+                  <Switch defaultChecked />
+                </Box>
+              </Box>
+            </Box>
+
+            <Divider sx={{ mb: 3 }} />
+
+            {/* Seção: Sincronização */}
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: 'text.secondary', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Sincronização
+              </Typography>
+              
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1 }}>
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.25 }}>
+                    Sincronização automática
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Atualizar produtos e pedidos automaticamente
+                  </Typography>
+                </Box>
+                <Switch />
+              </Box>
+            </Box>
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setPreferencesOpen(false)}>Cancelar</Button>
-          <Button onClick={() => setPreferencesOpen(false)} variant="contained">Salvar</Button>
+        
+        <DialogActions sx={{ px: 3, pb: 3, pt: 2, gap: 1 }}>
+          <Button 
+            onClick={() => setPreferencesOpen(false)}
+            sx={{ textTransform: 'none', color: 'text.secondary' }}
+          >
+            Cancelar
+          </Button>
+          <Button 
+            onClick={() => setPreferencesOpen(false)} 
+            variant="contained"
+            sx={{
+              textTransform: 'none',
+              bgcolor: '#42A5F5',
+              px: 3,
+              py: 1,
+              fontWeight: 600,
+              '&:hover': {
+                bgcolor: '#1E88E5',
+              },
+            }}
+          >
+            Salvar Preferências
+          </Button>
         </DialogActions>
       </Dialog>
 

@@ -47,10 +47,16 @@ import {
   Upload as UploadIcon,
   DeleteOutline as DeleteOutlineIcon,
   Sync as SyncIcon,
+  Inventory as ProductsIcon,
 } from '@mui/icons-material';
+import PageHeader from '../../components/PageHeader';
+import StatusBadge from '../../components/StatusBadge';
+import EmptyState from '../../components/EmptyState';
 import { productsService, Product, CreateProductInput } from '../../services/productsService';
 import { storesService, Store } from '../../services/storesService';
 import * as websocket from '../../services/websocket';
+import { CategorySelector } from '../../components/CategorySelector';
+import { DynamicProductForm } from '../../components/DynamicProductForm';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -74,6 +80,12 @@ export default function ProductsPage() {
   const [syncMarketplace, setSyncMarketplace] = useState('');
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
+  
+  // Wizard de criação de produto
+  const [productStep, setProductStep] = useState(0); // 0 = selecionar categoria, 1 = preencher dados
+  const [selectedCategoryId, setSelectedCategoryId] = useState('');
+  const [mlAttributes, setMlAttributes] = useState<Record<string, any>>({});
+  
   const [formData, setFormData] = useState<CreateProductInput>({
     sku: '',
     name: '',
@@ -184,6 +196,20 @@ export default function ProductsPage() {
       model: product.model || '',
       description: product.description || '',
     });
+    // Carregar atributos do ML se existirem
+    if (product.mlCategoryId) {
+      setSelectedCategoryId(product.mlCategoryId);
+    }
+    if (product.mlAttributes) {
+      // Limpar índices numéricos do mlAttributes
+      const cleanedAttrs: Record<string, any> = {};
+      Object.keys(product.mlAttributes).forEach(key => {
+        if (isNaN(Number(key))) {
+          cleanedAttrs[key] = product.mlAttributes![key];
+        }
+      });
+      setMlAttributes(cleanedAttrs);
+    }
     setDialogOpen(true);
     loadCategories(); // Carregar categorias ao editar também
   };
@@ -193,6 +219,9 @@ export default function ProductsPage() {
     setEditingId(null);
     setImageFiles([]);
     setImagePreviews([]);
+    setProductStep(0);
+    setSelectedCategoryId('');
+    setMlAttributes({});
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -223,6 +252,27 @@ export default function ProductsPage() {
     setImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleCategorySelected = (categoryId: string) => {
+    setSelectedCategoryId(categoryId);
+    setFormData(prev => ({ ...prev, mlCategoryId: categoryId } as any));
+  };
+
+  const handleMlAttributeChange = (field: string, value: any) => {
+    setMlAttributes(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleNextProductStep = () => {
+    if (productStep === 0 && selectedCategoryId) {
+      setProductStep(1);
+    }
+  };
+
+  const handlePreviousProductStep = () => {
+    if (productStep === 1) {
+      setProductStep(0);
+    }
+  };
+
   const handleInputChange = (field: keyof CreateProductInput) => (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -234,7 +284,7 @@ export default function ProductsPage() {
 
   const handleSaveProduct = async () => {
     try {
-      if (!formData.sku || !formData.name || !formData.category) {
+      if (!formData.sku || !formData.name) {
         setError('Por favor, preencha todos os campos obrigatórios');
         return;
       }
@@ -246,7 +296,10 @@ export default function ProductsPage() {
       formDataToSend.append('name', formData.name);
       formDataToSend.append('price', formData.price.toString());
       formDataToSend.append('quantity', formData.quantity.toString());
-      formDataToSend.append('category', formData.category);
+      
+      if (formData.category) {
+        formDataToSend.append('category', formData.category);
+      }
       
       if (formData.brand) {
         formDataToSend.append('brand', formData.brand);
@@ -259,7 +312,24 @@ export default function ProductsPage() {
       if (formData.description) {
         formDataToSend.append('description', formData.description);
       }
-      
+
+      // Adicionar campos do Mercado Livre
+      if (selectedCategoryId) {
+        formDataToSend.append('mlCategoryId', selectedCategoryId);
+      }
+
+      if (Object.keys(mlAttributes).length > 0) {
+        // Limpar mlAttributes para remover índices numéricos (se houver)
+        const cleanedAttributes: Record<string, any> = {};
+        Object.keys(mlAttributes).forEach(key => {
+          // Ignorar índices numéricos, manter apenas chaves válidas
+          if (isNaN(Number(key))) {
+            cleanedAttributes[key] = mlAttributes[key];
+          }
+        });
+        
+        formDataToSend.append('mlAttributes', JSON.stringify(cleanedAttributes));
+      }
       // Adicionar múltiplas imagens
       imageFiles.forEach((file, index) => {
         formDataToSend.append('images', file);
@@ -409,37 +479,33 @@ export default function ProductsPage() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box>
-          <Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5 }}>
-            Produtos
-          </Typography>
-          <Typography variant="body2" color="textSecondary">
-            Gerencie o catálogo de produtos
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button 
-            variant="outlined" 
-            color="success" 
-            startIcon={<SyncIcon />} 
-            onClick={() => setSyncDialogOpen(true)}
-          >
-            Sincronizar Produtos
-          </Button>
-          <Button 
-            variant="outlined" 
-            color="primary" 
-            startIcon={<UploadIcon />} 
-            onClick={handleOpenPublishDialog}
-          >
-            Publicar Produtos
-          </Button>
-          <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleOpenDialog}>
-            Novo Produto
-          </Button>
-        </Box>
-      </Box>
+      <PageHeader 
+        title="Produtos"
+        subtitle="Gerencie o catálogo de produtos"
+        action={
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button 
+              variant="outlined" 
+              color="success" 
+              startIcon={<SyncIcon />} 
+              onClick={() => setSyncDialogOpen(true)}
+            >
+              Sincronizar
+            </Button>
+            <Button 
+              variant="outlined" 
+              color="primary" 
+              startIcon={<UploadIcon />} 
+              onClick={handleOpenPublishDialog}
+            >
+              Publicar
+            </Button>
+            <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleOpenDialog}>
+              Novo Produto
+            </Button>
+          </Box>
+        }
+      />
 
       {error && (
         <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
@@ -468,7 +534,32 @@ export default function ProductsPage() {
         />
       </Paper>
 
-      <TableContainer component={Paper}>
+      <TableContainer component={Paper} sx={{ borderRadius: 3, overflow: 'hidden' }}>
+        {filteredProducts.length === 0 ? (
+          <Box sx={{ p: 8, textAlign: 'center' }}>
+            <Box
+              sx={{
+                width: 120,
+                height: 120,
+                mx: 'auto',
+                mb: 3,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(100, 116, 139, 0.1)' : '#f3f4f6',
+                borderRadius: 3,
+              }}
+            >
+              <ProductsIcon sx={{ fontSize: 60, color: theme => theme.palette.mode === 'dark' ? '#64748b' : '#9ca3af' }} />
+            </Box>
+            <Typography variant="h5" sx={{ fontWeight: 600, color: 'text.primary', mb: 1 }}>
+              {searchTerm ? 'Nenhum produto encontrado' : 'Nenhum produto cadastrado'}
+            </Typography>
+            <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+              {searchTerm ? 'Tente ajustar os filtros de busca.' : 'Os produtos cadastrados aparecerão aqui.'}
+            </Typography>
+          </Box>
+        ) : (
         <Table>
           <TableHead>
             <TableRow sx={{ backgroundColor: '#f5f7fa' }}>
@@ -545,194 +636,274 @@ export default function ProductsPage() {
             ))}
           </TableBody>
         </Table>
+        )}
       </TableContainer>
 
       {/* Dialog de adicionar/editar produto */}
       <Dialog 
         open={dialogOpen} 
         onClose={handleCloseDialog}
-        maxWidth="sm"
+        maxWidth="md"
         fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: (theme) => theme.palette.mode === 'dark' 
+              ? '0 8px 32px rgba(0, 0, 0, 0.4)'
+              : '0 8px 32px rgba(0, 0, 0, 0.12)',
+          }
+        }}
       >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 600 }}>
-          {editingId ? 'Editar Produto' : 'Novo Produto'}
-          <Button onClick={handleCloseDialog} color="inherit" size="small">
+        <DialogTitle sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          pb: 2,
+          px: 3,
+          pt: 3,
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{
+              width: 40,
+              height: 40,
+              borderRadius: 2,
+              bgcolor: (theme) => theme.palette.mode === 'dark' 
+                ? 'rgba(66, 165, 245, 0.15)'
+                : 'rgba(66, 165, 245, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <ProductsIcon sx={{ color: '#42A5F5', fontSize: 24 }} />
+            </Box>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              {editingId ? 'Editar Produto' : 'Novo Produto'}
+            </Typography>
+          </Box>
+          <IconButton onClick={handleCloseDialog} size="small" sx={{ color: 'text.secondary' }}>
             <CloseIcon />
-          </Button>
+          </IconButton>
         </DialogTitle>
-        <DialogContent dividers>
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                {imagePreviews.length > 0 && (
-                  <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, width: '100%' }}>
-                    {imagePreviews.map((preview, index) => (
-                      <Box key={index} sx={{ position: 'relative' }}>
-                        <Avatar
-                          src={preview}
-                          alt={`Preview ${index + 1}`}
-                          variant="rounded"
-                          sx={{ width: '100%', height: 100 }}
-                        />
-                        <IconButton
-                          size="small"
-                          onClick={() => handleRemoveImage(index)}
-                          sx={{
-                            position: 'absolute',
-                            top: -10,
-                            right: -10,
-                            bgcolor: 'error.main',
-                            color: 'white',
-                            '&:hover': { bgcolor: 'error.dark' }
-                          }}
-                        >
-                          <DeleteOutlineIcon fontSize="small" />
-                        </IconButton>
-                      </Box>
-                    ))}
-                  </Box>
-                )}
-                <Button
-                  component="label"
-                  variant="outlined"
-                  startIcon={<CloudUploadIcon />}
-                  disabled={imagePreviews.length >= 5}
-                >
-                  {imagePreviews.length >= 5 ? 'Máximo de 5 imagens' : `Adicionar Imagem (${imagePreviews.length}/5)`}
-                  <input
-                    type="file"
-                    hidden
-                    accept="image/*"
-                    multiple
-                    onChange={handleImageChange}
-                  />
-                </Button>
-                {imagePreviews.length > 0 && (
-                  <Typography variant="caption" color="textSecondary">
-                    Clique no X para remover uma imagem
+        
+        {!editingId && (
+          <Box sx={{ px: 3, pt: 2, pb: 2, bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : '#f5f7fa' }}>
+            <Stepper activeStep={productStep} alternativeLabel>
+              <Step>
+                <StepLabel>Categoria</StepLabel>
+              </Step>
+              <Step>
+                <StepLabel>Dados Básicos</StepLabel>
+              </Step>
+            </Stepper>
+          </Box>
+        )}
+
+        <DialogContent sx={{ px: 3, py: 3 }}>
+          {/* Step 0: Seleção de Categoria */}
+          {!editingId && productStep === 0 && stores.length > 0 && (
+            <Box sx={{ py: 2 }}>
+              <Alert severity="info" sx={{ mb: 3, borderRadius: 2 }} icon={<SearchIcon />}>
+                <strong>Selecione a categoria</strong> do Mercado Livre para cadastrar o produto
+              </Alert>
+              <CategorySelector
+                storeId={stores[0]?.id || ''}
+                onCategorySelected={handleCategorySelected}
+              />
+            </Box>
+          )}
+
+          {/* Step 1: Formulário do Produto */}
+          {(editingId || productStep === 1) && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {/* Seção de Imagens */}
+              <Paper elevation={0} sx={{ p: 3, bgcolor: 'white', borderRadius: 2, border: '1px solid #e0e0e0' }}>
+                <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CloudUploadIcon color="primary" />
+                  Imagens do Produto
+                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                  {imagePreviews.length > 0 && (
+                    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 2, width: '100%' }}>
+                      {imagePreviews.map((preview, index) => (
+                        <Box key={index} sx={{ position: 'relative', borderRadius: 2, overflow: 'hidden', boxShadow: 1 }}>
+                          <Avatar
+                            src={preview}
+                            alt={`Preview ${index + 1}`}
+                            variant="rounded"
+                            sx={{ width: '100%', height: 120 }}
+                          />
+                          <IconButton
+                            size="small"
+                            onClick={() => handleRemoveImage(index)}
+                            sx={{
+                              position: 'absolute',
+                              top: 4,
+                              right: 4,
+                              bgcolor: 'rgba(0,0,0,0.6)',
+                              color: 'white',
+                              '&:hover': { bgcolor: 'error.main' },
+                              backdropFilter: 'blur(4px)'
+                            }}
+                          >
+                            <DeleteOutlineIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      ))}
+                    </Box>
+                  )}
+                  <Button
+                    component="label"
+                    variant={imagePreviews.length === 0 ? 'contained' : 'outlined'}
+                    startIcon={<CloudUploadIcon />}
+                    disabled={imagePreviews.length >= 5}
+                    sx={{ minWidth: 250 }}
+                  >
+                    {imagePreviews.length >= 5 ? 'Máximo de 5 imagens' : imagePreviews.length === 0 ? 'Adicionar Imagens' : `Adicionar Mais (${imagePreviews.length}/5)`}
+                    <input
+                      type="file"
+                      hidden
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageChange}
+                    />
+                  </Button>
+                  {imagePreviews.length === 0 && (
+                    <Typography variant="caption" color="textSecondary">
+                      Adicione até 5 imagens do produto
+                    </Typography>
+                  )}
+                </Box>
+              </Paper>
+
+              {/* Seção de Informações Básicas */}
+              <Paper elevation={0} sx={{ p: 3, bgcolor: 'white', borderRadius: 2, border: '1px solid #e0e0e0' }}>
+                <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <EditIcon color="primary" />
+                  Informações Básicas
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      label="SKU"
+                      value={formData.sku}
+                      onChange={handleInputChange('sku')}
+                      required
+                      placeholder="Ex: PROD001"
+                      helperText="Código único do produto"
+                      variant="outlined"
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      label="Nome do Produto"
+                      value={formData.name}
+                      onChange={handleInputChange('name')}
+                      required
+                      placeholder="Ex: Smartphone Samsung Galaxy S21"
+                      variant="outlined"
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      label="Preço"
+                      type="number"
+                      value={formData.price}
+                      onChange={handleInputChange('price')}
+                      required
+                      InputProps={{
+                        startAdornment: <InputAdornment position="start">R$</InputAdornment>,
+                      }}
+                      inputProps={{ min: 0, step: 0.01 }}
+                      variant="outlined"
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      label="Quantidade em Estoque"
+                      type="number"
+                      value={formData.quantity}
+                      onChange={handleInputChange('quantity')}
+                      required
+                      inputProps={{ min: 0, step: 1 }}
+                      variant="outlined"
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      label="Descrição"
+                      value={formData.description || ''}
+                      onChange={handleInputChange('description')}
+                      multiline
+                      rows={4}
+                      placeholder="Descreva as características, benefícios e detalhes técnicos do produto..."
+                      variant="outlined"
+                    />
+                  </Grid>
+                </Grid>
+              </Paper>
+
+              {/* Atributos obrigatórios do Mercado Livre */}
+              {selectedCategoryId && stores.length > 0 && (
+                <Paper elevation={0} sx={{ p: 3, bgcolor: 'white', borderRadius: 2, border: '1px solid #e0e0e0' }}>
+                  <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1, color: 'primary.main' }}>
+                    <img 
+                      src="https://http2.mlstatic.com/frontend-assets/ui-navigation/5.21.1/mercadolibre/logo__large_plus.png" 
+                      alt="ML" 
+                      style={{ height: 24 }}
+                    />
+                    Atributos Obrigatórios do Mercado Livre
                   </Typography>
-                )}
-              </Box>
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="SKU"
-                value={formData.sku}
-                onChange={handleInputChange('sku')}
-                required
-                placeholder="Ex: PROD001"
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Nome do Produto"
-                value={formData.name}
-                onChange={handleInputChange('name')}
-                required
-                placeholder="Ex: Smartphone XYZ"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Preço"
-                type="number"
-                value={formData.price}
-                onChange={handleInputChange('price')}
-                required
-                InputProps={{
-                  startAdornment: <InputAdornment position="start">R$</InputAdornment>,
-                }}
-                inputProps={{ min: 0, step: 0.01 }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Quantidade em Estoque"
-                type="number"
-                value={formData.quantity}
-                onChange={handleInputChange('quantity')}
-                required
-                inputProps={{ min: 0, step: 1 }}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Autocomplete
-                fullWidth
-                options={categories}
-                getOptionLabel={(option) => `${option.name} (${option.id})`}
-                value={categories.find(c => c.id === formData.category) || null}
-                onChange={(_, newValue) => {
-                  setFormData(prev => ({ ...prev, category: newValue?.id || '' }));
-                }}
-                loading={loadingCategories}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Categoria"
-                    required
-                    placeholder="Selecione a categoria do Mercado Livre"
-                    helperText="Escolha a categoria que melhor descreve seu produto"
-                    InputProps={{
-                      ...params.InputProps,
-                      endAdornment: (
-                        <>
-                          {loadingCategories ? <CircularProgress color="inherit" size={20} /> : null}
-                          {params.InputProps.endAdornment}
-                        </>
-                      ),
-                    }}
+                  <DynamicProductForm
+                    categoryId={selectedCategoryId}
+                    storeId={stores[0]?.id || ''}
+                    formData={mlAttributes}
+                    onChange={handleMlAttributeChange}
                   />
-                )}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Marca"
-                value={formData.brand || ''}
-                onChange={handleInputChange('brand')}
-                placeholder="Ex: Samsung, Apple, Xiaomi"
-                helperText="Obrigatório para Mercado Livre"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Modelo"
-                value={formData.model || ''}
-                onChange={handleInputChange('model')}
-                placeholder="Ex: Galaxy S21, iPhone 13"
-                helperText="Obrigatório para Mercado Livre"
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Descrição do Produto"
-                value={formData.description || ''}
-                onChange={handleInputChange('description')}
-                multiline
-                rows={4}
-                placeholder="Descreva as características e detalhes do produto..."
-              />
-            </Grid>
-          </Grid>
+                </Paper>
+              )}
+            </Box>
+          )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog} disabled={saving}>
+        
+        <DialogActions sx={{ px: 3, py: 2, bgcolor: '#f5f7fa', gap: 1 }}>
+          {!editingId && productStep === 1 && (
+            <Button 
+              onClick={handlePreviousProductStep} 
+              disabled={saving}
+              startIcon={<SearchIcon />}
+              sx={{ mr: 'auto' }}
+            >
+              Voltar
+            </Button>
+          )}
+          <Button onClick={handleCloseDialog} disabled={saving} variant="outlined">
             Cancelar
           </Button>
-          <Button 
-            onClick={handleSaveProduct} 
-            variant="contained" 
-            disabled={saving}
-          >
-            {saving ? <CircularProgress size={24} /> : 'Salvar'}
-          </Button>
+          {!editingId && productStep === 0 ? (
+            <Button 
+              onClick={handleNextProductStep} 
+              variant="contained"
+              disabled={!selectedCategoryId}
+              sx={{ minWidth: 120 }}
+            >
+              Avançar
+            </Button>
+          ) : (
+            <Button 
+              onClick={handleSaveProduct} 
+              variant="contained" 
+              disabled={saving}
+              startIcon={saving ? <CircularProgress size={20} /> : <AddIcon />}
+              sx={{ minWidth: 120 }}
+            >
+              {saving ? 'Salvando...' : 'Salvar Produto'}
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
 
@@ -742,14 +913,46 @@ export default function ProductsPage() {
         onClose={handleClosePublishDialog}
         maxWidth="md"
         fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: (theme) => theme.palette.mode === 'dark' 
+              ? '0 8px 32px rgba(0, 0, 0, 0.4)'
+              : '0 8px 32px rgba(0, 0, 0, 0.12)',
+          }
+        }}
       >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 600 }}>
-          Publicar Produtos no Marketplace
-          <IconButton onClick={handleClosePublishDialog} size="small">
+        <DialogTitle sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          pb: 2,
+          px: 3,
+          pt: 3,
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{
+              width: 40,
+              height: 40,
+              borderRadius: 2,
+              bgcolor: (theme) => theme.palette.mode === 'dark' 
+                ? 'rgba(66, 165, 245, 0.15)'
+                : 'rgba(66, 165, 245, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <UploadIcon sx={{ color: '#42A5F5', fontSize: 24 }} />
+            </Box>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Publicar Produtos no Marketplace
+            </Typography>
+          </Box>
+          <IconButton onClick={handleClosePublishDialog} size="small" sx={{ color: 'text.secondary' }}>
             <CloseIcon />
           </IconButton>
         </DialogTitle>
-        <DialogContent dividers>
+        <DialogContent sx={{ px: 3, py: 3 }}>
           <Stepper activeStep={publishStep} sx={{ mb: 3 }}>
             <Step>
               <StepLabel>Selecionar Produtos</StepLabel>
@@ -918,12 +1121,51 @@ export default function ProductsPage() {
       </Dialog>
 
       {/* Dialog de Sincronização */}
-      <Dialog open={syncDialogOpen} onClose={() => setSyncDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600 }}>
-          <SyncIcon color="success" />
-          Sincronizar Produtos do Marketplace
+      <Dialog 
+        open={syncDialogOpen} 
+        onClose={() => setSyncDialogOpen(false)} 
+        maxWidth="sm" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: (theme) => theme.palette.mode === 'dark' 
+              ? '0 8px 32px rgba(0, 0, 0, 0.4)'
+              : '0 8px 32px rgba(0, 0, 0, 0.12)',
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          pb: 2,
+          px: 3,
+          pt: 3,
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{
+              width: 40,
+              height: 40,
+              borderRadius: 2,
+              bgcolor: (theme) => theme.palette.mode === 'dark' 
+                ? 'rgba(16, 185, 129, 0.15)'
+                : 'rgba(16, 185, 129, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <SyncIcon sx={{ color: '#10b981', fontSize: 24 }} />
+            </Box>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Sincronizar Produtos do Marketplace
+            </Typography>
+          </Box>
+          <IconButton onClick={() => setSyncDialogOpen(false)} size="small" sx={{ color: 'text.secondary' }}>
+            <CloseIcon />
+          </IconButton>
         </DialogTitle>
-        <DialogContent dividers>
+        <DialogContent sx={{ px: 3, py: 3 }}>
           <Box sx={{ py: 2 }}>
             <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
               Esta ação irá buscar todos os produtos do marketplace selecionado e importá-los para o sistema.

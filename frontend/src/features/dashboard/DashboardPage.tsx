@@ -8,6 +8,7 @@ import {
   CircularProgress,
   Paper,
   LinearProgress,
+  useTheme,
 } from '@mui/material';
 import {
   ShoppingCart as OrdersIcon,
@@ -20,6 +21,7 @@ import {
 import { ordersService } from '../../services/ordersService';
 import { productsService } from '../../services/productsService';
 import { storesService } from '../../services/storesService';
+import PageHeader from '../../components/PageHeader';
 
 interface DashboardStats {
   totalOrders: number;
@@ -33,6 +35,7 @@ interface DashboardStats {
 }
 
 export default function DashboardPage() {
+  const theme = useTheme();
   const [stats, setStats] = useState<DashboardStats>({
     totalOrders: 0,
     totalProducts: 0,
@@ -153,37 +156,50 @@ export default function DashboardPage() {
   ];
 
   return (
-    <Box>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5 }}>
-          Dashboard
-        </Typography>
-        <Typography variant="body2" color="textSecondary">
-          Visão geral do seu negócio
-        </Typography>
-      </Box>
+    <Box sx={{ bgcolor: theme.palette.background.default, minHeight: '100vh', p: 3 }}>
+      {/* Page Header */}
+      <PageHeader 
+        title="Dashboard"
+        subtitle="Visão geral do seu negócio"
+      />
 
       {/* Principais Métricas */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <Grid container spacing={3} sx={{ mb: 5 }}>
         {statCards.map((card, index) => (
           <Grid item xs={12} sm={6} md={3} key={index}>
             <Card
               sx={{
                 height: '100%',
+                borderRadius: 3,
+                boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
                 transition: 'all 0.3s ease',
                 '&:hover': {
                   transform: 'translateY(-4px)',
-                  boxShadow: '0 12px 20px rgba(0, 0, 0, 0.1)',
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
                 },
               }}
             >
-              <CardContent>
+              <CardContent sx={{ p: 3 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <Box sx={{ flex: 1 }}>
-                    <Typography color="textSecondary" variant="body2" sx={{ mb: 1 }}>
+                    <Typography 
+                      sx={{ 
+                        color: theme.palette.text.secondary,
+                        fontSize: '0.875rem',
+                        fontWeight: 500,
+                        mb: 1.5,
+                      }}
+                    >
                       {card.title}
                     </Typography>
-                    <Typography variant="h5" sx={{ fontWeight: 700, color: '#1a1a1a' }}>
+                    <Typography 
+                      variant="h4" 
+                      sx={{ 
+                        fontWeight: 700, 
+                        color: theme.palette.text.primary,
+                        fontSize: '1.875rem',
+                      }}
+                    >
                       {card.value}
                     </Typography>
                   </Box>
@@ -191,7 +207,7 @@ export default function DashboardPage() {
                     sx={{
                       p: 1.5,
                       bgcolor: card.bgColor,
-                      borderRadius: 2,
+                      borderRadius: 2.5,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -207,23 +223,66 @@ export default function DashboardPage() {
       </Grid>
 
       {/* Métricas Secundárias */}
-      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-        Detalhamento
-      </Typography>
-      <Grid container spacing={3}>
+      <Box sx={{ mb: 3 }}>
+        <Typography 
+          variant="h5" 
+          sx={{ 
+            fontWeight: 700, 
+            color: theme.palette.text.primary,
+            mb: 0.5,
+          }}
+        >
+          Detalhamento
+        </Typography>
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            color: theme.palette.text.secondary,
+            mb: 3,
+          }}
+        >
+          Análise detalhada das métricas
+        </Typography>
+      </Box>
+
+      <Grid container spacing={3} sx={{ mb: 5 }}>
         {secondaryStats.map((stat, index) => (
           <Grid item xs={12} sm={6} md={3} key={index}>
-            <Paper sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+            <Paper 
+              sx={{ 
+                p: 3,
+                borderRadius: 3,
+                boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                },
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2.5 }}>
                 {stat.icon}
-                <Typography variant="body2" color="textSecondary">
+                <Typography 
+                  sx={{ 
+                    color: theme.palette.text.secondary,
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                  }}
+                >
                   {stat.title}
                 </Typography>
               </Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+              <Typography 
+                variant="h3" 
+                sx={{ 
+                  fontWeight: 700, 
+                  color: theme.palette.text.primary,
+                  mb: 2,
+                  fontSize: '2.25rem',
+                }}
+              >
                 {stat.value}
               </Typography>
-              <Box sx={{ mb: 1 }}>
+              <Box sx={{ mb: 1.5 }}>
                 <LinearProgress
                   variant="determinate"
                   value={stat.total > 0 ? (stat.value / stat.total) * 100 : 0}
@@ -238,7 +297,14 @@ export default function DashboardPage() {
                   }}
                 />
               </Box>
-              <Typography variant="caption" color="textSecondary">
+              <Typography 
+                variant="caption" 
+                sx={{ 
+                  color: theme.palette.text.secondary,
+                  fontWeight: 600,
+                  fontSize: '0.75rem',
+                }}
+              >
                 {stat.total > 0 ? `${((stat.value / stat.total) * 100).toFixed(0)}%` : '0%'} do total
               </Typography>
             </Paper>
@@ -247,47 +313,164 @@ export default function DashboardPage() {
       </Grid>
 
       {/* Resumo Rápido */}
-      <Paper sx={{ mt: 4, p: 3 }}>
-        <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+      <Paper 
+        sx={{ 
+          p: 4,
+          borderRadius: 3,
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+        }}
+      >
+        <Typography 
+          variant="h5" 
+          sx={{ 
+            fontWeight: 700, 
+            color: theme.palette.text.primary,
+            mb: 3,
+          }}
+        >
           Resumo Rápido
         </Typography>
-        <Grid container spacing={2}>
+        <Grid container spacing={3}>
           <Grid item xs={12} sm={6} md={3}>
-            <Box sx={{ textAlign: 'center', p: 2, bgcolor: '#f9fafb', borderRadius: 2 }}>
-              <Typography variant="h3" sx={{ fontWeight: 700, color: '#0099FF', mb: 0.5 }}>
+            <Box 
+              sx={{ 
+                textAlign: 'center', 
+                p: 3, 
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(59, 130, 246, 0.1)' : '#f9fafb',
+                borderRadius: 3,
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(59, 130, 246, 0.15)' : '#f3f4f6',
+                },
+              }}
+            >
+              <Typography 
+                variant="h3" 
+                sx={{ 
+                  fontWeight: 700, 
+                  color: '#3b82f6', 
+                  mb: 0.5,
+                  fontSize: '2.5rem',
+                }}
+              >
                 {stats.totalOrders}
               </Typography>
-              <Typography variant="body2" color="textSecondary">
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: theme.palette.text.secondary,
+                  fontWeight: 500,
+                  fontSize: '0.875rem',
+                }}
+              >
                 Pedidos Totais
               </Typography>
             </Box>
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <Box sx={{ textAlign: 'center', p: 2, bgcolor: '#f9fafb', borderRadius: 2 }}>
-              <Typography variant="h3" sx={{ fontWeight: 700, color: '#10b981', mb: 0.5 }}>
+            <Box 
+              sx={{ 
+                textAlign: 'center', 
+                p: 3, 
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(16, 185, 129, 0.1)' : '#f9fafb',
+                borderRadius: 3,
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(16, 185, 129, 0.15)' : '#f3f4f6',
+                },
+              }}
+            >
+              <Typography 
+                variant="h3" 
+                sx={{ 
+                  fontWeight: 700, 
+                  color: '#10b981', 
+                  mb: 0.5,
+                  fontSize: '2.5rem',
+                }}
+              >
                 {stats.deliveredOrders}
               </Typography>
-              <Typography variant="body2" color="textSecondary">
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: theme.palette.text.secondary,
+                  fontWeight: 500,
+                  fontSize: '0.875rem',
+                }}
+              >
                 Entregues
               </Typography>
             </Box>
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <Box sx={{ textAlign: 'center', p: 2, bgcolor: '#f9fafb', borderRadius: 2 }}>
-              <Typography variant="h3" sx={{ fontWeight: 700, color: '#f59e0b', mb: 0.5 }}>
+            <Box 
+              sx={{ 
+                textAlign: 'center', 
+                p: 3, 
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(245, 158, 11, 0.1)' : '#f9fafb',
+                borderRadius: 3,
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(245, 158, 11, 0.15)' : '#f3f4f6',
+                },
+              }}
+            >
+              <Typography 
+                variant="h3" 
+                sx={{ 
+                  fontWeight: 700, 
+                  color: '#f59e0b', 
+                  mb: 0.5,
+                  fontSize: '2.5rem',
+                }}
+              >
                 {stats.pendingOrders}
               </Typography>
-              <Typography variant="body2" color="textSecondary">
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: theme.palette.text.secondary,
+                  fontWeight: 500,
+                  fontSize: '0.875rem',
+                }}
+              >
                 Pendentes
               </Typography>
             </Box>
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <Box sx={{ textAlign: 'center', p: 2, bgcolor: '#f9fafb', borderRadius: 2 }}>
-              <Typography variant="h3" sx={{ fontWeight: 700, color: '#8b5cf6', mb: 0.5 }}>
+            <Box 
+              sx={{ 
+                textAlign: 'center', 
+                p: 3, 
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(139, 92, 246, 0.1)' : '#f9fafb',
+                borderRadius: 3,
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(139, 92, 246, 0.15)' : '#f3f4f6',
+                },
+              }}
+            >
+              <Typography 
+                variant="h3" 
+                sx={{ 
+                  fontWeight: 700, 
+                  color: '#8b5cf6', 
+                  mb: 0.5,
+                  fontSize: '2.5rem',
+                }}
+              >
                 {stats.totalProducts}
               </Typography>
-              <Typography variant="body2" color="textSecondary">
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: theme.palette.text.secondary,
+                  fontWeight: 500,
+                  fontSize: '0.875rem',
+                }}
+              >
                 Produtos Ativos
               </Typography>
             </Box>

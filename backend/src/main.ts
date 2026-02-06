@@ -7,10 +7,20 @@ import { join } from 'path';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { 
     cors: {
-      origin: [
-        'http://localhost:5173',
-        'https://panel-joshua-norfolk-molecular.trycloudflare.com',
-      ],
+      origin: (origin, callback) => {
+        // Aceitar localhost, qualquer domínio ngrok, cloudflare, e sem origin (mobile/desktop)
+        const allowedPatterns = [
+          /localhost/,
+          /ngrok.*\.dev/,
+          /\.trycloudflare\.com$/,
+        ];
+        
+        if (!origin || allowedPatterns.some(pattern => pattern.test(origin))) {
+          callback(null, true);
+        } else {
+          callback(new Error('CORS não permitido'));
+        }
+      },
       credentials: true,
     }
   });

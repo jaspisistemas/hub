@@ -14,6 +14,8 @@ export interface Product {
   imageUrls?: string[];
   externalId?: string;
   marketplace?: string;
+  mlCategoryId?: string;
+  mlAttributes?: Record<string, any>;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -86,14 +88,14 @@ export const productsService = {
     });
   },
 
-  publishToMarketplace: async (productIds: string[], marketplace: string): Promise<any> => {
+  publishToMarketplace: async (productIds: string[], marketplace: string, brand?: string, model?: string): Promise<any> => {
     const endpoint = marketplace === 'MercadoLivre' 
       ? '/marketplace/mercadolivre/publish-products'
       : '/marketplace/shopee/publish-products';
     
     return apiFetch<any>(endpoint, {
       method: 'POST',
-      body: JSON.stringify({ productIds }),
+      body: JSON.stringify({ productIds, brand, model }),
     });
   },
 

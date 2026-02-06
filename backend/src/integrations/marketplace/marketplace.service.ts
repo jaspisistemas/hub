@@ -257,8 +257,8 @@ export class MarketplaceService {
     try {
       // Montar payload no formato do ML
       const listing = {
-        title: product.name.substring(0, 60), // ML limita a 60 caracteres
-        category_id: product.category || 'MLB1051', // Usar categoria do produto ou padrão
+        title: this.buildProductTitle(product), // Melhorar título automaticamente
+        category_id: product.mlCategoryId || product.category || 'MLB1051', // Usar mlCategoryId do produto ou padrão
         price: product.price,
         currency_id: 'BRL',
         available_quantity: product.quantity,
@@ -269,7 +269,7 @@ export class MarketplaceService {
           plain_text: product.description || `${product.name}\n\nSKU: ${product.sku}`,
         },
         pictures: [] as Array<{ source: string }>,
-        attributes: [] as Array<{ id: string; value_name: string }>,
+        attributes: [] as Array<{ id: string; value_name?: string; values?: Array<{ id: string }> }>,
         shipping: {
           mode: 'me2', // Mercado Envios
           local_pick_up: false,
@@ -285,8 +285,35 @@ export class MarketplaceService {
           .slice(0, 10); // ML limita a 10 imagens
       }
 
-      // Adicionar atributos básicos
-      if (product.sku) {
+      // Adicionar atributos do ML salvos
+      if (product.mlAttributes && Object.keys(product.mlAttributes).length > 0) {
+        console.log('📦 mlAttributes do produto:', product.mlAttributes);
+        for (const [attrId, attrValue] of Object.entries(product.mlAttributes)) {
+          if (attrValue) {
+            // Se o valor é um array, assume que são valores de atributo com múltiplas seleções
+            if (Array.isArray(attrValue)) {
+              listing.attributes.push({
+                id: attrId,
+                values: attrValue.map(v => ({ id: v })),
+              });
+            } else {
+              // Caso contrário, é um valor simples
+              listing.attributes.push({
+                id: attrId,
+                value_name: String(attrValue),
+              });
+            }
+          }
+        }
+        console.log('📦 Atributos adicionados ao listing:', listing.attributes);
+      } else {
+        console.warn('⚠️ Produto sem mlAttributes!');
+      }
+
+      // Adicionar atributos básicos se não fornecidos nos mlAttributes
+      const attrIds = listing.attributes.map(a => a.id);
+
+      if (!attrIds.includes('SELLER_SKU') && product.sku) {
         listing.attributes.push({
           id: 'SELLER_SKU',
           value_name: product.sku,
@@ -294,31 +321,35 @@ export class MarketplaceService {
       }
 
       // Adicionar marca (obrigatório para algumas categorias)
-      if (product.brand) {
-        listing.attributes.push({
-          id: 'BRAND',
-          value_name: product.brand,
-        });
-      } else {
-        // Valor padrão se não informado
-        listing.attributes.push({
-          id: 'BRAND',
-          value_name: 'Genérico',
-        });
+      if (!attrIds.includes('BRAND')) {
+        if (product.brand) {
+          listing.attributes.push({
+            id: 'BRAND',
+            value_name: product.brand,
+          });
+        } else {
+          // Valor padrão se não informado
+          listing.attributes.push({
+            id: 'BRAND',
+            value_name: 'Genérico',
+          });
+        }
       }
 
       // Adicionar modelo (obrigatório para algumas categorias)
-      if (product.model) {
-        listing.attributes.push({
-          id: 'MODEL',
-          value_name: product.model,
-        });
-      } else {
-        // Valor padrão se não informado
-        listing.attributes.push({
-          id: 'MODEL',
-          value_name: product.sku || 'Padrão',
-        });
+      if (!attrIds.includes('MODEL')) {
+        if (product.model) {
+          listing.attributes.push({
+            id: 'MODEL',
+            value_name: product.model,
+          });
+        } else {
+          // Valor padrão se não informado
+          listing.attributes.push({
+            id: 'MODEL',
+            value_name: product.sku || 'Padrão',
+          });
+        }
       }
 
       const response = await fetch('https://api.mercadolibre.com/items', {
@@ -341,7 +372,18 @@ export class MarketplaceService {
           errorMessage += `: ${responseData.message}`;
         }
         if (responseData.cause && responseData.cause.length > 0) {
-          errorMessage += ` - ${responseData.cause.map((c: any) => c.message).join(', ')}`;
+          const causes = responseData.cause.map((c: any) => c.message).join(', ');
+          errorMessage += ` - ${causes}`;
+          
+          // Verificar se faltam campos obrigatórios
+          const missingRequired = responseData.cause.filter((c: any) => 
+            c.code === 'item.attribute.missing_catalog_required'
+          );
+          
+          if (missingRequired.length > 0) {
+            console.warn('⚠️ Campos obrigatórios faltando:', missingRequired.map((c: any) => c.message));
+            errorMessage += '\n\n💡 Dica: Preencha TODOS os campos obrigatórios ao criar o produto, incluindo Cor, Marca, Modelo, etc.';
+          }
         }
         
         throw new HttpException(errorMessage, HttpStatus.BAD_REQUEST);
@@ -371,12 +413,12 @@ export class MarketplaceService {
   /**
    * Buscar categorias principais do Mercado Livre Brasil
    */
-  async getMercadoLivreCategories() {
+  async getMercadoLivreCategories(accessToken: string) {
     try {
       console.log('🔍 Buscando categorias do ML...');
       const response = await fetch('https://api.mercadolibre.com/sites/MLB/categories', {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Authorization': `Bearer ${accessToken}`,
           'Accept': 'application/json',
         },
       });
@@ -417,11 +459,11 @@ export class MarketplaceService {
   /**
    * Buscar subcategorias de uma categoria específica do ML
    */
-  async getMercadoLivreSubcategories(categoryId: string) {
+  async getMercadoLivreSubcategories(categoryId: string, accessToken: string) {
     try {
       const response = await fetch(`https://api.mercadolibre.com/categories/${categoryId}`, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Authorization': `Bearer ${accessToken}`,
           'Accept': 'application/json',
         },
       });
@@ -461,5 +503,81 @@ export class MarketplaceService {
       );
     }
   }
-}
 
+  /**
+   * Buscar atributos de uma categoria específica do ML
+   */
+  async getMercadoLivreCategoryAttributes(categoryId: string, accessToken: string) {
+    try {
+      const response = await fetch(`https://api.mercadolibre.com/categories/${categoryId}/attributes`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Accept': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new HttpException(
+          'Erro ao buscar atributos da categoria',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const attributes = await response.json();
+      
+      // Retornar atributos formatados
+      return attributes.map((attr: any) => ({
+        id: attr.id,
+        name: attr.name,
+        value_type: attr.value_type,
+        values: attr.values || [],
+        tags: attr.tags || {},
+      }));
+    } catch (error) {
+      console.error('❌ Erro ao buscar atributos ML:', error);
+      
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      
+      throw new HttpException(
+        'Erro ao buscar atributos da categoria',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Construir título otimizado para o ML com brand, modelo e características
+   */
+  private buildProductTitle(product: any): string {
+    const parts: string[] = [];
+    
+    // Adicionar brand (do mlAttributes ou do campo brand)
+    const brand = product.mlAttributes?.BRAND || product.brand;
+    if (brand && brand !== 'Genérico') {
+      parts.push(brand);
+    }
+    
+    // Adicionar nome do produto
+    parts.push(product.name);
+    
+    // Adicionar modelo (do mlAttributes ou do campo model)
+    const model = product.mlAttributes?.MODEL || product.model;
+    if (model) {
+      parts.push(model);
+    }
+    
+    // Adicionar cor se disponível
+    const color = product.mlAttributes?.COLOR;
+    if (color) {
+      parts.push(color);
+    }
+    
+    // Juntar e limitar a 60 caracteres
+    const title = parts.join(' ').substring(0, 60);
+    console.log('📝 Título gerado:', title);
+    
+    return title;
+  }
+}

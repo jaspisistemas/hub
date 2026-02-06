@@ -1,8 +1,10 @@
-import { Controller, Post, Body, Get, Param, Patch } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Patch, UseGuards, Request } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('orders')
+@UseGuards(JwtAuthGuard)
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
@@ -12,8 +14,8 @@ export class OrdersController {
   }
 
   @Get()
-  async findAll() {
-    return this.ordersService.listOrders();
+  async findAll(@Request() req: any) {
+    return this.ordersService.listOrdersByUser(req.user.id);
   }
 
   @Get(':id')

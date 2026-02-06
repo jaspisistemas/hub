@@ -33,12 +33,17 @@ import {
   Link as LinkIcon,
 } from '@mui/icons-material';
 import { storesService, Store } from '../../services/storesService';
+import PageHeader from '../../components/PageHeader';
+import StatusBadge from '../../components/StatusBadge';
+import EmptyState from '../../components/EmptyState';
 
 export default function StoresPage() {
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
+  const [openErrorDialog, setOpenErrorDialog] = useState(false);
+  const [errorDialogMessage, setErrorDialogMessage] = useState('');
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
@@ -61,8 +66,19 @@ export default function StoresPage() {
       setNotification(`✅ Mercado Livre conectado com sucesso! Loja ID: ${storeId}`);
       // Limpar URL
       window.history.replaceState({}, '', '/lojas');
+      // Recarregar stores
+      loadStores();
     } else if (mlAuth === 'error') {
-      setError(`❌ Erro ao conectar Mercado Livre: ${reason || 'Desconhecido'}`);
+      let errorMessage = '❌ Erro ao conectar Mercado Livre';
+      
+      if (reason === 'store_already_connected') {
+        errorMessage = 'Esta loja do Mercado Livre já está conectada a outra conta';
+      } else if (reason) {
+        errorMessage = `Erro ao conectar Mercado Livre: ${decodeURIComponent(reason)}`;
+      }
+      
+      setErrorDialogMessage(errorMessage);
+      setOpenErrorDialog(true);
       // Limpar URL
       window.history.replaceState({}, '', '/lojas');
     }
@@ -189,41 +205,37 @@ export default function StoresPage() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Box>
-          <Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5 }}>
-            Lojas Conectadas
-          </Typography>
-          <Typography variant="body2" color="textSecondary">
-            Gerenciar integrações com marketplaces
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button
-            variant="outlined"
-            startIcon={<LinkIcon />}
-            onClick={handleConnectMercadoLivre}
-            sx={{ 
-              borderColor: '#FFE600',
-              color: '#333',
-              '&:hover': { 
-                borderColor: '#FFD000',
-                bgcolor: '#FFF9E6'
-              }
-            }}
-          >
-            Conectar Mercado Livre
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<AddIcon />}
-            onClick={handleOpenCreate}
-          >
-            Conectar Loja
-          </Button>
-        </Box>
-      </Box>
+      <PageHeader 
+        title="Lojas Conectadas"
+        subtitle="Gerenciar integrações com marketplaces"
+        action={
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button
+              variant="outlined"
+              startIcon={<LinkIcon />}
+              onClick={handleConnectMercadoLivre}
+              sx={{ 
+                borderColor: '#FFE600',
+                color: '#333',
+                '&:hover': { 
+                  borderColor: '#FFD000',
+                  bgcolor: '#FFF9E6'
+                }
+              }}
+            >
+              Conectar Mercado Livre
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<AddIcon />}
+              onClick={handleOpenCreate}
+            >
+              Conectar Loja
+            </Button>
+          </Box>
+        }
+      />
 
       {error && (
         <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
@@ -231,6 +243,17 @@ export default function StoresPage() {
         </Alert>
       )}
 
+      {stores.length === 0 ? (
+        <EmptyState 
+          icon={<StorefrontIcon sx={{ fontSize: 64 }} />}
+          title="Nenhuma loja conectada"
+          description="Conecte sua primeira loja para começar a sincronizar produtos e pedidos dos marketplaces"
+          action={{
+            label: "Conectar Loja",
+            onClick: handleOpenCreate
+          }}
+        />
+      ) : (
       <Grid container spacing={3}>
         {stores.map((store) => (
           <Grid item xs={12} sm={6} md={4} key={store.id}>
@@ -260,12 +283,7 @@ export default function StoresPage() {
                 </Box>
 
                 <Box sx={{ mb: 2.5 }}>
-                  <Chip
-                    label={getStatusLabel(store.status)}
-                    color={getStatusColor(store.status) as any}
-                    size="small"
-                    variant="filled"
-                  />
+                  <StatusBadge status={store.status} size="small" />
                 </Box>
 
                 <Box sx={{ mb: 2.5 }}>
@@ -325,17 +343,53 @@ export default function StoresPage() {
           </Grid>
         ))}
       </Grid>
+      )}
 
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            {editingId ? 'Editar Loja' : 'Conectar Nova Loja'}
-          </Typography>
-          <IconButton onClick={handleCloseDialog} size="small">
+      <Dialog 
+        open={openDialog} 
+        onClose={handleCloseDialog} 
+        maxWidth="sm" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: (theme) => theme.palette.mode === 'dark' 
+              ? '0 8px 32px rgba(0, 0, 0, 0.4)'
+              : '0 8px 32px rgba(0, 0, 0, 0.12)',
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          pb: 2,
+          px: 3,
+          pt: 3,
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{
+              width: 40,
+              height: 40,
+              borderRadius: 2,
+              bgcolor: (theme) => theme.palette.mode === 'dark' 
+                ? 'rgba(66, 165, 245, 0.15)'
+                : 'rgba(66, 165, 245, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <StorefrontIcon sx={{ color: '#42A5F5', fontSize: 24 }} />
+            </Box>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              {editingId ? 'Editar Loja' : 'Conectar Nova Loja'}
+            </Typography>
+          </Box>
+          <IconButton onClick={handleCloseDialog} size="small" sx={{ color: 'text.secondary' }}>
             <CloseIcon />
           </IconButton>
         </DialogTitle>
-        <DialogContent dividers>
+        <DialogContent sx={{ px: 3, py: 3 }}>
           <Grid container spacing={2}>
             <Grid item xs={12}>
               <TextField
@@ -390,6 +444,60 @@ export default function StoresPage() {
             disabled={saving}
           >
             {saving ? <CircularProgress size={24} /> : editingId ? 'Salvar' : 'Criar'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog de Erro */}
+      <Dialog
+        open={openErrorDialog}
+        onClose={() => setOpenErrorDialog(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            p: 1,
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          textAlign: 'center',
+          pt: 3,
+        }}>
+          <Box
+            sx={{
+              width: 64,
+              height: 64,
+              borderRadius: '50%',
+              bgcolor: 'error.light',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto',
+              mb: 2,
+            }}
+          >
+            <CloseIcon sx={{ fontSize: 40, color: 'error.main' }} />
+          </Box>
+          <Typography variant="h6" fontWeight="bold">
+            Erro ao Conectar Loja
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ textAlign: 'center', pb: 2 }}>
+          <Typography variant="body1" color="text.secondary">
+            {errorDialogMessage}
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button 
+            onClick={() => setOpenErrorDialog(false)} 
+            variant="contained" 
+            color="primary"
+            fullWidth
+            size="large"
+          >
+            OK, Entendi
           </Button>
         </DialogActions>
       </Dialog>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, List, ListItem, ListItemIcon, ListItemText, Divider, Button, IconButton, Tooltip } from '@mui/material';
+import { Box, List, ListItem, ListItemIcon, ListItemText, Divider, Button, IconButton, Tooltip, useTheme } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSidebar } from '../contexts/SidebarContext';
 import {
@@ -14,6 +14,7 @@ import {
 } from '@mui/icons-material';
 
 export default function Sidebar() {
+  const theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const { isCollapsed, setIsCollapsed } = useSidebar();
@@ -36,19 +37,18 @@ export default function Sidebar() {
     <Box
       sx={{
         width: isCollapsed ? 80 : 260,
-        bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1e1e1e' : '#1a3d5c',
+        bgcolor: '#42A5F5',
         height: '100vh',
-        color: 'white',
+        color: '#ffffff',
         p: 2,
         display: 'flex',
         flexDirection: 'column',
         position: 'fixed',
         left: 0,
         top: 0,
-        borderRight: 1,
-        borderColor: 'divider',
         transition: 'width 0.3s ease',
         overflow: 'hidden',
+        boxShadow: '2px 0 8px rgba(0,0,0,0.1)',
       }}
     >
       <Box
@@ -57,6 +57,7 @@ export default function Sidebar() {
           justifyContent: 'space-between',
           alignItems: 'center',
           mb: 4,
+          mt: 1,
         }}
       >
         {!isCollapsed && (
@@ -65,10 +66,8 @@ export default function Sidebar() {
               fontSize: '1.5rem',
               fontWeight: 700,
               cursor: 'pointer',
-              background: 'linear-gradient(135deg, #0099FF 0%, #0066CC 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
+              color: '#ffffff',
+              letterSpacing: '-0.02em',
             }}
             onClick={() => navigate('/')}
           >
@@ -79,8 +78,11 @@ export default function Sidebar() {
           <IconButton
             onClick={() => setIsCollapsed(!isCollapsed)}
             sx={{
-              color: '#0099FF',
+              color: '#ffffff',
               ml: isCollapsed ? 0 : 'auto',
+              '&:hover': {
+                bgcolor: 'rgba(255, 255, 255, 0.1)',
+              },
             }}
           >
             {isCollapsed ? <MenuIcon /> : <ChevronLeftIcon />}
@@ -95,21 +97,26 @@ export default function Sidebar() {
               button
               onClick={() => navigate(item.path)}
               sx={{
-                borderRadius: 1,
+                borderRadius: 2,
                 mb: 1,
-                bgcolor: location.pathname === item.path ? 'rgba(0, 153, 255, 0.15)' : 'transparent',
-                borderLeft: location.pathname === item.path ? '3px solid #0099FF' : '3px solid transparent',
+                bgcolor: location.pathname === item.path 
+                  ? 'rgba(255, 255, 255, 0.15)'
+                  : 'transparent',
+                borderLeft: location.pathname === item.path ? '4px solid #ffffff' : '4px solid transparent',
                 transition: 'all 0.2s ease',
                 justifyContent: isCollapsed ? 'center' : 'flex-start',
                 px: isCollapsed ? 1 : 2,
+                py: 1.5,
                 '&:hover': {
-                  bgcolor: 'rgba(0, 153, 255, 0.1)',
+                  bgcolor: location.pathname === item.path 
+                    ? 'rgba(255, 255, 255, 0.2)'
+                    : 'rgba(255, 255, 255, 0.08)',
                 },
               }}
             >
               <ListItemIcon
                 sx={{
-                  color: location.pathname === item.path ? '#0099FF' : '#9db4c8',
+                  color: '#ffffff',
                   minWidth: isCollapsed ? 'auto' : 40,
                   mr: isCollapsed ? 0 : 2,
                 }}
@@ -120,9 +127,10 @@ export default function Sidebar() {
                 <ListItemText
                   primary={item.label}
                   sx={{
-                    color: location.pathname === item.path ? '#0099FF' : '#b8c9d9',
+                    color: '#ffffff',
                     '& .MuiListItemText-primary': {
                       fontWeight: location.pathname === item.path ? 600 : 500,
+                      fontSize: '0.9375rem',
                     },
                   }}
                 />
@@ -132,28 +140,32 @@ export default function Sidebar() {
         ))}
       </List>
 
-      <Divider sx={{ bgcolor: 'rgba(255,255,255,0.1)', mb: 2 }} />
+      <Divider sx={{ 
+        bgcolor: theme.palette.mode === 'dark' ? 'rgba(66, 165, 245, 0.2)' : '#BBDEFB', 
+        mb: 2 
+      }} />
 
       <Tooltip title={isCollapsed ? 'Sair' : ''} placement="right">
         <Button
           fullWidth
           variant="outlined"
-          color="inherit"
           onClick={handleLogout}
-          startIcon={<LogoutIcon />}
+          startIcon={!isCollapsed && <LogoutIcon />}
           sx={{
-            borderColor: '#557d96',
-            color: '#b8c9d9',
+            borderColor: 'rgba(255, 255, 255, 0.3)',
+            color: '#ffffff',
             textTransform: 'none',
             fontWeight: 500,
+            borderRadius: 2,
+            py: 1.5,
             justifyContent: isCollapsed ? 'center' : 'flex-start',
             '&:hover': {
-              bgcolor: 'rgba(239, 68, 68, 0.1)',
-              borderColor: '#ef4444',
-              color: '#ef4444',
+              bgcolor: 'rgba(255, 255, 255, 0.1)',
+              borderColor: '#ffffff',
             },
           }}
         >
+          {isCollapsed && <LogoutIcon />}
           {!isCollapsed && 'Sair'}
         </Button>
       </Tooltip>

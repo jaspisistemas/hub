@@ -1,34 +1,49 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Request, UseGuards } from '@nestjs/common';
 import { StoresService } from './stores.service';
 import { CreateStoreDto } from './dto/create-store.dto';
 import { UpdateStoreDto } from './dto/update-store.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('stores')
+@UseGuards(JwtAuthGuard)
 export class StoresController {
   constructor(private readonly storesService: StoresService) {}
 
   @Post()
-  create(@Body() dto: CreateStoreDto) {
+  create(@Request() req: any, @Body() dto: CreateStoreDto) {
+    dto.userId = req.user.id;
     return this.storesService.create(dto);
   }
 
   @Get()
-  findAll() {
-    return this.storesService.findAll();
+  findAll(@Request() req: any) {
+    return this.storesService.findAllByUser(req.user.id);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.storesService.findOne(id);
+  async findOne(@Request() req: any, @Param('id') id: string) {
+    const store = await this.storesService.findOne(id);
+    if (store.userId !== req.user.id) {
+      throw new Error('Acesso negado');
+    }
+    return store;
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateStoreDto) {
+  async update(@Request() req: any, @Param('id') id: string, @Body() dto: UpdateStoreDto) {
+    const store = await this.storesService.findOne(id);
+    if (store.userId !== req.user.id) {
+      throw new Error('Acesso negado');
+    }
     return this.storesService.update(id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  async remove(@Request() req: any, @Param('id') id: string) {
+    const store = await this.storesService.findOne(id);
+    if (store.userId !== req.user.id) {
+      throw new Error('Acesso negado');
+    }
     return this.storesService.remove(id);
   }
 }

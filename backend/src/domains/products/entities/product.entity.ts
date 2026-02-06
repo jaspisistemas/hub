@@ -45,6 +45,13 @@ export class Product {
   @Column({ nullable: true, length: 50 })
   marketplace?: string;
 
+  // Campos para integração com Mercado Livre
+  @Column({ nullable: true, length: 100 })
+  mlCategoryId?: string;
+
+  @Column({ type: 'jsonb', nullable: true })
+  mlAttributes?: Record<string, any>;
+
   // Chave estrangeira para Store
   @Column({ type: 'uuid', nullable: true })
   storeId?: string;

@@ -5,4 +5,5 @@ export class CreateStoreDto {
   productsCount?: number;
   ordersCount?: number;
   revenue?: number;
+  userId?: string;
 }

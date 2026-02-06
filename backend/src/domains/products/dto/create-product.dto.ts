@@ -48,4 +48,11 @@ export class CreateProductDto {
   @IsOptional()
   @IsString()
   marketplace?: string;
+
+  @IsOptional()
+  @IsString()
+  mlCategoryId?: string;
+
+  @IsOptional()
+  mlAttributes?: any;
 }

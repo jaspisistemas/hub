@@ -31,6 +31,7 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Link as LinkIcon,
+  Info as InfoIcon,
 } from '@mui/icons-material';
 import { storesService, Store } from '../../services/storesService';
 import PageHeader from '../../components/PageHeader';
@@ -72,9 +73,11 @@ export default function StoresPage() {
       let errorMessage = '❌ Erro ao conectar Mercado Livre';
       
       if (reason === 'store_already_connected') {
-        errorMessage = 'Esta loja do Mercado Livre já está conectada a outra conta';
+        errorMessage = '❌ Esta conta do Mercado Livre já está conectada em outra conta do sistema';
+      } else if (reason && reason.includes('já está conectada')) {
+        errorMessage = '⚠️ Esta conta do Mercado Livre já está conectada. Para adicionar uma nova loja, faça logout da sua conta do Mercado Livre no navegador e entre com outra conta.';
       } else if (reason) {
-        errorMessage = `Erro ao conectar Mercado Livre: ${decodeURIComponent(reason)}`;
+        errorMessage = `❌ Erro ao conectar Mercado Livre: ${decodeURIComponent(reason)}`;
       }
       
       setErrorDialogMessage(errorMessage);
@@ -209,22 +212,39 @@ export default function StoresPage() {
         title="Lojas Conectadas"
         subtitle="Gerenciar integrações com marketplaces"
         action={
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Button
-              variant="outlined"
-              startIcon={<LinkIcon />}
-              onClick={handleConnectMercadoLivre}
-              sx={{ 
-                borderColor: '#FFE600',
-                color: '#333',
-                '&:hover': { 
-                  borderColor: '#FFD000',
-                  bgcolor: '#FFF9E6'
-                }
-              }}
-            >
-              Conectar Mercado Livre
-            </Button>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Button
+                variant="outlined"
+                startIcon={<LinkIcon />}
+                onClick={handleConnectMercadoLivre}
+                sx={{ 
+                  borderColor: '#FFE600',
+                  color: '#333',
+                  '&:hover': { 
+                    borderColor: '#FFD000',
+                    bgcolor: '#FFF9E6'
+                  }
+                }}
+              >
+                Conectar Mercado Livre
+              </Button>
+              <Alert 
+                severity="info" 
+                icon={<InfoIcon fontSize="small" />}
+                sx={{ 
+                  py: 0.5,
+                  px: 2,
+                  fontSize: '0.875rem',
+                  alignItems: 'center',
+                  '& .MuiAlert-message': {
+                    padding: 0
+                  }
+                }}
+              >
+                Você será redirecionado para fazer login na conta do Mercado Livre que deseja conectar
+              </Alert>
+            </Box>
             <Button
               variant="contained"
               color="primary"

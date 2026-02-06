@@ -97,16 +97,18 @@ export class StoresService {
     if (store) {
       // Verificar se a loja pertence a outro usuário
       if (store.userId !== userId) {
-        throw new Error('Esta loja do Mercado Livre já está conectada a outra conta');
+        throw new Error('Esta conta do Mercado Livre já está conectada em outra conta do sistema');
       }
       
-      // Atualizar tokens
+      // Se pertence ao mesmo usuário, apenas atualiza os tokens
+      console.log('✅ Renovando tokens da loja já conectada:', store.name);
       await this.storesRepository.update(
         { id: store.id },
         {
           mlAccessToken: tokenData.accessToken,
           mlRefreshToken: tokenData.refreshToken,
           mlTokenExpiresAt: expiresAt,
+          status: 'active', // Reativa a loja se estava inativa
         },
       );
       return this.findOne(store.id);

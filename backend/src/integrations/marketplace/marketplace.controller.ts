@@ -216,7 +216,8 @@ export class MarketplaceController {
     console.log('✅ Redirecionando para ML com state:', userId);
     
     // URL de autorização do Mercado Livre (passando userId no state)
-    const authUrl = `https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${APP_ID}&redirect_uri=${REDIRECT_URI}&state=${userId}`;
+    // Adiciona prompt=login para forçar a seleção/login de conta toda vez
+    const authUrl = `https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${APP_ID}&redirect_uri=${REDIRECT_URI}&state=${userId}&prompt=login`;
     
     return res.redirect(authUrl);
   }

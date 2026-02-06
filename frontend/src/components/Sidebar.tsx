@@ -37,7 +37,7 @@ export default function Sidebar() {
     <Box
       sx={{
         width: isCollapsed ? 80 : 260,
-        bgcolor: '#42A5F5',
+        bgcolor: theme.palette.mode === 'dark' ? '#010409' : '#42A5F5',
         height: '100vh',
         color: '#ffffff',
         p: 2,
@@ -48,7 +48,12 @@ export default function Sidebar() {
         top: 0,
         transition: 'width 0.3s ease',
         overflow: 'hidden',
-        boxShadow: '2px 0 8px rgba(0,0,0,0.1)',
+        boxShadow: theme.palette.mode === 'dark' 
+          ? 'none'
+          : '2px 0 8px rgba(0,0,0,0.1)',
+        borderRight: theme.palette.mode === 'dark' 
+          ? '1px solid #30363d'
+          : 'none',
       }}
     >
       <Box
@@ -100,17 +105,19 @@ export default function Sidebar() {
                 borderRadius: 2,
                 mb: 1,
                 bgcolor: location.pathname === item.path 
-                  ? 'rgba(255, 255, 255, 0.15)'
+                  ? (theme) => theme.palette.mode === 'dark' ? 'rgba(88, 166, 255, 0.15)' : 'rgba(255, 255, 255, 0.1)'
                   : 'transparent',
-                borderLeft: location.pathname === item.path ? '4px solid #ffffff' : '4px solid transparent',
+                borderLeft: location.pathname === item.path 
+                  ? (theme) => theme.palette.mode === 'dark' ? '3px solid #58a6ff' : '4px solid #ffffff'
+                  : '3px solid transparent',
                 transition: 'all 0.2s ease',
                 justifyContent: isCollapsed ? 'center' : 'flex-start',
                 px: isCollapsed ? 1 : 2,
                 py: 1.5,
                 '&:hover': {
                   bgcolor: location.pathname === item.path 
-                    ? 'rgba(255, 255, 255, 0.2)'
-                    : 'rgba(255, 255, 255, 0.08)',
+                    ? (theme) => theme.palette.mode === 'dark' ? 'rgba(88, 166, 255, 0.2)' : 'rgba(255, 255, 255, 0.15)'
+                    : (theme) => theme.palette.mode === 'dark' ? 'rgba(177, 186, 196, 0.06)' : 'rgba(255, 255, 255, 0.06)',
                 },
               }}
             >
@@ -141,7 +148,7 @@ export default function Sidebar() {
       </List>
 
       <Divider sx={{ 
-        bgcolor: theme.palette.mode === 'dark' ? 'rgba(66, 165, 245, 0.2)' : '#BBDEFB', 
+        bgcolor: 'rgba(255, 255, 255, 0.1)', 
         mb: 2 
       }} />
 

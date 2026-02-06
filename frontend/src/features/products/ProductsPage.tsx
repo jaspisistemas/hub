@@ -546,7 +546,7 @@ export default function ProductsPage() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(100, 116, 139, 0.1)' : '#f3f4f6',
+                bgcolor: theme => theme.palette.mode === 'dark' ? '#0d1117' : '#f3f4f6',
                 borderRadius: 3,
               }}
             >
@@ -562,7 +562,7 @@ export default function ProductsPage() {
         ) : (
         <Table>
           <TableHead>
-            <TableRow sx={{ backgroundColor: '#f5f7fa' }}>
+            <TableRow sx={{ backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#0d1117' : '#f5f7fa' }}>
               <TableCell sx={{ fontWeight: 600, color: '#1a1a1a' }}>Imagem</TableCell>
               <TableCell sx={{ fontWeight: 600, color: '#1a1a1a' }}>Produto</TableCell>
               <TableCell sx={{ fontWeight: 600, color: '#1a1a1a' }}>SKU</TableCell>
@@ -584,7 +584,7 @@ export default function ProductsPage() {
               <TableRow
                 key={product.id}
                 sx={{
-                  '&:hover': { backgroundColor: '#f5f7fa' },
+                  '&:hover': { backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(177, 186, 196, 0.08)' : '#f5f7fa' },
                   borderBottom: '1px solid #e8eef5',
                 }}
               >
@@ -686,7 +686,7 @@ export default function ProductsPage() {
         </DialogTitle>
         
         {!editingId && (
-          <Box sx={{ px: 3, pt: 2, pb: 2, bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : '#f5f7fa' }}>
+          <Box sx={{ px: 3, pt: 2, pb: 2, bgcolor: (theme) => theme.palette.mode === 'dark' ? '#0d1117' : '#f5f7fa', borderBottom: (theme) => theme.palette.mode === 'dark' ? '1px solid #30363d' : 'none' }}>
             <Stepper activeStep={productStep} alternativeLabel>
               <Step>
                 <StepLabel>Categoria</StepLabel>
@@ -870,7 +870,7 @@ export default function ProductsPage() {
           )}
         </DialogContent>
         
-        <DialogActions sx={{ px: 3, py: 2, bgcolor: '#f5f7fa', gap: 1 }}>
+        <DialogActions sx={{ px: 3, py: 2, bgcolor: (theme) => theme.palette.mode === 'dark' ? '#0d1117' : '#f5f7fa', borderTop: (theme) => theme.palette.mode === 'dark' ? '1px solid #30363d' : 'none', gap: 1 }}>
           {!editingId && productStep === 1 && (
             <Button 
               onClick={handlePreviousProductStep} 

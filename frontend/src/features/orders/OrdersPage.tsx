@@ -512,7 +512,7 @@ export default function OrdersPage() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                bgcolor: theme.palette.mode === 'dark' ? 'rgba(100, 116, 139, 0.1)' : '#f3f4f6',
+                bgcolor: theme.palette.mode === 'dark' ? '#0d1117' : '#f3f4f6',
                 borderRadius: 3,
               }}
             >
@@ -542,7 +542,7 @@ export default function OrdersPage() {
           <>
             <Table>
               <TableHead>
-                <TableRow sx={{ bgcolor: '#f9fafb' }}>
+                <TableRow sx={{ bgcolor: (theme) => theme.palette.mode === 'dark' ? '#0d1117' : '#f9fafb' }}>
                   <TableCell sx={{ fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>ID Pedido</TableCell>
                   <TableCell sx={{ fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>Marketplace</TableCell>
                   <TableCell sx={{ fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>Status</TableCell>
@@ -560,7 +560,7 @@ export default function OrdersPage() {
                     key={o.id}
                     sx={{
                       '&:hover': { 
-                        bgcolor: '#f9fafb',
+                        bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(177, 186, 196, 0.08)' : '#f9fafb',
                         cursor: 'pointer'
                       },
                       transition: 'background-color 0.2s',
@@ -591,7 +591,7 @@ export default function OrdersPage() {
                         sx={{
                           color: '#6b7280',
                           '&:hover': {
-                            bgcolor: '#f3f4f6',
+                            bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(177, 186, 196, 0.08)' : '#f3f4f6',
                           }
                         }}
                       >

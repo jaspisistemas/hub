@@ -336,11 +336,11 @@ export default function DashboardPage() {
               sx={{ 
                 textAlign: 'center', 
                 p: 3, 
-                bgcolor: theme.palette.mode === 'dark' ? 'rgba(59, 130, 246, 0.1)' : '#f9fafb',
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(88, 166, 255, 0.1)' : '#f9fafb',
                 borderRadius: 3,
                 transition: 'all 0.3s ease',
                 '&:hover': {
-                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(59, 130, 246, 0.15)' : '#f3f4f6',
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(88, 166, 255, 0.15)' : '#f3f4f6',
                 },
               }}
             >
@@ -372,11 +372,11 @@ export default function DashboardPage() {
               sx={{ 
                 textAlign: 'center', 
                 p: 3, 
-                bgcolor: theme.palette.mode === 'dark' ? 'rgba(16, 185, 129, 0.1)' : '#f9fafb',
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(63, 185, 80, 0.1)' : '#f9fafb',
                 borderRadius: 3,
                 transition: 'all 0.3s ease',
                 '&:hover': {
-                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(16, 185, 129, 0.15)' : '#f3f4f6',
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(63, 185, 80, 0.15)' : '#f3f4f6',
                 },
               }}
             >
@@ -408,11 +408,11 @@ export default function DashboardPage() {
               sx={{ 
                 textAlign: 'center', 
                 p: 3, 
-                bgcolor: theme.palette.mode === 'dark' ? 'rgba(245, 158, 11, 0.1)' : '#f9fafb',
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(210, 153, 34, 0.1)' : '#f9fafb',
                 borderRadius: 3,
                 transition: 'all 0.3s ease',
                 '&:hover': {
-                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(245, 158, 11, 0.15)' : '#f3f4f6',
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(210, 153, 34, 0.15)' : '#f3f4f6',
                 },
               }}
             >
@@ -444,11 +444,11 @@ export default function DashboardPage() {
               sx={{ 
                 textAlign: 'center', 
                 p: 3, 
-                bgcolor: theme.palette.mode === 'dark' ? 'rgba(139, 92, 246, 0.1)' : '#f9fafb',
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(179, 146, 240, 0.1)' : '#f9fafb',
                 borderRadius: 3,
                 transition: 'all 0.3s ease',
                 '&:hover': {
-                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(139, 92, 246, 0.15)' : '#f3f4f6',
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(179, 146, 240, 0.15)' : '#f3f4f6',
                 },
               }}
             >

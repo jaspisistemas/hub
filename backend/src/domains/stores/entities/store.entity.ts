@@ -51,6 +51,12 @@ export class Store {
   @Column({ type: 'varchar', length: 100, nullable: true })
   mlUserId?: string;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  mlNickname?: string;
+
+  @Column({ type: 'bigint', nullable: true })
+  mlLastSyncAt?: number;
+
   // Chave estrangeira para User
   @Column({ type: 'uuid' })
   userId!: string;

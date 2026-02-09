@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param, Patch, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Patch, UseGuards, Request, Query } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -11,6 +11,22 @@ export class OrdersController {
   @Post()
   async create(@Body() dto: CreateOrderDto) {
     return this.ordersService.createOrder(dto);
+  }
+
+  @Get('metrics/dashboard')
+  async getDashboardMetrics(@Query('days') days: string, @Request() req: any) {
+    const daysNumber = days ? parseInt(days) : 30;
+    return this.ordersService.getDashboardMetrics(req.user.id, daysNumber);
+  }
+
+  @Get('metrics/store/:storeId')
+  async getStoreMetrics(
+    @Param('storeId') storeId: string,
+    @Query('days') days: string,
+    @Request() req: any
+  ) {
+    const daysNumber = days ? parseInt(days) : 30;
+    return this.ordersService.getStoreMetrics(storeId, req.user.id, daysNumber);
   }
 
   @Get()

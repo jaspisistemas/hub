@@ -148,13 +148,37 @@ export class MarketplaceController {
     try {
       if (!code) {
         console.error('❌ Code não fornecido no callback');
-        return res.redirect(`https://panel-joshua-norfolk-molecular.trycloudflare.com/stores?ml_auth=error&reason=no_code`);
+        const errorUrl = `https://panel-joshua-norfolk-molecular.trycloudflare.com/lojas?ml_auth=error&reason=no_code`;
+        
+        // Retornar HTML que notifica popup pai
+        return res.send(`
+          <html>
+            <body>
+              <script>
+                if (window.opener) {
+                  window.opener.location.href = '${errorUrl}';
+                  window.close();
+                } else {
+                  window.location.href = '${errorUrl}';
+                }
+              </script>
+            </body>
+          </html>
+        `);
       }
 
       console.log('🔄 Trocando code por token...');
       // Trocar code por access_token
       const tokenData = await this.marketplaceService.exchangeMercadoLivreCode(code);
       console.log('✅ Token obtido, userId:', tokenData.userId);
+      
+      // Buscar informações do usuário/loja do ML
+      console.log('🔄 Buscando informações da loja...');
+      const userData = await this.marketplaceService.getMercadoLivreUser(
+        tokenData.userId,
+        tokenData.accessToken,
+      );
+      console.log('✅ Informações da loja obtidas:', userData.nickname);
       
       // Salvar ou atualizar loja com os tokens
       console.log('🔄 Salvando loja no banco...');
@@ -174,6 +198,7 @@ export class MarketplaceController {
           refreshToken: tokenData.refreshToken,
           expiresIn: tokenData.expiresIn,
         },
+        userData.nickname, // Passar o nome da loja
       );
 
       console.log('✅ Loja ML autorizada com sucesso:', store.name, 'ID:', store.id);
@@ -181,17 +206,49 @@ export class MarketplaceController {
       // Redirecionar para o frontend com sucesso
       const redirectUrl = `https://panel-joshua-norfolk-molecular.trycloudflare.com/lojas?ml_auth=success&store_id=${store.id}`;
       console.log('🔄 Redirecionando para:', redirectUrl);
-      return res.redirect(redirectUrl);
+      
+      // Retornar HTML que notifica popup pai e depois redireciona
+      return res.send(`
+        <html>
+          <body>
+            <script>
+              if (window.opener) {
+                window.opener.location.href = '${redirectUrl}';
+                window.close();
+              } else {
+                window.location.href = '${redirectUrl}';
+              }
+            </script>
+          </body>
+        </html>
+      `);
     } catch (error) {
       console.error('❌ Erro no callback ML:', error);
       const errorMsg = error instanceof Error ? error.message : 'unknown';
       
       // Verificar se é erro de loja já conectada
+      let reason = encodeURIComponent(errorMsg);
       if (errorMsg.includes('já está conectada')) {
-        return res.redirect(`https://panel-joshua-norfolk-molecular.trycloudflare.com/lojas?ml_auth=error&reason=store_already_connected`);
+        reason = 'store_already_connected';
       }
       
-      return res.redirect(`https://panel-joshua-norfolk-molecular.trycloudflare.com/lojas?ml_auth=error&reason=${encodeURIComponent(errorMsg)}`);
+      const errorUrl = `https://panel-joshua-norfolk-molecular.trycloudflare.com/lojas?ml_auth=error&reason=${reason}`;
+      
+      // Retornar HTML que notifica popup pai
+      return res.send(`
+        <html>
+          <body>
+            <script>
+              if (window.opener) {
+                window.opener.location.href = '${errorUrl}';
+                window.close();
+              } else {
+                window.location.href = '${errorUrl}';
+              }
+            </script>
+          </body>
+        </html>
+      `);
     }
   }
 
@@ -199,8 +256,12 @@ export class MarketplaceController {
    * Iniciar processo de autorização OAuth com Mercado Livre
    */
   @Get('mercadolivre/auth')
-  async mercadoLivreAuth(@Query('userId') userId: string, @Res() res: Response) {
-    console.log('🔄 Auth ML chamado, userId recebido:', userId);
+  async mercadoLivreAuth(
+    @Query('userId') userId: string, 
+    @Query('t') timestamp: string,
+    @Res() res: Response
+  ) {
+    console.log('🔄 Auth ML chamado, userId recebido:', userId, 'timestamp:', timestamp);
     
     if (!userId) {
       console.error('❌ userId não fornecido');
@@ -215,9 +276,19 @@ export class MarketplaceController {
     
     console.log('✅ Redirecionando para ML com state:', userId);
     
-    // URL de autorização do Mercado Livre (passando userId no state)
-    // Adiciona prompt=login para forçar a seleção/login de conta toda vez
-    const authUrl = `https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${APP_ID}&redirect_uri=${REDIRECT_URI}&state=${userId}&prompt=login`;
+    // URL de autorização do Mercado Livre com parâmetros para força nova autenticação
+    // - display=popup: Força abertura em contexto de popup (novo contexto de sessão)
+    // - nonce: Token único para cada request
+    // - timestamp na URL: Evita cache do navegador
+    const nonce = timestamp || Date.now();
+    const authUrl = `https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${APP_ID}&redirect_uri=${REDIRECT_URI}&state=${userId}&display=popup&nonce=${nonce}&t=${timestamp}`;
+    
+    console.log('🔗 Enviando para:', authUrl);
+    
+    // Headers para evitar cache
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     
     return res.redirect(authUrl);
   }
@@ -250,22 +321,51 @@ export class MarketplaceController {
           console.warn(`⚠️ Loja ${store.name} sem credenciais válidas`);
           continue;
         }
+
+        // Renovar token se estiver expirado
+        let accessToken = store.mlAccessToken;
+        if (store.mlTokenExpiresAt && store.mlRefreshToken) {
+          const now = Date.now();
+          // Se expira em menos de 5 minutos, renovar agora
+          if (now > store.mlTokenExpiresAt - 5 * 60 * 1000) {
+            console.log(`🔄 Renovando token ML da loja: ${store.name}`);
+            try {
+              const tokenData = await this.marketplaceService.refreshMercadoLivreToken(store.mlRefreshToken);
+              accessToken = tokenData.accessToken;
+              
+              // Atualizar token no banco de dados
+              await this.storesService.update(store.id, {
+                mlAccessToken: tokenData.accessToken,
+                mlRefreshToken: tokenData.refreshToken,
+                mlTokenExpiresAt: Date.now() + tokenData.expiresIn * 1000,
+              });
+              console.log(`✅ Token renovado com sucesso`);
+            } catch (error) {
+              console.error(`❌ Erro ao renovar token ML: ${error.message}`);
+              continue;
+            }
+          }
+        }
         
         const products = await this.marketplaceService.syncMercadoLivreProducts(
           store.mlUserId,
-          store.mlAccessToken,
+          accessToken,
         );
 
         // Salvar ou atualizar cada produto
         for (const productData of products) {
           try {
+            // Adicionar storeId ao produto
+            productData.storeId = store.id;
+            
             // Verificar se produto já existe pelo SKU
             const existing = await this.productsService.findBySku(productData.sku);
             
             if (existing) {
               await this.productsService.update(existing.id, productData);
             } else {
-              await this.productsService.create(productData);
+              // Passar o userId da loja para criar o produto
+              await this.productsService.create(productData, store.userId);
             }
             totalProducts++;
           } catch (error) {

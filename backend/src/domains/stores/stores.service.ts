@@ -81,49 +81,64 @@ export class StoresService {
 
   /**
    * Busca ou cria uma loja para o usuário do Mercado Livre
+   * IMPORTANTE: 
+   * - Mesma conta ML (mlUserId) = ATUALIZA o registro (não cria novo)
+   * - Contas ML DIFERENTES = CRIA novo registro
+   * - Nunca sobrescreve tokens de outro usuário hub
    */
-  async findOrCreateMercadoLivreStore(mlUserId: string, userId: string, tokenData: {
-    accessToken: string;
-    refreshToken: string;
-    expiresIn: number;
-  }) {
-    // Buscar loja existente pelo mlUserId
-    let store = await this.storesRepository.findOne({
+  async findOrCreateMercadoLivreStore(
+    mlUserId: string, 
+    userId: string, 
+    tokenData: {
+      accessToken: string;
+      refreshToken: string;
+      expiresIn: number;
+    },
+    storeName?: string, // Nome (nickname) da loja no ML
+  ) {
+    // Verificar se esta conta ML já está conectada
+    const existingStore = await this.storesRepository.findOne({
       where: { mlUserId },
     });
 
-    const expiresAt = Date.now() + tokenData.expiresIn * 1000;
+    // Se outra conta hub tem esta loja → rejeita
+    if (existingStore && existingStore.userId !== userId) {
+      throw new Error(`Esta conta do Mercado Livre (${storeName || mlUserId}) já está conectada em outra conta do sistema. Desconecte em outra conta primeiro.`);
+    }
 
-    if (store) {
-      // Verificar se a loja pertence a outro usuário
-      if (store.userId !== userId) {
-        throw new Error('Esta conta do Mercado Livre já está conectada em outra conta do sistema');
-      }
+    const expiresAt = Date.now() + tokenData.expiresIn * 1000;
+    const name = storeName ? `${storeName} - ${mlUserId}` : `Loja Mercado Livre - ${mlUserId}`;
+
+    // ✅ SE MESMA CONTA ML: ATUALIZA (não cria novo)
+    if (existingStore && existingStore.userId === userId) {
+      console.log('✅ Atualizando tokens da loja já conectada:', existingStore.name);
       
-      // Se pertence ao mesmo usuário, apenas atualiza os tokens
-      console.log('✅ Renovando tokens da loja já conectada:', store.name);
       await this.storesRepository.update(
-        { id: store.id },
+        { id: existingStore.id },
         {
           mlAccessToken: tokenData.accessToken,
           mlRefreshToken: tokenData.refreshToken,
           mlTokenExpiresAt: expiresAt,
-          status: 'active', // Reativa a loja se estava inativa
+          mlNickname: storeName || existingStore.mlNickname,
+          status: 'active',
+          name,
         },
       );
-      return this.findOne(store.id);
+      return this.findOne(existingStore.id);
     }
 
-    // Criar nova loja
-    store = this.storesRepository.create({
-      name: `Loja Mercado Livre - ${mlUserId}`,
+    // ✅ SE NOVA CONTA ML: CRIA novo registro
+    console.log('✨ Criando novo registro de loja ML:', name);
+    const store = this.storesRepository.create({
+      name,
       marketplace: 'MercadoLivre',
       status: 'active',
       userId,
+      mlUserId,
+      mlNickname: storeName,
       mlAccessToken: tokenData.accessToken,
       mlRefreshToken: tokenData.refreshToken,
       mlTokenExpiresAt: expiresAt,
-      mlUserId,
     });
 
     return this.storesRepository.save(store);
@@ -135,6 +150,48 @@ export class StoresService {
   async findByMercadoLivreUserId(mlUserId: string) {
     return this.storesRepository.findOne({
       where: { mlUserId },
+    });
+  }
+
+  /**
+   * Desconecta uma loja do Mercado Livre (marca como revogada)
+   */
+  async disconnectMercadoLiveStore(storeId: string, userId: string) {
+    const store = await this.findOne(storeId);
+    
+    // Validar que o usuário é dono da loja
+    if (store.userId !== userId) {
+      throw new Error('Você não tem permissão para desconectar esta loja');
+    }
+
+    if (!store.mlUserId) {
+      throw new Error('Esta loja não está conectada ao Mercado Livre');
+    }
+
+    // Limpar tokens e marcar como inativo
+    await this.storesRepository.update(
+      { id: storeId },
+      {
+        status: 'disconnected',
+        mlAccessToken: null,
+        mlRefreshToken: null,
+        mlTokenExpiresAt: null,
+      },
+    );
+
+    return this.findOne(storeId);
+  }
+
+  /**
+   * Busca todas as lojas ML conectadas de um usuário
+   */
+  async findAllMercadoLivreStores(userId: string) {
+    return this.storesRepository.find({
+      where: { 
+        userId,
+        marketplace: 'MercadoLivre',
+      },
+      order: { createdAt: 'DESC' },
     });
   }
 }

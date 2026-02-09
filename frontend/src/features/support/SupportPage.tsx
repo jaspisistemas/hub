@@ -1,29 +1,410 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Card,
-  Divider,
+  CardContent,
   Typography,
+  Button,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Chip,
+  Alert,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Grid,
+  CircularProgress,
 } from '@mui/material';
+import {
+  Refresh as RefreshIcon,
+  Send as SendIcon,
+  QuestionAnswer as QuestionIcon,
+  Star as StarIcon,
+  Close as CloseIcon,
+} from '@mui/icons-material';
+import { supportService, Support, SupportFilters } from '../../services/supportService';
+import { storesService } from '../../services/storesService';
 import PageHeader from '../../components/PageHeader';
-import EmptyState from '../../components/EmptyState';
-import { SupportAgent as SupportIcon } from '@mui/icons-material';
 
-export default function SupportPage() {
+const SupportPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [supports, setSupports] = useState<Support[]>([]);
+  const [stores, setStores] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [filters, setFilters] = useState<SupportFilters>({});
+  const [selectedSupport, setSelectedSupport] = useState<Support | null>(null);
+  const [answerText, setAnswerText] = useState('');
+  const [answerDialogOpen, setAnswerDialogOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadSupports();
+    loadStores();
+  }, [filters]);
+
+  const loadSupports = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await supportService.getAll(filters);
+      setSupports(data);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Erro ao carregar atendimentos');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadStores = async () => {
+    try {
+      const data = await storesService.getAll();
+      setStores(data);
+    } catch (err) {
+      console.error('Erro ao carregar lojas:', err);
+    }
+  };
+
+  const handleSync = async () => {
+    if (!filters.storeId) {
+      setError('Selecione uma loja para sincronizar');
+      return;
+    }
+
+    try {
+      setSyncing(true);
+      setError(null);
+      const result = await supportService.sync(filters.storeId);
+      setSuccess(`Sincronização concluída: ${result.imported} novos, ${result.updated} atualizados`);
+      loadSupports();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Erro ao sincronizar atendimentos');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleOpenAnswerDialog = (support: Support) => {
+    setSelectedSupport(support);
+    setAnswerText('');
+    setAnswerDialogOpen(true);
+  };
+
+  const handleCloseAnswerDialog = () => {
+    setSelectedSupport(null);
+    setAnswerText('');
+    setAnswerDialogOpen(false);
+  };
+
+  const handleAnswer = async () => {
+    if (!selectedSupport || !answerText.trim()) {
+      return;
+    }
+
+    try {
+      setError(null);
+      await supportService.answer(selectedSupport.id, { answer: answerText });
+      setSuccess('Resposta enviada com sucesso!');
+      handleCloseAnswerDialog();
+      loadSupports();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Erro ao enviar resposta');
+    }
+  };
+
+  const getOriginLabel = (origin: string) => {
+    const labels: Record<string, string> = {
+      mercado_livre: 'Mercado Livre',
+      shopee: 'Shopee',
+      amazon: 'Amazon',
+      outros: 'Outros',
+    };
+    return labels[origin] || origin;
+  };
+
+  const getTypeIcon = (type: string) => {
+    return type === 'pergunta' ? <QuestionIcon /> : <StarIcon />;
+  };
+
+  const getTypeLabel = (type: string) => {
+    return type === 'pergunta' ? 'Pergunta' : 'Avaliação';
+  };
+
+  const getStatusColor = (status: string) => {
+    const colors: Record<string, 'default' | 'success' | 'warning'> = {
+      nao_respondido: 'warning',
+      respondido: 'success',
+      fechado: 'default',
+    };
+    return colors[status] || 'default';
+  };
+
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      nao_respondido: 'Não Respondido',
+      respondido: 'Respondido',
+      fechado: 'Fechado',
+    };
+    return labels[status] || status;
+  };
+
   return (
     <Box sx={{ p: 3 }}>
-      <PageHeader 
-        title="Atendimento"
-        subtitle="Gerencie todos os atendimentos dos seus marketplaces"
+      <PageHeader
+        title="Atendimentos"
+        subtitle="Gerencie perguntas e avaliações dos marketplaces"
       />
-      
-      <Card sx={{ borderRadius: 3, p: 4 }}>
-        <EmptyState 
-          icon={<SupportIcon sx={{ fontSize: 64 }} />}
-          title="Em Desenvolvimento"
-          description="A funcionalidade de Atendimento está sendo desenvolvida e estará disponível em breve. Em breve você poderá gerenciar todos os atendimentos dos seus marketplaces em um só lugar."
-        />
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
+      {success && (
+        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess(null)}>
+          {success}
+        </Alert>
+      )}
+
+      {/* Filtros */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} sm={6} md={3}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Loja</InputLabel>
+                <Select
+                  value={filters.storeId || ''}
+                  label="Loja"
+                  onChange={(e) => setFilters({ ...filters, storeId: e.target.value })}
+                >
+                  <MenuItem value="">Todas</MenuItem>
+                  {stores.map((store) => (
+                    <MenuItem key={store.id} value={store.id}>
+                      {store.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={2}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Tipo</InputLabel>
+                <Select
+                  value={filters.type || ''}
+                  label="Tipo"
+                  onChange={(e) => setFilters({ ...filters, type: e.target.value })}
+                >
+                  <MenuItem value="">Todos</MenuItem>
+                  <MenuItem value="pergunta">Pergunta</MenuItem>
+                  <MenuItem value="avaliacao">Avaliação</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={2}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={filters.status || ''}
+                  label="Status"
+                  onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                >
+                  <MenuItem value="">Todos</MenuItem>
+                  <MenuItem value="nao_respondido">Não Respondido</MenuItem>
+                  <MenuItem value="respondido">Respondido</MenuItem>
+                  <MenuItem value="fechado">Fechado</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={3}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Buscar"
+                placeholder="Buscar na pergunta..."
+                value={filters.search || ''}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={12} md={2}>
+              <Button
+                fullWidth
+                variant="outlined"
+                startIcon={syncing ? <CircularProgress size={20} /> : <RefreshIcon />}
+                onClick={handleSync}
+                disabled={syncing || !filters.storeId}
+              >
+                Sincronizar
+              </Button>
+            </Grid>
+          </Grid>
+        </CardContent>
       </Card>
+
+      {/* Lista de Atendimentos */}
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+          <CircularProgress />
+        </Box>
+      ) : supports.length === 0 ? (
+        <Card>
+          <CardContent>
+            <Typography variant="body1" color="text.secondary" align="center">
+              Nenhum atendimento encontrado
+            </Typography>
+          </CardContent>
+        </Card>
+      ) : (
+        <Grid container spacing={2}>
+          {supports.map((support) => (
+            <Grid item xs={12} key={support.id}>
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {getTypeIcon(support.type)}
+                      <Chip
+                        label={getTypeLabel(support.type)}
+                        size="small"
+                        color="primary"
+                        variant="outlined"
+                      />
+                    </Box>
+                    <Chip
+                      label={getOriginLabel(support.origin)}
+                      size="small"
+                      color="info"
+                    />
+                    <Chip
+                      label={getStatusLabel(support.status)}
+                      size="small"
+                      color={getStatusColor(support.status)}
+                    />
+                    {support.store && (
+                      <Chip
+                        label={support.store.name}
+                        size="small"
+                        variant="outlined"
+                      />
+                    )}
+                    <Box sx={{ flex: 1 }} />
+                    <Typography variant="caption" color="text.secondary">
+                      {new Date(support.questionDate).toLocaleString('pt-BR')}
+                    </Typography>
+                  </Box>
+
+                  {support.productTitle && (
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                      Produto: {support.productTitle}
+                    </Typography>
+                  )}
+
+                  <Typography variant="body2" gutterBottom>
+                    <strong>{support.customerName}:</strong> {support.question}
+                  </Typography>
+
+                  {support.answer && (
+                    <Box
+                      sx={{
+                        mt: 2,
+                        p: 2,
+                        bgcolor: 'action.hover',
+                        borderRadius: 1,
+                      }}
+                    >
+                      <Typography variant="body2" color="success.main">
+                        <strong>Sua resposta:</strong> {support.answer}
+                      </Typography>
+                      {support.answerDate && (
+                        <Typography variant="caption" color="text.secondary">
+                          Respondido em {new Date(support.answerDate).toLocaleString('pt-BR')}
+                        </Typography>
+                      )}
+                    </Box>
+                  )}
+
+                  {support.canAnswer && support.status === 'nao_respondido' && (
+                    <Box sx={{ mt: 2 }}>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        startIcon={<SendIcon />}
+                        onClick={() => handleOpenAnswerDialog(support)}
+                      >
+                        Responder
+                      </Button>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      )}
+
+      {/* Dialog de Resposta */}
+      <Dialog
+        open={answerDialogOpen}
+        onClose={handleCloseAnswerDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          Responder Pergunta
+          <IconButton
+            onClick={handleCloseAnswerDialog}
+            sx={{ position: 'absolute', right: 8, top: 8 }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          {selectedSupport && (
+            <>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                <strong>Cliente:</strong> {selectedSupport.customerName}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom sx={{ mb: 2 }}>
+                <strong>Pergunta:</strong> {selectedSupport.question}
+              </Typography>
+              <TextField
+                fullWidth
+                multiline
+                rows={4}
+                label="Sua Resposta"
+                value={answerText}
+                onChange={(e) => setAnswerText(e.target.value)}
+                placeholder="Digite sua resposta..."
+              />
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseAnswerDialog}>Cancelar</Button>
+          <Button
+            variant="contained"
+            onClick={handleAnswer}
+            disabled={!answerText.trim()}
+            startIcon={<SendIcon />}
+          >
+            Enviar Resposta
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
-}
+};
+
+export default SupportPage;

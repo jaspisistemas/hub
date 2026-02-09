@@ -172,6 +172,20 @@ export default function StoresPage() {
     }
   };
 
+  const handleDisconnectMercadoLivre = async (id: string, storeName: string) => {
+    if (!window.confirm(`Tem certeza que deseja desconectar ${storeName}? Você terá que reconectar para sincronizar produtos e pedidos.`)) {
+      return;
+    }
+
+    try {
+      await storesService.disconnectMercadoLivre(id);
+      setNotification(`${storeName} desconectada com sucesso!`);
+      await loadStores();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao desconectar loja');
+    }
+  };
+
   const handleConnectMercadoLivre = () => {
     storesService.connectMercadoLivre();
   };
@@ -184,6 +198,8 @@ export default function StoresPage() {
         return 'error';
       case 'pending':
         return 'warning';
+      case 'disconnected':
+        return 'error';
       default:
         return 'default';
     }
@@ -211,50 +227,6 @@ export default function StoresPage() {
       <PageHeader 
         title="Lojas Conectadas"
         subtitle="Gerenciar integrações com marketplaces"
-        action={
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Button
-                variant="outlined"
-                startIcon={<LinkIcon />}
-                onClick={handleConnectMercadoLivre}
-                sx={{ 
-                  borderColor: '#FFE600',
-                  color: '#333',
-                  '&:hover': { 
-                    borderColor: '#FFD000',
-                    bgcolor: '#FFF9E6'
-                  }
-                }}
-              >
-                Conectar Mercado Livre
-              </Button>
-              <Alert 
-                severity="info" 
-                icon={<InfoIcon fontSize="small" />}
-                sx={{ 
-                  py: 0.5,
-                  px: 2,
-                  fontSize: '0.875rem',
-                  alignItems: 'center',
-                  '& .MuiAlert-message': {
-                    padding: 0
-                  }
-                }}
-              >
-                Você será redirecionado para fazer login na conta do Mercado Livre que deseja conectar
-              </Alert>
-            </Box>
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<AddIcon />}
-              onClick={handleOpenCreate}
-            >
-              Conectar Loja
-            </Button>
-          </Box>
-        }
       />
 
       {error && (
@@ -268,10 +240,6 @@ export default function StoresPage() {
           icon={<StorefrontIcon sx={{ fontSize: 64 }} />}
           title="Nenhuma loja conectada"
           description="Conecte sua primeira loja para começar a sincronizar produtos e pedidos dos marketplaces"
-          action={{
-            label: "Conectar Loja",
-            onClick: handleOpenCreate
-          }}
         />
       ) : (
       <Grid container spacing={3}>
@@ -353,7 +321,15 @@ export default function StoresPage() {
                   <IconButton
                     size="small"
                     color="error"
-                    onClick={() => handleDeleteStore(store.id)}
+                    onClick={() => {
+                      const isMLActive = store.marketplace === 'MercadoLivre' && store.status === 'active';
+                      if (isMLActive) {
+                        handleDisconnectMercadoLivre(store.id, store.name);
+                      } else {
+                        handleDeleteStore(store.id);
+                      }
+                    }}
+                    title={store.marketplace === 'MercadoLivre' && store.status === 'active' ? 'Desconectar' : 'Deletar'}
                   >
                     <DeleteIcon />
                   </IconButton>
@@ -364,6 +340,46 @@ export default function StoresPage() {
         ))}
       </Grid>
       )}
+
+      {/* Floating Action Button - Mercado Livre (sempre visível) */}
+      <Button
+        variant="contained"
+        onClick={handleConnectMercadoLivre}
+        sx={{
+          position: 'fixed',
+          bottom: 24,
+          right: 24,
+          bgcolor: '#FFE600',
+          color: '#333',
+          fontWeight: 600,
+          py: 1.5,
+          px: 3,
+          borderRadius: 3,
+          opacity: 0.9,
+          boxShadow: '0 4px 12px rgba(255, 230, 0, 0.3)',
+          '&:hover': {
+            bgcolor: '#FFD000',
+            opacity: 1,
+            boxShadow: '0 6px 16px rgba(255, 230, 0, 0.4)',
+          },
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1.5,
+          textTransform: 'none',
+          fontSize: '1rem',
+        }}
+      >
+        Conecte sua loja
+        <Box
+          component="img"
+          src="https://http2.mlstatic.com/frontend-assets/ml-web-navigation/ui-navigation/6.6.73/mercadolibre/logo_large_25years_v2.png"
+          alt="Mercado Livre"
+          sx={{
+            height: 24,
+            width: 'auto',
+          }}
+        />
+      </Button>
 
       <Dialog 
         open={openDialog} 

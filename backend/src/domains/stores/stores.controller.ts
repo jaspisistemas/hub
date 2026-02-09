@@ -46,4 +46,24 @@ export class StoresController {
     }
     return this.storesService.remove(id);
   }
+
+  /**
+   * Desconectar uma loja do Mercado Livre
+   */
+  @Post(':id/disconnect')
+  async disconnectMercadoLivre(@Request() req: any, @Param('id') id: string) {
+    const store = await this.storesService.findOne(id);
+    if (store.userId !== req.user.id) {
+      throw new Error('Acesso negado');
+    }
+    return this.storesService.disconnectMercadoLiveStore(id, req.user.id);
+  }
+
+  /**
+   * Listar todas as lojas Mercado Livre conectadas do usuário
+   */
+  @Get('marketplace/mercadolivre')
+  findAllMercadoLivre(@Request() req: any) {
+    return this.storesService.findAllMercadoLivreStores(req.user.id);
+  }
 }

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, MoreThan } from 'typeorm';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { OrderCreatedEvent, OrderIntegrationFailedEvent } from './events';
@@ -116,5 +116,196 @@ export class OrdersService {
 
   private handleIntegrationFailure(event: OrderIntegrationFailedEvent) {
     console.warn('[event] order.integration_failed', event);
+  }
+
+  async getDashboardMetrics(userId: string, days: number = 30) {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    // Buscar todos os pedidos do período
+    const orders = await this.ordersRepository.find({
+      where: {
+        createdAt: MoreThan(startDate),
+      },
+      relations: ['store'],
+    });
+
+    // Calcular overview
+    const totalRevenue = orders.reduce((sum, order) => sum + Number(order.total), 0);
+    const totalOrders = orders.length;
+    const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+    const uniqueStores = new Set(orders.map(o => o.store?.id).filter(Boolean));
+    const totalStores = uniqueStores.size;
+
+    // Vendas por período (por dia)
+    const salesByPeriod = this.calculateSalesByPeriod(orders, days);
+
+    // Pedidos por status
+    const ordersByStatus = this.calculateOrdersByStatus(orders);
+
+    // Vendas por loja
+    const salesByStore = await this.calculateSalesByStore(orders);
+
+    // Pedidos recentes (últimos 10)
+    const recentOrders = orders
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 10)
+      .map(order => ({
+        id: order.id,
+        externalId: order.externalId,
+        customerName: order.customerName || 'Cliente não informado',
+        marketplace: order.marketplace,
+        status: order.status,
+        total: Number(order.total),
+        createdAt: order.createdAt,
+      }));
+
+    return {
+      overview: {
+        totalRevenue,
+        totalOrders,
+        averageOrderValue,
+        totalStores,
+      },
+      salesByPeriod,
+      ordersByStatus,
+      salesByStore,
+      recentOrders,
+    };
+  }
+
+  async getStoreMetrics(storeId: string, userId: string, days: number = 30) {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const orders = await this.ordersRepository.find({
+      where: {
+        store: { id: storeId },
+        createdAt: MoreThan(startDate),
+      },
+      relations: ['items', 'items.product'],
+    });
+
+    const totalRevenue = orders.reduce((sum, order) => sum + Number(order.total), 0);
+    const totalOrders = orders.length;
+    const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+    // Contar produtos únicos
+    const uniqueProducts = new Set();
+    orders.forEach(order => {
+      order.items?.forEach(item => {
+        if (item.product?.id) uniqueProducts.add(item.product.id);
+      });
+    });
+    const totalProducts = uniqueProducts.size;
+
+    // Vendas por dia
+    const salesByDay = this.calculateSalesByPeriod(orders, days);
+
+    // Top produtos
+    const productSales = new Map<string, { id: string; name: string; sales: number; revenue: number }>();
+    orders.forEach(order => {
+      order.items?.forEach(item => {
+        if (item.product) {
+          const existing = productSales.get(item.product.id) || {
+            id: item.product.id,
+            name: item.product.name,
+            sales: 0,
+            revenue: 0,
+          };
+          existing.sales += item.quantity;
+          existing.revenue += Number(item.unitPrice) * item.quantity;
+          productSales.set(item.product.id, existing);
+        }
+      });
+    });
+
+    const topProducts = Array.from(productSales.values())
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5);
+
+    return {
+      totalRevenue,
+      totalOrders,
+      averageOrderValue,
+      totalProducts,
+      salesByDay,
+      topProducts,
+    };
+  }
+
+  private calculateSalesByPeriod(orders: Order[], days: number) {
+    const salesMap = new Map<string, { revenue: number; orders: number }>();
+    
+    // Inicializar todos os dias com 0
+    for (let i = 0; i < days; i++) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateKey = date.toISOString().split('T')[0];
+      salesMap.set(dateKey, { revenue: 0, orders: 0 });
+    }
+
+    // Preencher com dados reais
+    orders.forEach(order => {
+      const dateKey = new Date(order.createdAt).toISOString().split('T')[0];
+      const existing = salesMap.get(dateKey);
+      if (existing) {
+        existing.revenue += Number(order.total);
+        existing.orders += 1;
+      }
+    });
+
+    // Converter para array e ordenar
+    return Array.from(salesMap.entries())
+      .map(([date, data]) => ({
+        date,
+        revenue: data.revenue,
+        orders: data.orders,
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  private calculateOrdersByStatus(orders: Order[]) {
+    const statusMap = new Map<string, number>();
+    orders.forEach(order => {
+      const count = statusMap.get(order.status) || 0;
+      statusMap.set(order.status, count + 1);
+    });
+
+    return Array.from(statusMap.entries()).map(([status, count]) => ({
+      status,
+      count,
+    }));
+  }
+
+  private async calculateSalesByStore(orders: Order[]) {
+    const storeMap = new Map<string, {
+      storeId: string;
+      storeName: string;
+      marketplace: string;
+      revenue: number;
+      orders: number;
+      products: number;
+      lastSync: Date | null;
+    }>();
+
+    orders.forEach(order => {
+      if (order.store) {
+        const existing = storeMap.get(order.store.id) || {
+          storeId: order.store.id,
+          storeName: order.store.name,
+          marketplace: order.store.marketplace,
+          revenue: 0,
+          orders: 0,
+          products: 0,
+          lastSync: order.store.lastSyncAt,
+        };
+        existing.revenue += Number(order.total);
+        existing.orders += 1;
+        storeMap.set(order.store.id, existing);
+      }
+    });
+
+    return Array.from(storeMap.values());
   }
 }

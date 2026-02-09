@@ -1,6 +1,7 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus, Inject, forwardRef } from '@nestjs/common';
 import { MercadoLivreAdapter } from './adapters/mercadolivre.adapter';
 import { ShopeeAdapter } from './adapters/shopee.adapter';
+import { StoresService } from '../../domains/stores/stores.service';
 
 /**
  * MarketplaceService: orquestra o mapeamento dos adapters e enfileira o job para processamento.
@@ -11,6 +12,8 @@ export class MarketplaceService {
   constructor(
     private readonly mlAdapter: MercadoLivreAdapter,
     private readonly shopeeAdapter: ShopeeAdapter,
+    @Inject(forwardRef(() => StoresService))
+    private readonly storesService: StoresService,
   ) {}
 
   // Exemplo: receber payload bruto do webhook e criar um job na fila
@@ -167,6 +170,46 @@ export class MarketplaceService {
       console.error('❌ Erro ao buscar pedido do ML:', error);
       throw new HttpException(
         'Erro ao buscar pedido do Mercado Livre',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Busca informações do usuário/loja do Mercado Livre
+   */
+  async getMercadoLivreUser(userId: string, accessToken: string) {
+    try {
+      const response = await fetch(
+        `https://api.mercadolibre.com/users/${userId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error(`❌ Erro ao buscar usuário ${userId} do ML:`, error);
+        throw new HttpException(
+          'Erro ao buscar informações do usuário do Mercado Livre',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const userData = await response.json();
+      return {
+        id: userData.id,
+        nickname: userData.nickname,
+        firstName: userData.first_name,
+        lastName: userData.last_name,
+        email: userData.email,
+      };
+    } catch (error) {
+      console.error('❌ Erro ao buscar usuário do ML:', error);
+      throw new HttpException(
+        'Erro ao buscar informações do usuário do Mercado Livre',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -579,5 +622,117 @@ export class MarketplaceService {
     console.log('📝 Título gerado:', title);
     
     return title;
+  }
+
+  /**
+   * Busca perguntas não respondidas do Mercado Livre
+   */
+  async getQuestions(storeId: string) {
+    // Buscar a store para obter o accessToken
+    const Store = await this.getStoreEntity(storeId);
+    
+    if (!Store?.mlAccessToken) {
+      throw new HttpException(
+        'Loja não possui token de acesso ao Mercado Livre',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    try {
+      // Buscar perguntas dos últimos 30 dias
+      const response = await fetch(
+        `https://api.mercadolibre.com/questions/search?seller_id=${Store.mlUserId}&status=UNANSWERED&limit=50`,
+        {
+          headers: {
+            'Authorization': `Bearer ${Store.mlAccessToken}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error('❌ Erro ao buscar perguntas do ML:', error);
+        throw new HttpException(
+          'Erro ao buscar perguntas do Mercado Livre',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const data = await response.json();
+      
+      return (data.questions || []).map((q: any) => ({
+        id: q.id.toString(),
+        item_id: q.item_id,
+        item_title: q.item?.title || 'Produto não identificado',
+        text: q.text,
+        status: q.status,
+        date_created: q.date_created,
+        from: q.from,
+        answer: q.answer,
+        origin: 'mercado_livre',
+        type: 'pergunta',
+      }));
+    } catch (error) {
+      console.error('❌ Erro ao buscar perguntas do ML:', error);
+      throw new HttpException(
+        'Erro ao buscar perguntas do Mercado Livre',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Responde uma pergunta no Mercado Livre
+   */
+  async answerQuestion(storeId: string, questionId: string, answer: string) {
+    const Store = await this.getStoreEntity(storeId);
+    
+    if (!Store?.mlAccessToken) {
+      throw new HttpException(
+        'Loja não possui token de acesso ao Mercado Livre',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    try {
+      const response = await fetch(
+        `https://api.mercadolibre.com/answers`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${Store.mlAccessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            question_id: parseInt(questionId),
+            text: answer,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error('❌ Erro ao responder pergunta no ML:', error);
+        throw new HttpException(
+          'Erro ao responder pergunta no Mercado Livre',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('❌ Erro ao responder pergunta no ML:', error);
+      throw new HttpException(
+        'Erro ao responder pergunta no Mercado Livre',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Método auxiliar para buscar a store
+   */
+  private async getStoreEntity(storeId: string) {
+    return await this.storesService.findOne(storeId);
   }
 }

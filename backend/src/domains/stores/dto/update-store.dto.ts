@@ -5,4 +5,7 @@ export class UpdateStoreDto {
   productsCount?: number;
   ordersCount?: number;
   revenue?: number;
+  mlAccessToken?: string;
+  mlRefreshToken?: string;
+  mlTokenExpiresAt?: number;
 }

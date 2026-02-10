@@ -50,9 +50,9 @@ export class SupportSyncSchedule {
               `✅ Loja ${store.name}: ${result.imported} importadas, ${result.updated} atualizadas`,
             );
           }
-        } catch (error) {
+        } catch (error: any) {
           this.logger.error(
-            `❌ Erro ao sincronizar suporte para loja ${store.name}: ${error.message}`,
+            `❌ Erro ao sincronizar suporte para loja ${store.name}: ${error?.message || String(error)}`,
             error,
           );
         }

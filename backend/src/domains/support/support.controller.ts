@@ -13,9 +13,9 @@ import {
 import { SupportService } from './support.service';
 import { CreateSupportDto } from './dto/create-support.dto';
 import { UpdateSupportDto } from './dto/update-support.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { FilterSupportDto } from './dto/filter-support.dto';
 import { AnswerSupportDto } from './dto/answer-support.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('supports')
 @UseGuards(JwtAuthGuard)
@@ -46,7 +46,7 @@ export class SupportController {
   answer(
     @Param('id') id: string,
     @Body() answerDto: AnswerSupportDto,
-    @Request() req,
+    @Request() req: any,
   ) {
     return this.supportService.answer(id, answerDto, req.user.id);
   }

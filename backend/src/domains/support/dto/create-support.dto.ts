@@ -3,10 +3,10 @@ import { SupportOrigin, SupportType, SupportStatus } from '../entities/support.e
 
 export class CreateSupportDto {
   @IsEnum(SupportOrigin)
-  origin: SupportOrigin;
+  origin!: SupportOrigin;
 
   @IsEnum(SupportType)
-  type: SupportType;
+  type!: SupportType;
 
   @IsOptional()
   @IsString()
@@ -29,7 +29,7 @@ export class CreateSupportDto {
   customerExternalId?: string;
 
   @IsString()
-  question: string;
+  question!: string;
 
   @IsOptional()
   @IsDateString()

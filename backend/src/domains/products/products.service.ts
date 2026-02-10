@@ -15,15 +15,12 @@ export class ProductsService {
   ) {}
 
   async create(dto: CreateProductDto, userId: string) {
-    // Se o DTO já tem storeId, usar ele; caso contrário, buscar a primeira loja do usuário
-    let storeId = dto.storeId;
+    // Buscar a primeira loja do usuário
+    const store = await this.productsRepository.manager.findOne('stores', {
+      where: { userId },
+    } as any);
     
-    if (!storeId) {
-      const store = await this.productsRepository.manager.findOne('stores', {
-        where: { userId },
-      });
-      storeId = store?.id;
-    }
+    const storeId: string = (store as any)?.id;
     
     const product = this.productsRepository.create({
       ...dto,

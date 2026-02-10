@@ -13,6 +13,8 @@ async function bootstrap() {
     'http://localhost:3000',
     'http://localhost:5173',
     'https://localhost:5173',
+    'http://localhost:5174',
+    'https://localhost:5174',
   ];
 
   // Adicionar origem do ngrok se configurada
@@ -32,14 +34,30 @@ async function bootstrap() {
     cors: {
       origin: (origin, callback) => {
         // Permitir requisições sem origin (mobile, desktop apps, etc)
-        if (!origin || allowedOrigins.includes(origin)) {
+        if (!origin) {
+          callback(null, true);
+          return;
+        }
+
+        // Permitir hosts específicos
+        if (allowedOrigins.includes(origin)) {
+          callback(null, true);
+          return;
+        }
+
+        // Permitir qualquer ngrok-free.dev (já que o subdomínio muda)
+        if (origin.includes('trycloudflare.com') || origin.includes('ngrok-free.dev') || origin.includes('ngrok.io')) {
+          callback(null, true);
+          return;
+        }
+
+        // Em desenvolvimento, permitir; em produção, rejeitar
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(`⚠️ CORS permitido para origem em desenvolvimento: ${origin}`);
           callback(null, true);
         } else {
           console.warn(`⚠️ CORS bloqueado para origem: ${origin}`);
-          // Em produção, você pode rejeitar
-          // callback(new Error('Not allowed by CORS'));
-          // Por enquanto, permitir para não quebrar em desenvolvimento
-          callback(null, true);
+          callback(new Error('Not allowed by CORS'));
         }
       },
       credentials: true,

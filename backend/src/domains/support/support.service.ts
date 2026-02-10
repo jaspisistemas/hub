@@ -117,8 +117,8 @@ export class SupportService {
       support.status = SupportStatus.RESPONDIDO;
 
       return this.supportRepository.save(support);
-    } catch (error) {
-      throw new BadRequestException('Erro ao enviar resposta para o marketplace: ' + error.message);
+    } catch (error: any) {
+      throw new BadRequestException('Erro ao enviar resposta para o marketplace: ' + (error?.message || String(error)));
     }
   }
 
@@ -137,7 +137,7 @@ export class SupportService {
       .andWhere('questionDate < :thirtyDaysAgo', { thirtyDaysAgo })
       .execute();
     
-    if (deletedCount.affected > 0) {
+    if (deletedCount?.affected && deletedCount.affected > 0) {
       console.log(`🗑️  ${deletedCount.affected} pergunta(s) antiga(s) removida(s)`);
     }
     
@@ -153,7 +153,7 @@ export class SupportService {
     console.log(`   URL: https://seu-dominio.com/marketplace/mercadolivre/webhook`);
     console.log(`   Tópico: "messages"\n`);
     
-    const messages = []; // Não buscar mais, só via webhook
+    const messages: any[] = []; // Não buscar mais, só via webhook
     
     let imported = 0;
     let updated = 0;
@@ -200,11 +200,11 @@ export class SupportService {
           questionDate: new Date(question.date_created),
           canAnswer: question.status !== 'CLOSED' && question.status !== 'CLOSED_UNANSWERED',
           status: question.answer ? SupportStatus.RESPONDIDO : SupportStatus.NAO_RESPONDIDO,
-          answer: question.answer?.text,
-          answerDate: question.answer ? new Date(question.answer.date_created) : null,
+          answer: question.answer?.text || '',
+          answerDate: question.answer ? new Date(question.answer.date_created) : undefined,
           storeId,
           metadata: question,
-        });
+        } as any);
 
         await this.supportRepository.save(support);
         imported++;

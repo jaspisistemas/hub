@@ -24,85 +24,85 @@ export enum SupportStatus {
 @Entity('supports')
 export class Support {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({
     type: 'enum',
     enum: SupportOrigin,
     default: SupportOrigin.MERCADO_LIVRE
   })
-  origin: SupportOrigin;
+  origin!: SupportOrigin;
 
   @Column({
     type: 'enum',
     enum: SupportType,
     default: SupportType.PERGUNTA
   })
-  type: SupportType;
+  type!: SupportType;
 
   @Column({
     type: 'enum',
     enum: SupportStatus,
     default: SupportStatus.NAO_RESPONDIDO
   })
-  status: SupportStatus;
+  status!: SupportStatus;
 
   @Column({ nullable: true })
-  externalId: string; // ID do atendimento no marketplace
+  externalId!: string; // ID do atendimento no marketplace
 
   @Column({ nullable: true })
-  productExternalId: string; // ID do produto no marketplace
+  productExternalId!: string; // ID do produto no marketplace
 
   @Column({ nullable: true })
-  productTitle: string; // Título do produto/anúncio
+  productTitle!: string; // Título do produto/anúncio
 
   @Column({ nullable: true })
-  orderExternalId: string; // ID do pedido no marketplace (para mensagens de venda)
+  orderExternalId!: string; // ID do pedido no marketplace (para mensagens de venda)
 
   @Column({ nullable: true })
-  packId: string; // ID do pack de mensagens no ML
+  packId!: string; // ID do pack de mensagens no ML
 
   @Column({ nullable: true })
-  customerName: string; // Nome do cliente
+  customerName!: string; // Nome do cliente
 
   @Column({ nullable: true })
-  customerExternalId: string; // ID do cliente no marketplace
+  customerExternalId!: string; // ID do cliente no marketplace
 
   @Column('text')
-  question: string; // Pergunta ou comentário
+  question!: string; // Pergunta ou comentário
 
   @Column('text', { nullable: true })
-  answer: string; // Resposta
+  answer!: string; // Resposta
 
   @Column({ type: 'timestamp', nullable: true })
-  questionDate: Date;
+  questionDate!: Date;
 
   @Column({ type: 'timestamp', nullable: true })
-  answerDate: Date;
+  answerDate!: Date;
 
   @Column({ default: true })
-  canAnswer: boolean; // Se ainda pode responder
+  canAnswer!: boolean; // Se ainda pode responder
 
   @Column('jsonb', { nullable: true })
   metadata: any; // Dados extras do marketplace
 
   @ManyToOne(() => Store, { nullable: true })
   @JoinColumn({ name: 'storeId' })
-  store: Store;
+  store!: Store;
 
   @Column({ nullable: true })
-  storeId: string;
+  storeId!: string;
 
   @ManyToOne(() => Product, { nullable: true })
   @JoinColumn({ name: 'productId' })
-  product: Product;
+  product!: Product;
 
   @Column({ nullable: true })
-  productId: string;
+  productId!: string;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }

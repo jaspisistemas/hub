@@ -173,9 +173,9 @@ export class StoresService {
       { id: storeId },
       {
         status: 'disconnected',
-        mlAccessToken: null,
-        mlRefreshToken: null,
-        mlTokenExpiresAt: null,
+        mlAccessToken: undefined,
+        mlRefreshToken: undefined,
+        mlTokenExpiresAt: undefined,
       },
     );
 

@@ -270,39 +270,15 @@ export class OrdersService {
     const totalOrders = orders.length;
     const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-    // Contar produtos únicos
+    // Contar produtos únicos - não há relação items na Order
     const uniqueProducts = new Set();
-    orders.forEach(order => {
-      order.items?.forEach(item => {
-        if (item.product?.id) uniqueProducts.add(item.product.id);
-      });
-    });
     const totalProducts = uniqueProducts.size;
 
     // Vendas por dia
     const salesByDay = this.calculateSalesByPeriod(orders, days);
 
-    // Top produtos
-    const productSales = new Map<string, { id: string; name: string; sales: number; revenue: number }>();
-    orders.forEach(order => {
-      order.items?.forEach(item => {
-        if (item.product) {
-          const existing = productSales.get(item.product.id) || {
-            id: item.product.id,
-            name: item.product.name,
-            sales: 0,
-            revenue: 0,
-          };
-          existing.sales += item.quantity;
-          existing.revenue += Number(item.unitPrice) * item.quantity;
-          productSales.set(item.product.id, existing);
-        }
-      });
-    });
-
-    const topProducts = Array.from(productSales.values())
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 5);
+    // Top produtos - não há dados de itens nos pedidos
+    const topProducts: any[] = [];
 
     return {
       totalRevenue,
@@ -378,7 +354,7 @@ export class OrdersService {
           revenue: 0,
           orders: 0,
           products: 0,
-          lastSync: order.store.lastSyncAt,
+          lastSync: order.store.mlLastSyncAt ? new Date(order.store.mlLastSyncAt) : null,
         };
         existing.revenue += Number(order.total);
         existing.orders += 1;

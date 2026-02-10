@@ -386,8 +386,8 @@ export class MarketplaceController {
                 mlTokenExpiresAt: Date.now() + tokenData.expiresIn * 1000,
               });
               console.log(`✅ Token renovado com sucesso`);
-            } catch (error) {
-              console.error(`❌ Erro ao renovar token ML: ${error.message}`);
+            } catch (error: any) {
+              console.error(`❌ Erro ao renovar token ML: ${error?.message || String(error)}`);
               continue;
             }
           }
@@ -402,7 +402,7 @@ export class MarketplaceController {
         for (const productData of products) {
           try {
             // Adicionar storeId ao produto
-            productData.storeId = store.id;
+            (productData as any).storeId = store.id;
             
             // Verificar se produto já existe pelo SKU
             const existing = await this.productsService.findBySku(productData.sku);
@@ -482,8 +482,8 @@ export class MarketplaceController {
                 mlTokenExpiresAt: Date.now() + tokenData.expiresIn * 1000,
               });
               console.log('✅ Token renovado com sucesso');
-            } catch (error) {
-              console.error(`❌ Erro ao renovar token ML: ${error.message}`);
+            } catch (error: any) {
+              console.error(`❌ Erro ao renovar token ML: ${error?.message || String(error)}`);
               continue;
             }
           }

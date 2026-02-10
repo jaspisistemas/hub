@@ -713,8 +713,8 @@ export class MarketplaceService {
             mlTokenExpiresAt: Date.now() + tokenData.expiresIn * 1000,
           });
           console.log(`   ✅ Token renovado com sucesso`);
-        } catch (error) {
-          console.error(`   ❌ Erro ao renovar token ML: ${error.message}`);
+        } catch (error: any) {
+          console.error(`   ❌ Erro ao renovar token ML: ${error?.message || String(error)}`);
           throw new HttpException(
             'Token expirado. Por favor, reconecte a loja do Mercado Livre.',
             HttpStatus.UNAUTHORIZED,
@@ -802,8 +802,8 @@ export class MarketplaceService {
         origin: 'mercado_livre',
         type: 'pergunta',
       }));
-    } catch (error) {
-      console.error(`❌ [QUESTIONS] Erro ao buscar perguntas:`, error.message);
+    } catch (error: any) {
+      console.error(`❌ [QUESTIONS] Erro ao buscar perguntas:`, error?.message || String(error));
       
       if (error instanceof HttpException) {
         throw error;
@@ -853,8 +853,8 @@ export class MarketplaceService {
             mlTokenExpiresAt: Date.now() + tokenData.expiresIn * 1000,
           });
           console.log(`   ✅ Token renovado`);
-        } catch (error) {
-          console.error(`   ❌ Erro ao renovar token ML: ${error.message}`);
+        } catch (error: any) {
+          console.error(`   ❌ Erro ao renovar token ML: ${error?.message || String(error)}`);
           throw new HttpException(
             'Token expirado. Por favor, reconecte a loja do Mercado Livre.',
             HttpStatus.UNAUTHORIZED,
@@ -923,8 +923,8 @@ export class MarketplaceService {
       console.log(`✅ [ANSWER] Operação concluída\n`);
       
       return result;
-    } catch (error) {
-      console.error(`❌ [ANSWER] Erro ao responder pergunta:`, error.message);
+    } catch (error: any) {
+      console.error(`❌ [ANSWER] Erro ao responder pergunta:`, error?.message || String(error));
       
       if (error instanceof HttpException) {
         throw error;
@@ -974,8 +974,8 @@ export class MarketplaceService {
             mlTokenExpiresAt: Date.now() + tokenData.expiresIn * 1000,
           });
           console.log('✅ Token renovado com sucesso');
-        } catch (error) {
-          console.error(`❌ Erro ao renovar token ML: ${error.message}`);
+        } catch (error: any) {
+          console.error(`❌ Erro ao renovar token ML: ${error?.message || String(error)}`);
           throw new HttpException(
             'Token expirado. Por favor, reconecte a loja do Mercado Livre.',
             HttpStatus.UNAUTHORIZED,
@@ -1003,7 +1003,7 @@ export class MarketplaceService {
               'Authorization': `Bearer ${accessToken}`,
             },
           },
-        );
+        ) as any;
 
         if (!ordersResponse.ok) {
           const errorText = await ordersResponse.text();
@@ -1011,8 +1011,8 @@ export class MarketplaceService {
           break;
         }
 
-        const ordersData = await ordersResponse.json();
-        const orders = ordersData.results || [];
+        const ordersData: any = await ordersResponse.json();
+        const orders: any[] = ordersData.results || [];
         
         if (orders.length === 0) {
           console.log(`  ℹ️ Nenhum pedido encontrado nesta página`);
@@ -1030,13 +1030,13 @@ export class MarketplaceService {
               id: order.id,
               pack_id: order.pack_id,
               context: order.context,
-              payments: order.payments?.map(p => ({ id: p.id, pack_id: p.pack_id })),
+              payments: order.payments?.map((p: any) => ({ id: p.id, pack_id: p.pack_id })),
               messages_available: !!order.messages
             }, null, 2));
 
             // Extrair pack_id do objeto order
             // O pack_id pode estar em diferentes locais dependendo da estrutura da API
-            const packId = order.pack_id || 
+            const packId: any = order.pack_id || 
                           order.context?.flow_id ||
                           order.payments?.[0]?.pack_id ||
                           order.messages?.pack_id;
@@ -1059,7 +1059,7 @@ export class MarketplaceService {
             };
 
             // Lista de URLs para tentar - incluindo API de Claims
-            const urlsToTry = [
+            const urlsToTry: any = [
               // API de Claims (usado para mensagens de pós-venda)
               `https://api.mercadolibre.com/v1/claims/${packId}`,
               `https://api.mercadolibre.com/claims/${packId}`,
@@ -1074,7 +1074,7 @@ export class MarketplaceService {
 
             // Tentar cada URL até encontrar uma que funcione
             for (let i = 0; i < urlsToTry.length; i++) {
-              const url = urlsToTry[i];
+              const url: any = urlsToTry[i];
               console.log(`    📨 Tentativa ${i + 1}: GET ${url}`);
               
               messagesResponse = await fetch(url, { headers });
@@ -1135,7 +1135,7 @@ export class MarketplaceService {
             }
 
             console.log(`    📝 Total de ${messagesList.length} mensagens encontradas no pack`);
-            const lastMessage = messagesList[messagesList.length - 1];
+            const lastMessage: any = messagesList[messagesList.length - 1];
             
             // Filtrar: só adicionar se a última mensagem for do comprador (não do vendedor)
             if (lastMessage.from?.user_id === Store.mlUserId) {
@@ -1160,8 +1160,8 @@ export class MarketplaceService {
               lastMessageDate: lastMessage.date_created,
               origin: SupportOrigin.MERCADO_LIVRE,
             });
-          } catch (error) {
-            console.error(`  ❌ Erro ao processar pedido ${order.id}:`, error.message);
+          } catch (error: any) {
+            console.error(`  ❌ Erro ao processar pedido ${order.id}:`, error?.message || String(error));
           }
         }
 
@@ -1210,8 +1210,8 @@ export class MarketplaceService {
             mlTokenExpiresAt: Date.now() + tokenData.expiresIn * 1000,
           });
           console.log('✅ Token renovado com sucesso');
-        } catch (error) {
-          console.error(`❌ Erro ao renovar token ML: ${error.message}`);
+        } catch (error: any) {
+          console.error(`❌ Erro ao renovar token ML: ${error?.message || String(error)}`);
           throw new HttpException(
             'Token expirado. Por favor, reconecte a loja do Mercado Livre.',
             HttpStatus.UNAUTHORIZED,
@@ -1287,8 +1287,8 @@ export class MarketplaceService {
             mlRefreshToken: tokenData.refreshToken,
             mlTokenExpiresAt: Date.now() + tokenData.expiresIn * 1000,
           });
-        } catch (error) {
-          console.error(`❌ Erro ao renovar token ML: ${error.message}`);
+        } catch (error: any) {
+          console.error(`❌ Erro ao renovar token ML: ${error?.message || String(error)}`);
         }
       }
     }

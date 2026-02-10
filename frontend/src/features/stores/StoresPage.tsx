@@ -34,6 +34,8 @@ import {
   Info as InfoIcon,
 } from '@mui/icons-material';
 import { storesService, Store } from '../../services/storesService';
+import { productsService } from '../../services/productsService';
+import { ordersService } from '../../services/ordersService';
 import PageHeader from '../../components/PageHeader';
 import StatusBadge from '../../components/StatusBadge';
 import EmptyState from '../../components/EmptyState';
@@ -92,7 +94,41 @@ export default function StoresPage() {
       setLoading(true);
       setError(null);
       const data = await storesService.getAll();
-      setStores(data);
+      
+      // Buscar dados agregados (produtos, pedidos, receita) para cada loja
+      const storesWithData = await Promise.all(
+        data.map(async (store) => {
+          try {
+            const [products, orders] = await Promise.all([
+              productsService.getAll({ storeId: store.id }).catch(() => []),
+              ordersService.getAll({ storeId: store.id }).catch(() => []),
+            ]);
+            
+            // Calcular receita total dos pedidos
+            const revenue = orders.reduce((total: number, order: any) => {
+              const orderTotal = Number(order.total) || 0;
+              return total + (isNaN(orderTotal) ? 0 : orderTotal);
+            }, 0);
+            
+            return {
+              ...store,
+              productsCount: products.length || 0,
+              ordersCount: orders.length || 0,
+              revenue: isNaN(revenue) ? 0 : revenue,
+            };
+          } catch (err) {
+            console.error(`Erro ao carregar dados da loja ${store.id}:`, err);
+            return {
+              ...store,
+              productsCount: 0,
+              ordersCount: 0,
+              revenue: 0,
+            };
+          }
+        })
+      );
+      
+      setStores(storesWithData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao carregar lojas');
     } finally {
@@ -297,7 +333,11 @@ export default function StoresPage() {
                         Receita
                       </Typography>
                       <Typography sx={{ fontWeight: 600, color: '#10b981' }}>
-                        R$ {((store.revenue || 0) / 1000).toFixed(1)}k
+                        {(() => {
+                          const revenue = Number(store.revenue) || 0;
+                          if (revenue === 0) return 'R$ 0.0k';
+                          return `R$ ${(revenue / 1000).toFixed(1)}k`;
+                        })()}
                       </Typography>
                     </Box>
                   </Box>

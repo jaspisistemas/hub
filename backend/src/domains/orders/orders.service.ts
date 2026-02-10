@@ -1,11 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan } from 'typeorm';
+import { Repository, MoreThan, In, IsNull } from 'typeorm';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { OrderCreatedEvent, OrderIntegrationFailedEvent } from './events';
 import { Order } from './entities/order.entity';
 import { WebsocketGateway } from '../../infra/websocket/websocket.gateway';
+import { Store } from '../stores/entities/store.entity';
 
 /**
  * OrdersService: contém APENAS regras de negócio.
@@ -17,8 +18,16 @@ export class OrdersService {
   constructor(
     @InjectRepository(Order)
     private readonly ordersRepository: Repository<Order>,
+    @InjectRepository(Store)
+    private readonly storesRepository: Repository<Store>,
     private readonly websocketGateway: WebsocketGateway,
   ) {}
+
+  private normalizeMarketplace(value?: string) {
+    return (value || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '');
+  }
 
   async createOrder(dto: CreateOrderDto) {
     // exemplo de regra de negócio: garantir total >= 0
@@ -35,9 +44,10 @@ export class OrdersService {
     const order = this.ordersRepository.create({
       externalId: dto.externalId,
       marketplace: dto.marketplace,
-      status: 'created',
+      status: dto.raw?.status || 'created',
       total: dto.total,
       rawData: dto.raw ? JSON.stringify(dto.raw) : undefined,
+      storeId: dto.storeId,
       customerName: dto.customerName,
       customerEmail: dto.customerEmail,
       customerPhone: dto.customerPhone,
@@ -74,12 +84,48 @@ export class OrdersService {
   }
 
   async listOrdersByUser(userId: string) {
-    return this.ordersRepository
+    const stores = await this.storesRepository.find({ where: { userId } });
+    const storeIds = stores.map((s) => s.id);
+
+    const baseOrders = await this.ordersRepository
       .createQueryBuilder('order')
-      .leftJoin('order.store', 'store')
-      .where('store.userId = :userId', { userId })
+      .leftJoinAndSelect('order.store', 'store')
+      .where(storeIds.length ? 'order.storeId IN (:...storeIds)' : '1=0', { storeIds })
       .orderBy('order.createdAt', 'DESC')
       .getMany();
+
+    if (stores.length === 1) {
+      const store = stores[0];
+      const normalizedStoreMarketplace = this.normalizeMarketplace(store.marketplace);
+
+      const orphanOrders = await this.ordersRepository.find({
+        where: { storeId: IsNull() },
+        order: { createdAt: 'DESC' },
+      });
+
+      const matchedOrphans = orphanOrders.filter((order) =>
+        this.normalizeMarketplace(order.marketplace) === normalizedStoreMarketplace,
+      );
+
+      if (matchedOrphans.length) {
+        await this.ordersRepository.update(
+          { id: In(matchedOrphans.map((o) => o.id)) },
+          { storeId: store.id },
+        );
+
+        matchedOrphans.forEach((order) => {
+          order.storeId = store.id;
+          order.store = store;
+        });
+      }
+
+      const combined = [...matchedOrphans, ...baseOrders];
+      return combined.sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+    }
+
+    return baseOrders;
   }
 
   async updateOrder(id: string, dto: UpdateOrderDto) {
@@ -106,6 +152,40 @@ export class OrdersService {
     });
 
     return saved;
+  }
+
+  async upsertFromMarketplace(dto: CreateOrderDto) {
+    const existing = await this.ordersRepository.findOne({
+      where: { externalId: dto.externalId },
+    });
+
+    if (existing) {
+      const updated = Object.assign(existing, {
+        marketplace: dto.marketplace || existing.marketplace,
+        status: dto.raw?.status || existing.status,
+        total: dto.total !== undefined ? dto.total : existing.total,
+        rawData: dto.raw ? JSON.stringify(dto.raw) : existing.rawData,
+        storeId: dto.storeId || existing.storeId,
+        customerName: dto.customerName || existing.customerName,
+        customerEmail: dto.customerEmail || existing.customerEmail,
+        customerPhone: dto.customerPhone || existing.customerPhone,
+        customerCity: dto.customerCity || existing.customerCity,
+        customerState: dto.customerState || existing.customerState,
+        customerAddress: dto.customerAddress || existing.customerAddress,
+        customerZipCode: dto.customerZipCode || existing.customerZipCode,
+      });
+
+      const saved = await this.ordersRepository.save(updated);
+      this.websocketGateway.emitOrderUpdated({
+        id: saved.id,
+        status: saved.status,
+      });
+
+      return { order: saved, updated: true };
+    }
+
+    const created = await this.createOrder(dto);
+    return { order: created, updated: false };
   }
 
   private emitOrderCreated(event: OrderCreatedEvent) {

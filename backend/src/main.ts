@@ -7,45 +7,12 @@ import { join } from 'path';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { 
     cors: {
-      origin: (origin, callback) => {
-        // Aceitar localhost, cloudflare tunnels, ngrok, e sem origin (mobile/desktop)
-        const allowedOrigins = [
-          'http://localhost:5173',
-          'http://localhost:3000',
-          'http://localhost:5174',
-          'https://panel-joshua-norfolk-molecular.trycloudflare.com',
-        ];
-
-        const allowedPatterns = [
-          /localhost:\d+/,
-          /ngrok.*\.dev$/,
-          /trycloudflare\.com$/,
-        ];
-        
-        // Sem origin (mobile apps, etc) → aceitar
-        if (!origin) {
-          callback(null, true);
-          return;
-        }
-
-        // Verificar se está na lista permitida
-        if (allowedOrigins.includes(origin)) {
-          callback(null, true);
-          return;
-        }
-
-        // Verificar padrões
-        if (allowedPatterns.some(pattern => pattern.test(origin))) {
-          callback(null, true);
-          return;
-        }
-
-        console.warn(`❌ CORS: Origin bloqueado: ${origin}`);
-        callback(new Error(`CORS não permitido para: ${origin}`));
-      },
+      origin: ['*', 'https://panel-joshua-norfolk-molecular.trycloudflare.com'],
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning', 'Accept', 'X-Requested-With'],
+      exposedHeaders: ['Content-Range', 'X-Content-Range'],
+      maxAge: 86400,
     }
   });
   

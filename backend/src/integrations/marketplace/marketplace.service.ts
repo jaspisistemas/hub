@@ -2,6 +2,7 @@ import { Injectable, HttpException, HttpStatus, Inject, forwardRef } from '@nest
 import { MercadoLivreAdapter } from './adapters/mercadolivre.adapter';
 import { ShopeeAdapter } from './adapters/shopee.adapter';
 import { StoresService } from '../../domains/stores/stores.service';
+import { SupportOrigin } from '../../domains/support/entities/support.entity';
 
 /**
  * MarketplaceService: orquestra o mapeamento dos adapters e enfileira o job para processamento.
@@ -176,6 +177,54 @@ export class MarketplaceService {
   }
 
   /**
+   * Sincroniza pedidos do Mercado Livre do vendedor
+   */
+  async syncMercadoLivreOrders(mlUserId: string, accessToken: string, limit: number = 50) {
+    try {
+      const response = await fetch(
+        `https://api.mercadolibre.com/orders/search?seller=${mlUserId}&limit=${limit}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error('❌ Erro ao listar pedidos do ML:', error);
+        throw new HttpException(
+          'Erro ao listar pedidos do Mercado Livre',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const data = await response.json();
+      const results = data.results || [];
+      const orders = [];
+
+      for (const item of results) {
+        const orderId = item.id || item.order_id;
+        if (!orderId) continue;
+        try {
+          const mapped = await this.getMercadoLivreOrder(orderId.toString(), accessToken);
+          orders.push(mapped);
+        } catch (error) {
+          console.error(`❌ Erro ao buscar pedido ${orderId} do ML:`, error);
+        }
+      }
+
+      return orders;
+    } catch (error) {
+      console.error('❌ Erro ao sincronizar pedidos do ML:', error);
+      throw new HttpException(
+        'Erro ao sincronizar pedidos do Mercado Livre',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
    * Busca informações do usuário/loja do Mercado Livre
    */
   async getMercadoLivreUser(userId: string, accessToken: string) {
@@ -273,7 +322,8 @@ export class MarketplaceService {
               price: item.price,
               quantity: item.available_quantity,
               category: item.category_id,
-              imageUrl: item.pictures?.[0]?.url || null,
+              imageUrl: item.pictures?.[0]?.url || item.thumbnail || null,
+              imageUrls: item.pictures?.map((pic: any) => pic.url || pic.secure_url).filter(Boolean) || [],
               externalId: item.id,
               marketplace: 'mercadolivre',
             });
@@ -638,29 +688,76 @@ export class MarketplaceService {
       );
     }
 
-    try {
-      // Buscar perguntas dos últimos 30 dias
-      const response = await fetch(
-        `https://api.mercadolibre.com/questions/search?seller_id=${Store.mlUserId}&status=UNANSWERED&limit=50`,
-        {
-          headers: {
-            'Authorization': `Bearer ${Store.mlAccessToken}`,
-          },
-        },
-      );
+    // Renovar token se estiver expirado
+    let accessToken = Store.mlAccessToken;
+    if (Store.mlTokenExpiresAt && Store.mlRefreshToken) {
+      const now = Date.now();
+      if (now > Store.mlTokenExpiresAt - 5 * 60 * 1000) {
+        console.log(`🔄 Renovando token ML da loja: ${Store.name}`);
+        try {
+          const tokenData = await this.refreshMercadoLivreToken(Store.mlRefreshToken);
+          accessToken = tokenData.accessToken;
+          
+          await this.storesService.update(Store.id, {
+            mlAccessToken: tokenData.accessToken,
+            mlRefreshToken: tokenData.refreshToken,
+            mlTokenExpiresAt: Date.now() + tokenData.expiresIn * 1000,
+          });
+          console.log('✅ Token renovado com sucesso');
+        } catch (error) {
+          console.error(`❌ Erro ao renovar token ML: ${error.message}`);
+          throw new HttpException(
+            'Token expirado. Por favor, reconecte a loja do Mercado Livre.',
+            HttpStatus.UNAUTHORIZED,
+          );
+        }
+      }
+    }
 
-      if (!response.ok) {
-        const error = await response.text();
-        console.error('❌ Erro ao buscar perguntas do ML:', error);
-        throw new HttpException(
-          'Erro ao buscar perguntas do Mercado Livre',
-          HttpStatus.BAD_REQUEST,
+    try {
+      // Buscar perguntas dos últimos 60 dias com paginação
+      let offset = 0;
+      const limit = 50;
+      let hasMore = true;
+      const allQuestions = [];
+
+      // Buscar até 200 perguntas (4 páginas)
+      while (hasMore && offset < 200) {
+        const response = await fetch(
+          `https://api.mercadolibre.com/questions/search?seller_id=${Store.mlUserId}&status=UNANSWERED&limit=${limit}&offset=${offset}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+            },
+          },
         );
+
+        if (!response.ok) {
+          const error = await response.text();
+          console.error('❌ Erro ao buscar perguntas do ML:', error);
+          break;
+        }
+
+        const data = await response.json();
+        const questions = data.questions || [];
+        
+        if (questions.length === 0) {
+          hasMore = false;
+          break;
+        }
+
+        allQuestions.push(...questions);
+        offset += limit;
+
+        // Se retornou menos que o limite, não há mais páginas
+        if (questions.length < limit) {
+          hasMore = false;
+        }
       }
 
-      const data = await response.json();
+      console.log(`✅ Total de ${allQuestions.length} perguntas não respondidas encontradas`);
       
-      return (data.questions || []).map((q: any) => ({
+      return allQuestions.map((q: any) => ({
         id: q.id.toString(),
         item_id: q.item_id,
         item_title: q.item?.title || 'Produto não identificado',
@@ -694,13 +791,39 @@ export class MarketplaceService {
       );
     }
 
+    // Renovar token se estiver expirado
+    let accessToken = Store.mlAccessToken;
+    if (Store.mlTokenExpiresAt && Store.mlRefreshToken) {
+      const now = Date.now();
+      if (now > Store.mlTokenExpiresAt - 5 * 60 * 1000) {
+        console.log(`🔄 Renovando token ML da loja: ${Store.name}`);
+        try {
+          const tokenData = await this.refreshMercadoLivreToken(Store.mlRefreshToken);
+          accessToken = tokenData.accessToken;
+          
+          await this.storesService.update(Store.id, {
+            mlAccessToken: tokenData.accessToken,
+            mlRefreshToken: tokenData.refreshToken,
+            mlTokenExpiresAt: Date.now() + tokenData.expiresIn * 1000,
+          });
+          console.log('✅ Token renovado com sucesso');
+        } catch (error) {
+          console.error(`❌ Erro ao renovar token ML: ${error.message}`);
+          throw new HttpException(
+            'Token expirado. Por favor, reconecte a loja do Mercado Livre.',
+            HttpStatus.UNAUTHORIZED,
+          );
+        }
+      }
+    }
+
     try {
       const response = await fetch(
         `https://api.mercadolibre.com/answers`,
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${Store.mlAccessToken}`,
+            'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -734,5 +857,237 @@ export class MarketplaceService {
    */
   private async getStoreEntity(storeId: string) {
     return await this.storesService.findOne(storeId);
+  }
+
+  /**
+   * Busca mensagens de vendas (packs) dos pedidos do Mercado Livre
+   */
+  async getOrderMessages(storeId: string) {
+    const Store = await this.getStoreEntity(storeId);
+    
+    if (!Store?.mlAccessToken || !Store?.mlUserId) {
+      throw new HttpException(
+        'Loja não possui token de acesso ao Mercado Livre',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Renovar token se estiver expirado
+    let accessToken = Store.mlAccessToken;
+    if (Store.mlTokenExpiresAt && Store.mlRefreshToken) {
+      const now = Date.now();
+      if (now > Store.mlTokenExpiresAt - 5 * 60 * 1000) {
+        console.log(`🔄 Renovando token ML da loja: ${Store.name}`);
+        try {
+          const tokenData = await this.refreshMercadoLivreToken(Store.mlRefreshToken);
+          accessToken = tokenData.accessToken;
+          
+          await this.storesService.update(Store.id, {
+            mlAccessToken: tokenData.accessToken,
+            mlRefreshToken: tokenData.refreshToken,
+            mlTokenExpiresAt: Date.now() + tokenData.expiresIn * 1000,
+          });
+          console.log('✅ Token renovado com sucesso');
+        } catch (error) {
+          console.error(`❌ Erro ao renovar token ML: ${error.message}`);
+          throw new HttpException(
+            'Token expirado. Por favor, reconecte a loja do Mercado Livre.',
+            HttpStatus.UNAUTHORIZED,
+          );
+        }
+      }
+    }
+
+    try {
+      // Buscar pedidos dos últimos 60 dias (limite do ML)
+      const messages = [];
+      let offset = 0;
+      const limit = 50;
+      let hasMore = true;
+      let totalOrdersProcessed = 0;
+
+      console.log(`\n🔍 Iniciando busca de mensagens de pós-venda para loja: ${Store.name} (userId: ${Store.mlUserId})`);
+
+      // Buscar até 200 pedidos (4 páginas) para cobrir mais histórico
+      while (hasMore && offset < 200) {
+        console.log(`  📄 Buscando página ${Math.floor(offset / limit) + 1}...`);
+        
+        const ordersResponse = await fetch(
+          `https://api.mercadolibre.com/orders/search?seller=${Store.mlUserId}&limit=${limit}&offset=${offset}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+            },
+          },
+          );
+
+        if (!ordersResponse.ok) {
+          const error = await ordersResponse.text();
+          console.error('❌ Erro ao buscar pedidos do ML:', error);
+          break;
+        }
+
+        const ordersData = await ordersResponse.json();
+        const orders = ordersData.results || [];
+        
+        if (orders.length === 0) {
+          console.log(`  ℹ️ Nenhum pedido encontrado nesta página`);
+          hasMore = false;
+          break;
+        }
+
+        console.log(`  📦 Processando ${orders.length} pedidos (offset: ${offset})`);
+        
+        // Para cada pedido, buscar o pack de mensagens
+        for (const order of orders) {
+          totalOrdersProcessed++;
+          try {
+            const packResponse = await fetch(
+              `https://api.mercadolibre.com/messages/packs/${order.id}/sellers/${Store.mlUserId}`,
+              {
+                headers: {
+                  'Authorization': `Bearer ${accessToken}`,
+                },
+              },
+            );
+
+            if (packResponse.ok) {
+              const pack = await packResponse.json();
+              console.log(`    🔗 Pack encontrado para pedido ${order.id}: ${pack.id}`);
+              
+              // Buscar mensagens do pack
+              const messagesResponse = await fetch(
+                `https://api.mercadolibre.com/messages/packs/${pack.id}`,
+                {
+                  headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                  },
+                },
+              );
+
+              if (messagesResponse.ok) {
+                const messagesData = await messagesResponse.json();
+                const lastMessage = messagesData.messages?.[messagesData.messages.length - 1];
+                
+                if (lastMessage && lastMessage.from?.user_id !== Store.mlUserId) {
+                  // Só adicionar se a última mensagem for do comprador
+                  console.log(`    💬 Mensagem encontrada! Cliente: ${lastMessage.from.nickname}, Mensagem: "${lastMessage.text.substring(0, 50)}..."`);
+                  messages.push({
+                    packId: pack.id,
+                    orderId: order.id.toString(),
+                    orderTitle: order.order_items?.[0]?.item?.title || 'Pedido',
+                    customerId: lastMessage.from.user_id,
+                    customerName: lastMessage.from.nickname || 'Cliente',
+                    lastMessage: lastMessage.text,
+                    lastMessageDate: lastMessage.date_created,
+                    origin: SupportOrigin.MERCADO_LIVRE,
+                  });
+                } else {
+                  console.log(`    ✋ Pack sem mensagens do comprador (ou última mensagem foi do vendedor)`);
+                }
+              } else {
+                console.log(`    ⚠️ Erro ao buscar mensagens do pack: ${messagesResponse.status}`);
+              }
+            } else {
+              console.log(`    ⚠️ Pack não encontrado para pedido ${order.id}`);
+            }
+          } catch (error) {
+            console.error(`    ❌ Erro ao buscar mensagens do pedido ${order.id}:`, error);
+          }
+        }
+
+        offset += limit;
+        
+        // Se retornou menos que o limite, não há mais páginas
+        if (orders.length < limit) {
+          hasMore = false;
+        }
+      }
+
+      console.log(`\n✅ Total de ${messages.length} mensagens de vendas encontradas (processados ${totalOrdersProcessed} pedidos)\n`);
+      return messages;
+    } catch (error) {
+      console.error('❌ Erro ao buscar mensagens de vendas do ML:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Envia mensagem em um pack de vendas do Mercado Livre
+   */
+  async sendOrderMessage(storeId: string, packId: string, message: string) {
+    const Store = await this.getStoreEntity(storeId);
+    
+    if (!Store?.mlAccessToken) {
+      throw new HttpException(
+        'Loja não possui token de acesso ao Mercado Livre',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Renovar token se estiver expirado
+    let accessToken = Store.mlAccessToken;
+    if (Store.mlTokenExpiresAt && Store.mlRefreshToken) {
+      const now = Date.now();
+      if (now > Store.mlTokenExpiresAt - 5 * 60 * 1000) {
+        console.log(`🔄 Renovando token ML da loja: ${Store.name}`);
+        try {
+          const tokenData = await this.refreshMercadoLivreToken(Store.mlRefreshToken);
+          accessToken = tokenData.accessToken;
+          
+          await this.storesService.update(Store.id, {
+            mlAccessToken: tokenData.accessToken,
+            mlRefreshToken: tokenData.refreshToken,
+            mlTokenExpiresAt: Date.now() + tokenData.expiresIn * 1000,
+          });
+          console.log('✅ Token renovado com sucesso');
+        } catch (error) {
+          console.error(`❌ Erro ao renovar token ML: ${error.message}`);
+          throw new HttpException(
+            'Token expirado. Por favor, reconecte a loja do Mercado Livre.',
+            HttpStatus.UNAUTHORIZED,
+          );
+        }
+      }
+    }
+
+    try {
+      const response = await fetch(
+        `https://api.mercadolibre.com/messages/packs/${packId}/sellers/${Store.mlUserId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: {
+              user_id: Store.mlUserId,
+            },
+            to: {
+              user_id: 'buyer', // O comprador
+            },
+            text: message,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error('❌ Erro ao enviar mensagem no ML:', error);
+        throw new HttpException(
+          'Erro ao enviar mensagem no Mercado Livre',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('❌ Erro ao enviar mensagem no ML:', error);
+      throw new HttpException(
+        'Erro ao enviar mensagem no Mercado Livre',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

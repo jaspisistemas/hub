@@ -4,13 +4,14 @@ const API_URL = 'https://uneducated-georgiann-personifiant.ngrok-free.dev';
 
 export interface FetchOptions extends RequestInit {
   needsAuth?: boolean;
+  suppressAuthRedirect?: boolean;
 }
 
 export async function apiFetch<T = any>(
   endpoint: string,
   options: FetchOptions = {}
 ): Promise<T> {
-  const { needsAuth = true, ...fetchOptions } = options;
+  const { needsAuth = true, suppressAuthRedirect = false, ...fetchOptions } = options;
 
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -30,7 +31,10 @@ export async function apiFetch<T = any>(
 
   if (response.status === 401) {
     authService.removeToken();
-    window.location.href = '/auth/login';
+    if (!suppressAuthRedirect) {
+      window.location.href = '/auth/login';
+    }
+    throw new Error('Sessão expirada. Faça login novamente.');
   }
 
   if (!response.ok) {

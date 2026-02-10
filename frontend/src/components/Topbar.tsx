@@ -20,7 +20,6 @@ export default function Topbar() {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [notificationsAnchor, setNotificationsAnchor] = React.useState<null | HTMLElement>(null);
   const [settingsAnchor, setSettingsAnchor] = React.useState<null | HTMLElement>(null);
-  const [helpOpen, setHelpOpen] = React.useState(false);
   const [preferencesOpen, setPreferencesOpen] = React.useState(false);
   const [aboutOpen, setAboutOpen] = React.useState(false);
   const user = JSON.parse(localStorage.getItem('user') || '{"email":""}');
@@ -58,7 +57,7 @@ export default function Topbar() {
   };
 
   const handleHelp = () => {
-    setHelpOpen(true);
+    navigate('/ajuda');
   };
 
   return (
@@ -398,50 +397,6 @@ export default function Topbar() {
           </Menu>
         </Box>
       </Toolbar>
-
-      {/* Dialog de Ajuda */}
-      <Dialog open={helpOpen} onClose={() => setHelpOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Central de Ajuda</DialogTitle>
-        <DialogContent dividers>
-          <Typography variant="h6" gutterBottom>Perguntas Frequentes</Typography>
-          
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-              Como conectar uma loja?
-            </Typography>
-            <Typography variant="body2" color="text.secondary" paragraph>
-              Acesse o menu "Lojas", clique em "Nova Loja" e siga as instruções para conectar sua conta do marketplace.
-            </Typography>
-          </Box>
-
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-              Como exportar produtos?
-            </Typography>
-            <Typography variant="body2" color="text.secondary" paragraph>
-              Na página de Produtos, selecione os produtos desejados e clique em "Exportar". Escolha o marketplace de destino.
-            </Typography>
-          </Box>
-
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-              Os pedidos são sincronizados automaticamente?
-            </Typography>
-            <Typography variant="body2" color="text.secondary" paragraph>
-              Sim, os pedidos dos marketplaces conectados são sincronizados em tempo real.
-            </Typography>
-          </Box>
-
-          <Divider sx={{ my: 2 }} />
-
-          <Typography variant="body2" color="text.secondary">
-            Precisa de mais ajuda? Entre em contato: <strong>suporte@jaspi.com.br</strong>
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setHelpOpen(false)} variant="contained">Fechar</Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Dialog de Preferências */}
       <Dialog 

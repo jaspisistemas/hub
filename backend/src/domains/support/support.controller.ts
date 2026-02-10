@@ -52,7 +52,8 @@ export class SupportController {
   }
 
   @Post('sync/:storeId')
-  syncFromMarketplace(@Param('storeId') storeId: string) {
+  syncFromMarketplace(@Param('storeId') storeId: string, @Body() _data?: any) {
+    console.log(`\n📡 [SYNC] Requisição de sincronização recebida para loja: ${storeId}`);
     return this.supportService.syncFromMarketplace(storeId);
   }
 

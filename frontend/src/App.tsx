@@ -13,6 +13,7 @@ import OrdersPage from './features/orders/OrdersPage';
 import ProductsPage from './features/products/ProductsPage';
 import StoresPage from './features/stores/StoresPage';
 import SupportPage from './features/support/SupportPage';
+import HelpCenterPage from './features/support/HelpCenterPage';
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
@@ -108,6 +109,17 @@ export default function App() {
             <ProtectedRoute>
               <AppLayout>
                 <SupportPage />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/ajuda"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <HelpCenterPage />
               </AppLayout>
             </ProtectedRoute>
           }

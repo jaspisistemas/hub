@@ -36,6 +36,9 @@ import {
   ListItem,
   ListItemText,
   Autocomplete,
+  Tooltip,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import {
   Add as AddIcon, 
@@ -80,6 +83,8 @@ export default function ProductsPage() {
   const [syncMarketplace, setSyncMarketplace] = useState('');
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [menuProductId, setMenuProductId] = useState<string | null>(null);
   
   // Wizard de criação de produto
   const [productStep, setProductStep] = useState(0); // 0 = selecionar categoria, 1 = preencher dados
@@ -181,11 +186,26 @@ export default function ProductsPage() {
     loadCategories(); // Carregar categorias ao abrir o diálogo
   };
 
+  // Helper para construir URL de imagem
+  const getImageUrl = (url?: string) => {
+    if (!url) return undefined;
+    // Se já é uma URL absoluta (começa com http ou https), retorna como está
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    // Se é um caminho relativo de uploads, adiciona o prefixo do backend
+    if (url.startsWith('/')) {
+      return `https://uneducated-georgiann-personifiant.ngrok-free.dev${url}`;
+    }
+    // Caso padrão: adiciona o prefixo
+    return `https://uneducated-georgiann-personifiant.ngrok-free.dev${url}`;
+  };
+
   const handleEditProduct = (product: Product) => {
     setEditingId(product.id);
     setImageFiles([]);
     const productImageUrls = product.imageUrls || (product.imageUrl ? [product.imageUrl] : []);
-    setImagePreviews(productImageUrls.map(url => `https://uneducated-georgiann-personifiant.ngrok-free.dev${url}`));
+    setImagePreviews(productImageUrls.map(url => getImageUrl(url)));
     setFormData({
       sku: product.sku,
       name: product.name,
@@ -560,23 +580,17 @@ export default function ProductsPage() {
             </Typography>
           </Box>
         ) : (
-        <Table>
+        <Table size="small">
           <TableHead>
             <TableRow sx={{ backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#0d1117' : '#f5f7fa' }}>
-              <TableCell sx={{ fontWeight: 600, color: '#1a1a1a' }}>Imagem</TableCell>
-              <TableCell sx={{ fontWeight: 600, color: '#1a1a1a' }}>Produto</TableCell>
-              <TableCell sx={{ fontWeight: 600, color: '#1a1a1a' }}>SKU</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
-                Preço
-              </TableCell>
-              <TableCell align="center" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
-                Estoque
-              </TableCell>
-              <TableCell sx={{ fontWeight: 600, color: '#1a1a1a' }}>Categoria</TableCell>
-              <TableCell sx={{ fontWeight: 600, color: '#1a1a1a' }}>Status</TableCell>
-              <TableCell align="center" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
-                Ações
-              </TableCell>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#555555', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Imagem</TableCell>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#555555', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Produto</TableCell>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#555555', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SKU</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#555555', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Preço</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#555555', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Estoque</TableCell>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#555555', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Categoria</TableCell>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#555555', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Status</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#555555', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Ações</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -584,53 +598,133 @@ export default function ProductsPage() {
               <TableRow
                 key={product.id}
                 sx={{
-                  '&:hover': { backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(177, 186, 196, 0.08)' : '#f5f7fa' },
+                  '&:hover': { backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(177, 186, 196, 0.08)' : '#fafbfc' },
                   borderBottom: '1px solid #e8eef5',
+                  height: '64px',
                 }}
               >
-                <TableCell>
-                  <Avatar
-                    src={product.imageUrls?.[0] || product.imageUrl ? `https://uneducated-georgiann-personifiant.ngrok-free.dev${product.imageUrls?.[0] || product.imageUrl}` : undefined}
-                    alt={product.name}
-                    variant="rounded"
-                    sx={{ width: 50, height: 50 }}
+                <TableCell sx={{ py: 1, px: 1 }}>
+                  <Box
+                    sx={{
+                      width: '56px',
+                      height: '56px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: '#f3f4f6',
+                      borderRadius: '6px',
+                      overflow: 'hidden',
+                      flexShrink: 0,
+                      border: '1px solid #e5e7eb',
+                    }}
                   >
-                    {!product.imageUrls?.[0] && !product.imageUrl && product.name[0]}
-                  </Avatar>
+                    {product.imageUrls?.[0] || product.imageUrl ? (
+                      <img
+                        src={getImageUrl(product.imageUrls?.[0] || product.imageUrl)}
+                        alt={product.name}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'contain',
+                          padding: '2px',
+                        }}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <Typography
+                        sx={{
+                          fontSize: '1.5rem',
+                          fontWeight: 600,
+                          color: '#9ca3af',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        {product.name[0] || '?'}
+                      </Typography>
+                    )}
+                  </Box>
                 </TableCell>
-                <TableCell sx={{ fontWeight: 500 }}>{product.name}</TableCell>
-                <TableCell sx={{ color: '#555555' }}>{product.sku}</TableCell>
-                <TableCell align="right">
-                  <Typography sx={{ fontWeight: 600, color: '#1a1a1a' }}>
-                    R$ {Number(product.price).toFixed(2)}
+                <TableCell sx={{ py: 1 }}>
+                  <Tooltip title={product.name} arrow>
+                    <Typography 
+                      sx={{ 
+                        fontWeight: 500, 
+                        fontSize: '0.875rem',
+                        color: '#1a1a1a',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        maxWidth: '200px',
+                      }}
+                    >
+                      {product.name}
+                    </Typography>
+                  </Tooltip>
+                </TableCell>
+                <TableCell sx={{ py: 1, fontSize: '0.8rem', color: '#666666' }}>
+                  <Chip 
+                    label={product.sku} 
+                    variant="outlined" 
+                    size="small" 
+                    sx={{ height: '24px', fontSize: '0.75rem' }}
+                  />
+                </TableCell>
+                <TableCell align="right" sx={{ py: 1 }}>
+                  <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#1a1a1a' }}>
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(product.price))}
                   </Typography>
                 </TableCell>
-                <TableCell align="center">
+                <TableCell align="center" sx={{ py: 1 }}>
                   <Typography
                     sx={{
                       fontWeight: 500,
-                      color: product.quantity === 0 ? '#ef4444' : '#10b981',
+                      fontSize: '0.875rem',
+                      color: product.quantity === 0 ? '#666666' : product.quantity < 10 ? '#f59e0b' : '#10b981',
+                      fontWeight: product.quantity < 10 ? 600 : 500,
                     }}
                   >
                     {product.quantity}
                   </Typography>
                 </TableCell>
-                <TableCell>{product.category}</TableCell>
-                <TableCell>
+                <TableCell sx={{ py: 1 }}>
+                  <Chip 
+                    label={product.category} 
+                    variant="outlined" 
+                    size="small"
+                    sx={{ height: '24px', fontSize: '0.75rem' }}
+                  />
+                </TableCell>
+                <TableCell sx={{ py: 1 }}>
                   <Chip
                     label={product.quantity > 0 ? 'Ativo' : 'Sem Estoque'}
                     color={product.quantity > 0 ? 'success' : 'error'}
                     size="small"
-                    variant="outlined"
+                    variant="filled"
+                    sx={{ 
+                      height: '24px',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      minWidth: '90px',
+                    }}
                   />
                 </TableCell>
-                <TableCell align="center">
-                  <IconButton size="small" color="primary" onClick={() => handleEditProduct(product)}>
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton size="small" color="error" onClick={() => handleDeleteProduct(product.id)}>
-                    <DeleteIcon />
-                  </IconButton>
+                <TableCell align="center" sx={{ py: 1 }}>
+                  <Tooltip title="Ações" arrow>
+                    <IconButton 
+                      size="small" 
+                      onClick={(e) => {
+                        setAnchorEl(e.currentTarget);
+                        setMenuProductId(product.id);
+                      }}
+                      sx={{ color: '#1976d2' }}
+                    >
+                      ⋯
+                    </IconButton>
+                  </Tooltip>
                 </TableCell>
               </TableRow>
             ))}
@@ -638,6 +732,42 @@ export default function ProductsPage() {
         </Table>
         )}
       </TableContainer>
+
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={() => {
+          setAnchorEl(null);
+          setMenuProductId(null);
+        }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <MenuItem 
+          onClick={() => {
+            const product = filteredProducts.find(p => p.id === menuProductId);
+            if (product) {
+              handleEditProduct(product);
+            }
+            setAnchorEl(null);
+            setMenuProductId(null);
+          }}
+        >
+          Editar
+        </MenuItem>
+        <MenuItem 
+          onClick={() => {
+            if (menuProductId) {
+              handleDeleteProduct(menuProductId);
+            }
+            setAnchorEl(null);
+            setMenuProductId(null);
+          }}
+          sx={{ color: '#ef4444' }}
+        >
+          Deletar
+        </MenuItem>
+      </Menu>
 
       {/* Dialog de adicionar/editar produto */}
       <Dialog 
@@ -996,7 +1126,7 @@ export default function ProductsPage() {
                         disableRipple
                       />
                       <Avatar
-                        src={product.imageUrl ? `https://uneducated-georgiann-personifiant.ngrok-free.dev${product.imageUrl}` : undefined}
+                        src={getImageUrl(product.imageUrl)}
                         alt={product.name}
                         variant="rounded"
                         sx={{ width: 40, height: 40, mr: 2 }}

@@ -88,6 +88,7 @@ export class MarketplaceController {
           orderId,
           accessToken,
         );
+        orderData.storeId = store.id;
         
         // Criar o pedido no sistema
         const order = await this.ordersService.createOrder(orderData);
@@ -390,6 +391,94 @@ export class MarketplaceController {
   }
 
   /**
+   * Sincronizar pedidos do Mercado Livre
+   */
+  @Post('mercadolivre/sync-orders')
+  async syncMercadoLivreOrders() {
+    try {
+      // Buscar lojas do Mercado Livre conectadas
+      const stores = await this.storesService.findAll();
+      const mlStores = stores.filter(s => s.marketplace === 'MercadoLivre' && s.mlAccessToken);
+
+      if (mlStores.length === 0) {
+        return {
+          success: false,
+          message: 'Nenhuma loja do Mercado Livre conectada',
+          imported: 0,
+          updated: 0,
+        };
+      }
+
+      let imported = 0;
+      let updated = 0;
+
+      // Sincronizar pedidos de cada loja
+      for (const store of mlStores) {
+        console.log(`🔄 Sincronizando pedidos da loja: ${store.name}`);
+
+        if (!store.mlUserId || !store.mlAccessToken) {
+          console.warn(`⚠️ Loja ${store.name} sem credenciais válidas`);
+          continue;
+        }
+
+        // Renovar token se estiver expirado
+        let accessToken = store.mlAccessToken;
+        if (store.mlTokenExpiresAt && store.mlRefreshToken) {
+          const now = Date.now();
+          if (now > store.mlTokenExpiresAt - 5 * 60 * 1000) {
+            console.log(`🔄 Renovando token ML da loja: ${store.name}`);
+            try {
+              const tokenData = await this.marketplaceService.refreshMercadoLivreToken(store.mlRefreshToken);
+              accessToken = tokenData.accessToken;
+
+              await this.storesService.update(store.id, {
+                mlAccessToken: tokenData.accessToken,
+                mlRefreshToken: tokenData.refreshToken,
+                mlTokenExpiresAt: Date.now() + tokenData.expiresIn * 1000,
+              });
+              console.log('✅ Token renovado com sucesso');
+            } catch (error) {
+              console.error(`❌ Erro ao renovar token ML: ${error.message}`);
+              continue;
+            }
+          }
+        }
+
+        const orders = await this.marketplaceService.syncMercadoLivreOrders(
+          store.mlUserId,
+          accessToken,
+        );
+
+        for (const orderData of orders) {
+          try {
+            orderData.storeId = store.id;
+            const result = await this.ordersService.upsertFromMarketplace(orderData);
+            if (result.updated) updated++;
+            else imported++;
+          } catch (error) {
+            console.error(`Erro ao salvar pedido ${orderData.externalId}:`, error);
+          }
+        }
+      }
+
+      return {
+        success: true,
+        message: `${imported} novos, ${updated} atualizados`,
+        imported,
+        updated,
+      };
+    } catch (error) {
+      console.error('❌ Erro ao sincronizar pedidos ML:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Falha ao sincronizar pedidos',
+        imported: 0,
+        updated: 0,
+      };
+    }
+  }
+
+  /**
    * Publicar produtos no Mercado Livre
    */
   @Post('mercadolivre/publish-products')
@@ -529,7 +618,11 @@ export class MarketplaceController {
     };
 
     const mapped = this.marketplaceService.handleMercadoLivreWebhook(mockPayload);
-    const order = await this.ordersService.createOrder(await mapped);
+    const mappedOrder = await mapped;
+    if (customData?.storeId) {
+      mappedOrder.storeId = customData.storeId;
+    }
+    const order = await this.ordersService.createOrder(mappedOrder);
 
     return {
       success: true,

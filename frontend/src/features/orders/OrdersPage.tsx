@@ -46,6 +46,7 @@ import {
   LocalShipping as LocalShippingIcon,
   ShoppingBag as ShoppingBagIcon,
   FilterList as FilterListIcon,
+  Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { ordersService, Order } from '../../services/ordersService';
 import PageHeader from '../../components/PageHeader';
@@ -70,8 +71,12 @@ export default function OrdersPage() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedOrderForMenu, setSelectedOrderForMenu] = useState<Order | null>(null);
+  const [syncing, setSyncing] = useState(false);
+
+  console.log('OrdersPage renderizando', { loading, ordersCount: orders?.length });
 
   useEffect(() => {
+    console.log('OrdersPage montado');
     loadOrders();
     loadStores();
     
@@ -105,24 +110,46 @@ export default function OrdersPage() {
   }, []);
 
   const loadOrders = async () => {
+    console.log('loadOrders iniciado');
     try {
       setLoading(true);
       setError(null);
+      console.log('Chamando ordersService.getAll()');
       const data = await ordersService.getAll();
-      setOrders(data);
+      console.log('Pedidos recebidos:', data);
+      setOrders(data || []);
     } catch (err) {
+      console.error('Erro ao carregar pedidos:', err);
       setError(err instanceof Error ? err.message : 'Erro ao carregar pedidos');
+      setOrders([]);
     } finally {
+      console.log('loadOrders finalizado');
       setLoading(false);
+    }
+  };
+
+  const handleSyncOrders = async () => {
+    try {
+      setSyncing(true);
+      setError(null);
+      const result = await ordersService.sync();
+      setNotification(`Sincronização concluída: ${result.imported} novos, ${result.updated} atualizados`);
+      await loadOrders();
+    } catch (err) {
+      console.error('Erro ao sincronizar pedidos:', err);
+      setError(err instanceof Error ? err.message : 'Erro ao sincronizar pedidos');
+    } finally {
+      setSyncing(false);
     }
   };
 
   const loadStores = async () => {
     try {
       const data = await storesService.getAll();
-      setStores(data);
+      setStores(data || []);
     } catch (err) {
       console.error('Erro ao carregar lojas:', err);
+      setStores([]);
     }
   };
 
@@ -155,7 +182,17 @@ export default function OrdersPage() {
       setSelectedOrder(fullOrder);
       setDetailsOpen(true);
     } catch (err) {
+      console.error('Erro ao carregar detalhes:', err);
       setError(err instanceof Error ? err.message : 'Erro ao carregar detalhes do pedido');
+    }
+  };
+
+  const getParsedRawData = (rawData?: string) => {
+    if (!rawData) return null;
+    try {
+      return JSON.parse(rawData);
+    } catch {
+      return rawData;
     }
   };
 
@@ -210,8 +247,9 @@ export default function OrdersPage() {
     handleMenuClose();
   };
 
-  const filteredOrders = orders
+  const filteredOrders = (orders || [])
     .filter((o) => {
+      if (!o) return false;
       const matchesSearch = o.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         o.marketplace?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         o.customerName?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -225,14 +263,25 @@ export default function OrdersPage() {
     page * rowsPerPage + rowsPerPage
   );
 
-  const uniqueMarketplaces = Array.from(new Set(orders.map((o) => o.marketplace).filter(Boolean)));
+  const uniqueMarketplaces = Array.from(new Set((orders || []).map((o) => o?.marketplace).filter(Boolean)));
 
   // Estatísticas
   const stats = {
-    total: orders.length || 0,
-    pending: orders.filter((o) => o.status === 'pending').length || 0,
-    revenue: orders.reduce((sum, o) => sum + (o.total || 0), 0) || 0,
+    total: (orders || []).length || 0,
+    pending: (orders || []).filter((o) => o?.status === 'pending').length || 0,
+    revenue: (orders || []).reduce((sum, o) => sum + (Number(o?.total) || 0), 0) || 0,
   };
+
+  if (loading) {
+    console.log('Renderizando loading spinner');
+    return (
+      <Box sx={{ bgcolor: theme.palette.background.default, minHeight: '100vh', p: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  console.log('Renderizando página principal', { ordersCount: orders?.length, loading });
 
   return (
     <Box sx={{ bgcolor: theme.palette.background.default, minHeight: '100vh', p: 3 }}>
@@ -240,6 +289,16 @@ export default function OrdersPage() {
       <PageHeader 
         title="Pedidos"
         subtitle="Acompanhe e gerencie todos os pedidos sincronizados dos marketplaces"
+        action={
+          <Button
+            variant="contained"
+            startIcon={<RefreshIcon />}
+            onClick={handleSyncOrders}
+            disabled={syncing}
+          >
+            {syncing ? 'Sincronizando...' : 'Sincronizar'}
+          </Button>
+        }
       />
 
       {/* Stats Cards */}
@@ -492,11 +551,7 @@ export default function OrdersPage() {
           overflow: 'hidden',
         }}
       >
-        {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 8 }}>
-            <CircularProgress />
-          </Box>
-        ) : paginatedOrders.length === 0 ? (
+        {paginatedOrders.length === 0 ? (
           <Box
             sx={{
               p: 8,
@@ -555,7 +610,9 @@ export default function OrdersPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {paginatedOrders.map((o) => (
+                {(paginatedOrders || []).map((o) => {
+                  if (!o || !o.id) return null;
+                  return (
                   <TableRow
                     key={o.id}
                     sx={{
@@ -577,11 +634,11 @@ export default function OrdersPage() {
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <StatusBadge status={o.status} size="small" />
+                      <StatusBadge status={o.status || 'pending'} size="small" />
                     </TableCell>
                     <TableCell align="right">
                       <Typography sx={{ fontWeight: 700, color: theme.palette.text.primary, fontSize: '1rem' }}>
-                        R$ {(o.total || 0).toFixed(2)}
+                        R$ {(Number(o.total) || 0).toFixed(2)}
                       </Typography>
                     </TableCell>
                     <TableCell align="center">
@@ -599,7 +656,8 @@ export default function OrdersPage() {
                       </IconButton>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
             <TablePagination
@@ -794,7 +852,7 @@ export default function OrdersPage() {
                     Valor Total
                   </Typography>
                   <Typography variant="h6" sx={{ fontWeight: 600, color: '#10b981' }}>
-                    R$ {(selectedOrder.total || 0).toFixed(2)}
+                    R$ {(Number(selectedOrder.total) || 0).toFixed(2)}
                   </Typography>
                 </Grid>
                 {selectedOrder.createdAt && (
@@ -901,7 +959,7 @@ export default function OrdersPage() {
                     }}
                   >
                     <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                      {JSON.stringify(JSON.parse(selectedOrder.rawData), null, 2)}
+                      {JSON.stringify(getParsedRawData(selectedOrder.rawData), null, 2)}
                     </pre>
                   </Paper>
                 </>

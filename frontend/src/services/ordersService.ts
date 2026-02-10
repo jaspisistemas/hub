@@ -32,6 +32,16 @@ export const ordersService = {
     return apiFetch<Order[]>('/orders');
   },
 
+  sync: async (): Promise<{ imported: number; updated: number }> => {
+    return apiFetch<{ imported: number; updated: number }>(
+      '/marketplace/mercadolivre/sync-orders',
+      {
+        method: 'POST',
+        suppressAuthRedirect: true,
+      },
+    );
+  },
+
   getOne: async (id: string): Promise<Order> => {
     return apiFetch<Order>(`/orders/${id}`);
   },

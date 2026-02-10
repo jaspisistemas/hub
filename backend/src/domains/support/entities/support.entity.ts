@@ -11,7 +11,8 @@ export enum SupportOrigin {
 
 export enum SupportType {
   PERGUNTA = 'pergunta',
-  AVALIACAO = 'avaliacao'
+  AVALIACAO = 'avaliacao',
+  MENSAGEM_VENDA = 'mensagem_venda'
 }
 
 export enum SupportStatus {
@@ -54,6 +55,12 @@ export class Support {
 
   @Column({ nullable: true })
   productTitle: string; // Título do produto/anúncio
+
+  @Column({ nullable: true })
+  orderExternalId: string; // ID do pedido no marketplace (para mensagens de venda)
+
+  @Column({ nullable: true })
+  packId: string; // ID do pack de mensagens no ML
 
   @Column({ nullable: true })
   customerName: string; // Nome do cliente

@@ -3,11 +3,13 @@ import { apiFetch } from './api';
 export interface Support {
   id: string;
   origin: 'mercado_livre' | 'shopee' | 'amazon' | 'outros';
-  type: 'pergunta' | 'avaliacao';
+  type: 'pergunta' | 'avaliacao' | 'mensagem_venda';
   status: 'nao_respondido' | 'respondido' | 'fechado';
   externalId: string;
   productExternalId?: string;
   productTitle?: string;
+  orderExternalId?: string;
+  packId?: string;
   customerName?: string;
   customerExternalId?: string;
   question: string;
@@ -70,6 +72,7 @@ export const supportService = {
   async sync(storeId: string): Promise<{ imported: number; updated: number }> {
     return apiFetch<{ imported: number; updated: number }>(`/supports/sync/${storeId}`, {
       method: 'POST',
+      body: JSON.stringify({}),
     });
   },
 

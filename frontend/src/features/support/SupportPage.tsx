@@ -55,8 +55,11 @@ const SupportPage: React.FC = () => {
       setLoading(true);
       setError(null);
       const data = await supportService.getAll(filters);
+      console.log('Atendimentos carregados:', data);
+      console.log('Filtros aplicados:', filters);
       setSupports(data);
     } catch (err: any) {
+      console.error('Erro ao carregar atendimentos:', err);
       setError(err.response?.data?.message || 'Erro ao carregar atendimentos');
     } finally {
       setLoading(false);
@@ -81,10 +84,17 @@ const SupportPage: React.FC = () => {
     try {
       setSyncing(true);
       setError(null);
+      console.log('Sincronizando loja:', filters.storeId);
       const result = await supportService.sync(filters.storeId);
+      console.log('Resultado da sincronização:', result);
       setSuccess(`Sincronização concluída: ${result.imported} novos, ${result.updated} atualizados`);
+      
+      // Aguardar um pouco para o backend processar
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       loadSupports();
     } catch (err: any) {
+      console.error('Erro ao sincronizar:', err);
       setError(err.response?.data?.message || 'Erro ao sincronizar atendimentos');
     } finally {
       setSyncing(false);
@@ -130,10 +140,12 @@ const SupportPage: React.FC = () => {
   };
 
   const getTypeIcon = (type: string) => {
+    if (type === 'mensagem_venda') return <SendIcon />;
     return type === 'pergunta' ? <QuestionIcon /> : <StarIcon />;
   };
 
   const getTypeLabel = (type: string) => {
+    if (type === 'mensagem_venda') return 'Mensagem de Venda';
     return type === 'pergunta' ? 'Pergunta' : 'Avaliação';
   };
 
@@ -159,7 +171,7 @@ const SupportPage: React.FC = () => {
     <Box sx={{ p: 3 }}>
       <PageHeader
         title="Atendimentos"
-        subtitle="Gerencie perguntas e avaliações dos marketplaces"
+        subtitle="Gerencie perguntas, avaliações e dúvidas frequentes"
       />
 
       {error && (
@@ -207,6 +219,7 @@ const SupportPage: React.FC = () => {
                   <MenuItem value="">Todos</MenuItem>
                   <MenuItem value="pergunta">Pergunta</MenuItem>
                   <MenuItem value="avaliacao">Avaliação</MenuItem>
+                  <MenuItem value="mensagem_venda">Mensagem de Venda</MenuItem>
                 </Select>
               </FormControl>
             </Grid>

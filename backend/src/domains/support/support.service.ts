@@ -83,11 +83,21 @@ export class SupportService {
 
     // Enviar resposta para o marketplace
     try {
-      await this.marketplaceService.answerQuestion(
-        support.storeId,
-        support.externalId,
-        answerDto.answer,
-      );
+      if (support.type === SupportType.MENSAGEM_VENDA && support.packId) {
+        // Enviar mensagem de venda
+        await this.marketplaceService.sendOrderMessage(
+          support.storeId,
+          support.packId,
+          answerDto.answer,
+        );
+      } else {
+        // Enviar resposta de pergunta
+        await this.marketplaceService.answerQuestion(
+          support.storeId,
+          support.externalId,
+          answerDto.answer,
+        );
+      }
 
       support.answer = answerDto.answer;
       support.answerDate = new Date();
@@ -100,12 +110,30 @@ export class SupportService {
   }
 
   async syncFromMarketplace(storeId: string): Promise<{ imported: number; updated: number }> {
+    console.log(`\n🔄 Iniciando sincronização para loja: ${storeId}`);
+    
     // Buscar perguntas do marketplace
     const questions = await this.marketplaceService.getQuestions(storeId);
+    console.log(`📝 Perguntas encontradas: ${questions?.length || 0}`);
+    
+    // Buscar mensagens de vendas do marketplace
+    console.log(`⏳ Buscando mensagens de pós-venda...`);
+    let messages = [];
+    try {
+      messages = await this.marketplaceService.getOrderMessages(storeId);
+      console.log(`💬 Mensagens de pós-venda encontradas: ${messages?.length || 0}`);
+      if (messages?.length > 0) {
+        console.log(`📋 Primeiras mensagens:`, JSON.stringify(messages.slice(0, 2), null, 2));
+      }
+    } catch (error) {
+      console.error(`❌ Erro ao buscar mensagens de pós-venda:`, error.message);
+      messages = [];
+    }
     
     let imported = 0;
     let updated = 0;
 
+    // Processar perguntas
     for (const question of questions) {
       const existing = await this.supportRepository.findOne({
         where: { externalId: question.id },
@@ -145,6 +173,52 @@ export class SupportService {
       }
     }
 
+    // Processar mensagens de vendas
+    console.log(`\n📨 Processando ${messages.length} mensagens de pós-venda...`);
+    for (const message of messages) {
+      console.log(`  Verificando mensagem: packId=${message.packId}, cliente=${message.customerName}`);
+      
+      const existing = await this.supportRepository.findOne({
+        where: { packId: message.packId },
+      });
+
+      if (existing) {
+        console.log(`    ✏️ Mensagem já existe (ID: ${existing.id})`);
+        // Atualizar última mensagem se houver nova
+        if (message.lastMessage && message.lastMessage !== existing.question) {
+          existing.question = message.lastMessage;
+          existing.questionDate = new Date(message.lastMessageDate);
+          await this.supportRepository.save(existing);
+          updated++;
+          console.log(`    ✅ Mensagem atualizada`);
+        }
+      } else {
+        console.log(`    🆕 Criando nova mensagem de pós-venda`);
+        // Criar novo
+        const support = this.supportRepository.create({
+          origin: message.origin,
+          type: SupportType.MENSAGEM_VENDA,
+          externalId: message.packId,
+          packId: message.packId,
+          orderExternalId: message.orderId,
+          productTitle: message.orderTitle || 'Pedido',
+          customerName: message.customerName || 'Cliente',
+          customerExternalId: message.customerId,
+          question: message.lastMessage,
+          questionDate: new Date(message.lastMessageDate),
+          canAnswer: true,
+          status: SupportStatus.NAO_RESPONDIDO,
+          storeId,
+          metadata: message,
+        });
+
+        const saved = await this.supportRepository.save(support);
+        imported++;
+        console.log(`    ✅ Mensagem criada (ID: ${saved.id})`);
+      }
+    }
+
+    console.log(`\n✨ Sincronização concluída! Importadas: ${imported}, Atualizadas: ${updated}\n`);
     return { imported, updated };
   }
 

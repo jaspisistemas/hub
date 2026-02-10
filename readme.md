@@ -42,6 +42,8 @@ Sistema completo de integração com marketplaces (Mercado Livre, Shopee, etc.) 
 - [x] Gestão de pedidos com detalhes completos
 - [x] WebSocket para notificações em tempo real
 - [x] Sistema de temas (claro/escuro)
+- [x] Central de Ajuda completa com FAQs organizados
+- [x] Sistema de atendimento unificado
 
 ### ✅ Integração Mercado Livre
 - [x] Fluxo OAuth completo (autorização e callback)
@@ -52,13 +54,28 @@ Sistema completo de integração com marketplaces (Mercado Livre, Shopee, etc.) 
 - [x] Busca de dados completos do pedido via API
 - [x] Mapeamento de dados do ML para formato interno
 - [x] Salvamento de dados do cliente (nome, email, endereço, etc.)
+- [x] Sincronização de produtos do Mercado Livre
+- [x] Criação de anúncios no ML com categorias e atributos
+- [x] Sincronização automática de pedidos
+- [x] Sistema de perguntas e respostas
+- [x] Mensagens de pós-venda (comunicação com compradores)
+- [x] Atendimento centralizado (perguntas + mensagens + avaliações)
+
+### ✅ Sistema de Suporte/Atendimento
+- [x] Sincronização de perguntas não respondidas
+- [x] Sincronização de mensagens de pós-venda
+- [x] Resposta direta pelo hub (enviada automaticamente ao ML)
+- [x] Filtros por tipo (pergunta, avaliação, mensagem de venda)
+- [x] Filtros por loja, status, origem
+- [x] Logs detalhados de sincronização
+- [x] Histórico completo de interações
 
 ### 🔄 Em Desenvolvimento
-- [ ] Sincronização de produtos com Mercado Livre
-- [ ] Criação de anúncios no ML
 - [ ] Integração com Shopee
-- [ ] Sistema de filas com BullMQ
-- [ ] Sincronização de status de pedidos
+- [ ] Sistema de filas com BullMQ para processamento assíncrono
+- [ ] Sincronização bidirecional de status de pedidos
+- [ ] Gestão de estoque multi-loja
+- [ ] Relatórios avançados e analytics
 
 ## 🛠️ Instalação e Execução
 
@@ -134,12 +151,27 @@ npm run dev:frontend # Frontend na porta 5174
 - `GET /orders` - Listar todos os pedidos
 - `POST /orders` - Criar novo pedido
 - `GET /orders/:id` - Buscar pedido por ID
+- `PATCH /orders/:id` - Atualizar pedido
+- `GET /orders/metrics/dashboard` - Métricas do dashboard
+
+### Suporte/Atendimento
+- `GET /supports` - Listar atendimentos (com filtros)
+- `GET /supports/:id` - Buscar atendimento por ID
+- `POST /supports/:id/answer` - Responder atendimento
+- `POST /supports/sync/:storeId` - Sincronizar perguntas e mensagens
+- `DELETE /supports/:id` - Deletar atendimento
 
 ### Marketplace - Mercado Livre
 - `GET /marketplace/mercadolivre/auth` - Iniciar OAuth
 - `GET /marketplace/mercadolivre/callback` - Callback OAuth
 - `POST /marketplace/mercadolivre/webhook` - Receber webhooks
 - `POST /marketplace/mercadolivre/test-order` - Criar pedido de teste
+- `POST /marketplace/mercadolivre/sync-products` - Sincronizar produtos
+- `POST /marketplace/mercadolivre/sync-orders` - Sincronizar pedidos
+- `POST /marketplace/mercadolivre/publish-products` - Publicar produtos no ML
+- `GET /marketplace/mercadolivre/categories` - Listar categorias
+- `GET /marketplace/mercadolivre/categories/:id` - Buscar subcategorias
+- `GET /marketplace/mercadolivre/categories/:id/attributes` - Atributos da categoria
 
 ## 🔌 Integração com Mercado Livre
 
@@ -189,14 +221,29 @@ backend/src/
 │   ├── auth/         # Autenticação
 │   ├── orders/       # Pedidos
 │   ├── products/     # Produtos
-│   └── stores/       # Lojas
-├── integrations/     # Integrações externas
-│   └── marketplace/  # Mercado Livre, Shopee, etc.
-├── infra/           # Infraestrutura
-│   ├── queue/       # Sistema de filas
-│   └── websocket/   # WebSocket Gateway
-└── jobs/            # Background jobs
-```
+│   └── stores/       # Lojas com estatísticas
+│   ├── orders/      # Gestão de pedidos
+│   ├── products/    # Gestão de produtos
+│   ├── stores/      # Gestão de lojas
+│   └── support/     # Sistema de atendimento + Central de Ajuda
+├── components/      # Componentes compartilhados
+│   ├── Sidebar.tsx
+│   ├── Topbar.tsx
+│   ├── PageHeader.tsx
+│   ├── StatusBadge.tsx
+│   ├── EmptyState.tsx
+│   └── ...
+├── services/        # Serviços de API
+│   ├── api.ts
+│   ├── authService.ts
+│   ├── productsService.ts
+│   ├── ordersService.ts
+│   ├── storesService.ts
+│   ├── supportService.ts
+│   └── websocket.ts
+└── contexts/        # Contexts do React
+    ├── ThemeContext.tsx
+    └── SidebarContext.tsx
 
 ### Frontend - Feature-based
 
@@ -228,9 +275,61 @@ O sistema utiliza JWT (JSON Web Tokens) para autenticação:
 ### Entidades principais
 
 - **User**: Usuários do sistema
-- **Product**: Produtos cadastrados
+- **Product**: Produtos cadastrados com imagens
 - **Store**: Lojas conectadas (com tokens do ML)
 - **Order**: Pedidos recebidos dos marketplaces
+- **Support**: Atendimentos (perguntas, mensagens, avaliações)
+
+### Campos de integração ML na Store
+
+- `mlAccessToken`: Token de acesso à API
+- `mlRefreshToken`: Token para renovação
+- `mlTokenExpiresAt`: Timestamp de expiração
+- `mlUserId`: ID do usuário no ML
+
+### Entidade Support (Atendimento)
+
+- `origin`: Origem (mercado_livre, shopee, amazon, outros)
+- `type`: Tipo (pergunta, avaliacao, mensagem_venda)
+- `status`: Status (nao_respondido, respondido, fechado)
+- `externalId`: ID no marketplace
+- `packId`: ID do pack de mensagens (ML)
+- `orderExternalId`: ID do pedido (para mensagens de venda)
+- `question`: Pergunta/mensagem do cliente
+- `answer`: Resposta enviada
+- `customerName`: Nome do cliente
+- `productTitle`: Título do produto/pedidoões com clientes dos marketplaces:
+
+### Tipos de Atendimento
+- **Perguntas**: Dúvidas sobre produtos antes da compra
+- **Mensagens de Venda**: Comunicação pós-compra com compradores
+- **Avaliações**: Feedback e comentários dos clientes
+
+### Funcionalidades
+- Sincronização automática de perguntas e mensagens
+- Resposta direta pelo hub (enviada automaticamente ao marketplace)
+- Filtros avançados (tipo, status, loja, produto)
+- Histórico completo de conversas
+- Logs detalhados de sincronização
+- Busca por palavra-chave
+
+### Fluxo de Sincronização
+1. Selecione uma loja no filtro
+2. Clique em "Sincronizar"
+3. Sistema busca perguntas não respondidas e mensagens de pedidos
+4. Dados são salvos no banco local
+5. Você pode responder diretamente pelo hub
+6. Resposta é automaticamente enviada ao Mercado Livre
+
+## 📚 Central de Ajuda
+
+Interface completa com documentação e FAQs:
+
+- **6 Seções Organizadas**: Primeiros Passos, Produtos, Pedidos, Atendimento, Sincronização, Segurança
+- **29 Perguntas Frequentes**: Respostas detalhadas para dúvidas comuns
+- **Ações Rápidas**: Links diretos para funcionalidades principais
+- **Suporte**: Informações de contato e horário de atendimento
+- Acesso via ícone **?** no topo da páginamarketplaces
 
 ### Campos de integração ML na Store
 

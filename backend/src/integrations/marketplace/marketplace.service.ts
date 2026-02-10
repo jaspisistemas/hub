@@ -316,14 +316,21 @@ export class MarketplaceService {
 
           if (itemResponse.ok) {
             const item = await itemResponse.json();
+            
+            // Converter URLs de imagem para HTTPS (evita mixed content warnings)
+            const ensureHttps = (url: string | null | undefined) => {
+              if (!url) return undefined;
+              return url.toString().replace(/^http:\/\//, 'https://');
+            };
+            
             products.push({
               sku: item.id,
               name: item.title,
               price: item.price,
               quantity: item.available_quantity,
               category: item.category_id,
-              imageUrl: item.pictures?.[0]?.url || item.thumbnail || null,
-              imageUrls: item.pictures?.map((pic: any) => pic.url || pic.secure_url).filter(Boolean) || [],
+              imageUrl: ensureHttps(item.pictures?.[0]?.url || item.thumbnail || null),
+              imageUrls: (item.pictures?.map((pic: any) => ensureHttps(pic.url || pic.secure_url)).filter(Boolean)) || [],
               externalId: item.id,
               marketplace: 'mercadolivre',
             });

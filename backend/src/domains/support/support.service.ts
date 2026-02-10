@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
-import { Support, SupportStatus } from './entities/support.entity';
+import { Repository, Like, LessThan } from 'typeorm';
+import { Support, SupportStatus, SupportType } from './entities/support.entity';
 import { CreateSupportDto } from './dto/create-support.dto';
 import { UpdateSupportDto } from './dto/update-support.dto';
 import { FilterSupportDto } from './dto/filter-support.dto';
@@ -48,11 +48,24 @@ export class SupportService {
       where.question = Like(`%${filters.search}%`);
     }
 
+    // Filtrar apenas perguntas dos últimos 30 dias
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
     return this.supportRepository.find({
-      where,
+      where: [
+        {
+          ...where,
+          questionDate: LessThan(thirtyDaysAgo) ? undefined : where.questionDate,
+        },
+      ].map(() => ({
+        ...where,
+      })),
       relations: ['store', 'product'],
       order: { questionDate: 'DESC' },
-    });
+    }).then(supports => 
+      supports.filter(s => new Date(s.questionDate) >= thirtyDaysAgo)
+    );
   }
 
   async findOne(id: string): Promise<Support> {
@@ -112,23 +125,35 @@ export class SupportService {
   async syncFromMarketplace(storeId: string): Promise<{ imported: number; updated: number }> {
     console.log(`\n🔄 Iniciando sincronização para loja: ${storeId}`);
     
+    // Limpar perguntas antigas (mais de 30 dias)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const deletedCount = await this.supportRepository
+      .createQueryBuilder()
+      .delete()
+      .from(Support)
+      .where('storeId = :storeId', { storeId })
+      .andWhere('questionDate < :thirtyDaysAgo', { thirtyDaysAgo })
+      .execute();
+    
+    if (deletedCount.affected > 0) {
+      console.log(`🗑️  ${deletedCount.affected} pergunta(s) antiga(s) removida(s)`);
+    }
+    
     // Buscar perguntas do marketplace
     const questions = await this.marketplaceService.getQuestions(storeId);
     console.log(`📝 Perguntas encontradas: ${questions?.length || 0}`);
     
-    // Buscar mensagens de vendas do marketplace
-    console.log(`⏳ Buscando mensagens de pós-venda...`);
-    let messages = [];
-    try {
-      messages = await this.marketplaceService.getOrderMessages(storeId);
-      console.log(`💬 Mensagens de pós-venda encontradas: ${messages?.length || 0}`);
-      if (messages?.length > 0) {
-        console.log(`📋 Primeiras mensagens:`, JSON.stringify(messages.slice(0, 2), null, 2));
-      }
-    } catch (error) {
-      console.error(`❌ Erro ao buscar mensagens de pós-venda:`, error.message);
-      messages = [];
-    }
+    // ⚠️ IMPORTANTE: Mensagens de pós-venda NÃO podem ser buscadas via API REST
+    // Elas só chegam via WEBHOOK quando o cliente envia uma mensagem
+    // O webhook já está configurado em marketplace.controller.ts
+    console.log(`\n💡 Mensagens de pós-venda: Disponíveis apenas via WEBHOOK`);
+    console.log(`   Configure webhooks no ML para receber mensagens em tempo real`);
+    console.log(`   URL: https://seu-dominio.com/marketplace/mercadolivre/webhook`);
+    console.log(`   Tópico: "messages"\n`);
+    
+    const messages = []; // Não buscar mais, só via webhook
     
     let imported = 0;
     let updated = 0;
@@ -141,10 +166,23 @@ export class SupportService {
 
       if (existing) {
         // Atualizar se houver mudanças
+        let hasChanges = false;
+        
         if (question.answer && !existing.answer) {
           existing.answer = question.answer.text;
           existing.answerDate = new Date(question.answer.date_created);
           existing.status = SupportStatus.RESPONDIDO;
+          hasChanges = true;
+        }
+        
+        // Atualizar canAnswer baseado no status atual
+        const newCanAnswer = question.status !== 'CLOSED' && question.status !== 'CLOSED_UNANSWERED';
+        if (existing.canAnswer !== newCanAnswer) {
+          existing.canAnswer = newCanAnswer;
+          hasChanges = true;
+        }
+        
+        if (hasChanges) {
           await this.supportRepository.save(existing);
           updated++;
         }
@@ -160,7 +198,7 @@ export class SupportService {
           customerExternalId: question.from?.id?.toString(),
           question: question.text,
           questionDate: new Date(question.date_created),
-          canAnswer: question.status === 'UNANSWERED',
+          canAnswer: question.status !== 'CLOSED' && question.status !== 'CLOSED_UNANSWERED',
           status: question.answer ? SupportStatus.RESPONDIDO : SupportStatus.NAO_RESPONDIDO,
           answer: question.answer?.text,
           answerDate: question.answer ? new Date(question.answer.date_created) : null,
@@ -220,6 +258,71 @@ export class SupportService {
 
     console.log(`\n✨ Sincronização concluída! Importadas: ${imported}, Atualizadas: ${updated}\n`);
     return { imported, updated };
+  }
+
+  /**
+   * Processa uma mensagem individual recebida via webhook
+   * Usado quando o ML envia notificação de nova mensagem
+   */
+  async processMessageFromWebhook(storeId: string, packId: string): Promise<Support | null> {
+    console.log(`\n🔔 Processando mensagem via webhook - Store: ${storeId}, Pack: ${packId}`);
+
+    try {
+      // Buscar detalhes do pack via API (tentar múltiplos endpoints)
+      const packDetails = await this.marketplaceService.getPackDetails(storeId, packId);
+      
+      if (!packDetails) {
+        console.log(`❌ Não foi possível buscar detalhes do pack ${packId}`);
+        return null;
+      }
+
+      console.log(`📦 Pack encontrado:`, packDetails);
+
+      // Verificar se já existe
+      const existing = await this.supportRepository.findOne({
+        where: { packId: packId },
+      });
+
+      if (existing) {
+        console.log(`✏️ Atualizando mensagem existente (ID: ${existing.id})`);
+        
+        // Atualizar com os novos dados
+        existing.question = packDetails.lastMessage || existing.question;
+        existing.questionDate = packDetails.lastMessageDate ? new Date(packDetails.lastMessageDate) : existing.questionDate;
+        existing.status = SupportStatus.NAO_RESPONDIDO; // Nova mensagem = não respondido
+        
+        const updated = await this.supportRepository.save(existing);
+        console.log(`✅ Mensagem atualizada com sucesso`);
+        return updated;
+      } else {
+        console.log(`🆕 Criando nova mensagem de pós-venda`);
+        
+        // Criar novo registro
+        const support = this.supportRepository.create({
+          origin: packDetails.origin,
+          type: SupportType.MENSAGEM_VENDA,
+          externalId: packId,
+          packId: packId,
+          orderExternalId: packDetails.orderId,
+          productTitle: packDetails.orderTitle || 'Pedido',
+          customerName: packDetails.customerName || 'Cliente',
+          customerExternalId: packDetails.customerId,
+          question: packDetails.lastMessage,
+          questionDate: new Date(packDetails.lastMessageDate),
+          canAnswer: true,
+          status: SupportStatus.NAO_RESPONDIDO,
+          storeId,
+          metadata: packDetails,
+        });
+
+        const saved = await this.supportRepository.save(support);
+        console.log(`✅ Mensagem criada (ID: ${saved.id})`);
+        return saved;
+      }
+    } catch (error) {
+      console.error(`❌ Erro ao processar mensagem via webhook:`, error);
+      return null;
+    }
   }
 
   async remove(id: string): Promise<void> {

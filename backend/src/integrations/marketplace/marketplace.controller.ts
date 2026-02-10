@@ -4,6 +4,7 @@ import { MarketplaceService } from './marketplace.service';
 import { OrdersService } from '../../domains/orders/orders.service';
 import { StoresService } from '../../domains/stores/stores.service';
 import { ProductsService } from '../../domains/products/products.service';
+import { SupportService } from '../../domains/support/support.service';
 
 /**
  * Controller para receber webhooks e gerenciar integrações com marketplaces
@@ -15,6 +16,7 @@ export class MarketplaceController {
     private readonly ordersService: OrdersService,
     private readonly storesService: StoresService,
     private readonly productsService: ProductsService,
+    private readonly supportService: SupportService,
   ) {}
 
   /**
@@ -28,7 +30,50 @@ export class MarketplaceController {
     try {
       // O payload típico do ML contém: { resource, user_id, topic, application_id, attempts, sent, received }
       // Para pedidos: topic = "orders_v2" e resource = "/orders/{order_id}"
+      // Para mensagens: topic = "messages" e resource = "/messages/{pack_id}"
       
+      // Processar notificações de MENSAGENS
+      if (payload.topic === 'messages') {
+        const userId = payload.user_id?.toString();
+        const packId = payload.resource?.split('/').pop();
+
+        console.log(`📬 Nova mensagem ML - User: ${userId}, Pack: ${packId}`);
+
+        if (!userId || !packId) {
+          console.warn('⚠️ Webhook ML de mensagem sem user_id ou pack_id');
+          return { success: true, message: 'Webhook recebido mas dados incompletos' };
+        }
+
+        // Buscar a loja pelo userId do ML
+        const store = await this.storesService.findByMercadoLivreUserId(userId);
+        
+        if (!store || !store.mlAccessToken) {
+          console.warn(`⚠️ Loja não encontrada ou sem token para user ${userId}`);
+          return { success: false, message: 'Loja não autorizada' };
+        }
+
+        console.log(`✅ Mensagem recebida para loja: ${store.name}`);
+        
+        // Processar a mensagem e criar/atualizar registro de suporte
+        const support = await this.supportService.processMessageFromWebhook(store.id, packId);
+        
+        if (support) {
+          console.log(`✅ Mensagem processada com sucesso! Support ID: ${support.id}`);
+          return { 
+            success: true, 
+            message: 'Mensagem processada com sucesso',
+            supportId: support.id 
+          };
+        } else {
+          console.log(`⚠️ Não foi possível processar a mensagem do pack ${packId}`);
+          return { 
+            success: true, 
+            message: 'Webhook recebido mas mensagem não pôde ser processada' 
+          };
+        }
+      }
+      
+      // Processar notificações de PEDIDOS
       if (payload.topic === 'orders_v2' || payload.topic === 'orders') {
         const userId = payload.user_id?.toString();
         const orderId = payload.resource?.split('/').pop();

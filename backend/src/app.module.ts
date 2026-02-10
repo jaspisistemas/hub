@@ -5,7 +5,6 @@ import { OrdersModule } from './domains/orders/orders.module';
 import { MarketplaceModule } from './integrations/marketplace/marketplace.module';
 import { QueueModule } from './infra/queue/queue.module';
 import { WebsocketModule } from './infra/websocket/websocket.module';
-// import { JobsModule } from './jobs/jobs.module'; // Desabilitado temporariamente (requer Redis)
 import { AuthModule } from './domains/auth/auth.module';
 import { User } from './domains/auth/entities/user.entity';
 import { Product } from './domains/products/entities/product.entity';
@@ -37,7 +36,6 @@ import { SupportModule } from './domains/support/support.module';
     MarketplaceModule,
     QueueModule,
     WebsocketModule,
-    // JobsModule, // Desabilitado temporariamente (requer Redis)
   ],
 })
 export class AppModule {}

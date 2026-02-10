@@ -5,15 +5,49 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, { 
+  // Configurar CORS dinamicamente baseado em variáveis de ambiente
+  const allowedOrigins = [
+    'https://panel-joshua-norfolk-molecular.trycloudflare.com',
+    'https://uneducated-georgiann-personifiant.ngrok-free.dev',
+    'https://localhost:3000',
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'https://localhost:5173',
+  ];
+
+  // Adicionar origem do ngrok se configurada
+  if (process.env.FRONTEND_URL) {
+    allowedOrigins.push(process.env.FRONTEND_URL);
+  }
+  
+  // Adicionar BACKEND_URL do .env para aceitar requisições dele também
+  if (process.env.BACKEND_URL) {
+    const backendOrigin = process.env.BACKEND_URL.replace(/\/$/, ''); // Remove trailing slash
+    if (!allowedOrigins.includes(backendOrigin)) {
+      allowedOrigins.push(backendOrigin);
+    }
+  }
+
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     cors: {
-      origin: ['*', 'https://panel-joshua-norfolk-molecular.trycloudflare.com'],
+      origin: (origin, callback) => {
+        // Permitir requisições sem origin (mobile, desktop apps, etc)
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          console.warn(`⚠️ CORS bloqueado para origem: ${origin}`);
+          // Em produção, você pode rejeitar
+          // callback(new Error('Not allowed by CORS'));
+          // Por enquanto, permitir para não quebrar em desenvolvimento
+          callback(null, true);
+        }
+      },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning', 'Accept', 'X-Requested-With'],
       exposedHeaders: ['Content-Range', 'X-Content-Range'],
       maxAge: 86400,
-    }
+    },
   });
   
   // Servir arquivos estáticos da pasta uploads

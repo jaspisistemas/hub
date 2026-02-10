@@ -677,23 +677,32 @@ export class MarketplaceService {
   /**
    * Busca perguntas não respondidas do Mercado Livre
    */
+  /**
+   * Busca perguntas do Mercado Livre seguindo a documentação oficial
+   * Documentação: https://developers.mercadolivre.com.br/pt_br/gerenciamento-perguntas-respostas
+   * Endpoint: GET /questions/search
+   */
   async getQuestions(storeId: string) {
+    console.log(`\n🔍 [QUESTIONS] Iniciando busca de perguntas para loja: ${storeId}`);
+    
     // Buscar a store para obter o accessToken
     const Store = await this.getStoreEntity(storeId);
     
-    if (!Store?.mlAccessToken) {
+    if (!Store?.mlAccessToken || !Store?.mlUserId) {
       throw new HttpException(
-        'Loja não possui token de acesso ao Mercado Livre',
+        'Loja não possui token de acesso ou userId do Mercado Livre',
         HttpStatus.BAD_REQUEST,
       );
     }
+
+    console.log(`   📋 Loja: ${Store.name} (User ID: ${Store.mlUserId})`);
 
     // Renovar token se estiver expirado
     let accessToken = Store.mlAccessToken;
     if (Store.mlTokenExpiresAt && Store.mlRefreshToken) {
       const now = Date.now();
       if (now > Store.mlTokenExpiresAt - 5 * 60 * 1000) {
-        console.log(`🔄 Renovando token ML da loja: ${Store.name}`);
+        console.log(`   🔄 Renovando token ML...`);
         try {
           const tokenData = await this.refreshMercadoLivreToken(Store.mlRefreshToken);
           accessToken = tokenData.accessToken;
@@ -703,9 +712,9 @@ export class MarketplaceService {
             mlRefreshToken: tokenData.refreshToken,
             mlTokenExpiresAt: Date.now() + tokenData.expiresIn * 1000,
           });
-          console.log('✅ Token renovado com sucesso');
+          console.log(`   ✅ Token renovado com sucesso`);
         } catch (error) {
-          console.error(`❌ Erro ao renovar token ML: ${error.message}`);
+          console.error(`   ❌ Erro ao renovar token ML: ${error.message}`);
           throw new HttpException(
             'Token expirado. Por favor, reconecte a loja do Mercado Livre.',
             HttpStatus.UNAUTHORIZED,
@@ -715,26 +724,41 @@ export class MarketplaceService {
     }
 
     try {
-      // Buscar perguntas dos últimos 60 dias com paginação
-      let offset = 0;
-      const limit = 50;
-      let hasMore = true;
       const allQuestions = [];
+      
+      // Buscar perguntas do mês atual (últimos 30 dias)
+      const dateFrom = new Date();
+      dateFrom.setDate(dateFrom.getDate() - 30);
+      const dateFromISO = dateFrom.toISOString();
+      
+      console.log(`\n   📝 Buscando perguntas dos últimos 30 dias (desde ${dateFrom.toLocaleDateString('pt-BR')})...`);
+      
+      let offset = 0;
+      const limit = 50; // Limite padrão da API
+      let hasMore = true;
+      let pageCount = 0;
 
       // Buscar até 200 perguntas (4 páginas)
       while (hasMore && offset < 200) {
-        const response = await fetch(
-          `https://api.mercadolibre.com/questions/search?seller_id=${Store.mlUserId}&status=UNANSWERED&limit=${limit}&offset=${offset}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
-            },
+        pageCount++;
+        
+        // Endpoint oficial: GET /questions/search com filtro de data
+        const url = `https://api.mercadolibre.com/questions/search?seller_id=${Store.mlUserId}&limit=${limit}&offset=${offset}&api_version=4&date_from=${dateFromISO}`;
+        
+        console.log(`      🌐 Página ${pageCount}: offset=${offset}, limit=${limit}`);
+        
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Accept': 'application/json',
           },
-        );
+        });
 
-        if (!response.ok) {
-          const error = await response.text();
-          console.error('❌ Erro ao buscar perguntas do ML:', error);
+        // Validar status HTTP esperado (200 para GET)
+        if (response.status !== 200) {
+          const errorText = await response.text();
+          console.error(`      ❌ Erro HTTP ${response.status}: ${errorText.substring(0, 200)}`);
           break;
         }
 
@@ -742,10 +766,18 @@ export class MarketplaceService {
         const questions = data.questions || [];
         
         if (questions.length === 0) {
+          console.log(`      ℹ️ Nenhuma pergunta encontrada`);
           hasMore = false;
           break;
         }
 
+        console.log(`      ✅ ${questions.length} pergunta(s) encontrada(s)`);
+        
+        // Logar detalhes para auditoria
+        questions.forEach((q: any) => {
+          console.log(`         • ID: ${q.id} | Status: ${q.status} | Item: ${q.item_id} | Data: ${q.date_created}`);
+        });
+        
         allQuestions.push(...questions);
         offset += limit;
 
@@ -755,7 +787,8 @@ export class MarketplaceService {
         }
       }
 
-      console.log(`✅ Total de ${allQuestions.length} perguntas não respondidas encontradas`);
+      console.log(`\n   📊 Total: ${allQuestions.length} perguntas encontradas`);
+      console.log(`✅ [QUESTIONS] Busca concluída com sucesso\n`);
       
       return allQuestions.map((q: any) => ({
         id: q.id.toString(),
@@ -770,7 +803,12 @@ export class MarketplaceService {
         type: 'pergunta',
       }));
     } catch (error) {
-      console.error('❌ Erro ao buscar perguntas do ML:', error);
+      console.error(`❌ [QUESTIONS] Erro ao buscar perguntas:`, error.message);
+      
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      
       throw new HttpException(
         'Erro ao buscar perguntas do Mercado Livre',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -779,9 +817,15 @@ export class MarketplaceService {
   }
 
   /**
-   * Responde uma pergunta no Mercado Livre
+   * Responde uma pergunta no Mercado Livre seguindo a documentação oficial
+   * Documentação: https://developers.mercadolivre.com.br/pt_br/gerenciamento-perguntas-respostas
+   * Endpoint: POST /answers
+   * Corpo: { "question_id": <id>, "text": "<resposta>" }
    */
   async answerQuestion(storeId: string, questionId: string, answer: string) {
+    console.log(`\n📤 [ANSWER] Respondendo pergunta ID: ${questionId}`);
+    console.log(`   📝 Resposta: "${answer.substring(0, 100)}${answer.length > 100 ? '...' : ''}"`);
+    
     const Store = await this.getStoreEntity(storeId);
     
     if (!Store?.mlAccessToken) {
@@ -791,12 +835,14 @@ export class MarketplaceService {
       );
     }
 
+    console.log(`   🏪 Loja: ${Store.name}`);
+
     // Renovar token se estiver expirado
     let accessToken = Store.mlAccessToken;
     if (Store.mlTokenExpiresAt && Store.mlRefreshToken) {
       const now = Date.now();
       if (now > Store.mlTokenExpiresAt - 5 * 60 * 1000) {
-        console.log(`🔄 Renovando token ML da loja: ${Store.name}`);
+        console.log(`   🔄 Renovando token ML...`);
         try {
           const tokenData = await this.refreshMercadoLivreToken(Store.mlRefreshToken);
           accessToken = tokenData.accessToken;
@@ -806,9 +852,9 @@ export class MarketplaceService {
             mlRefreshToken: tokenData.refreshToken,
             mlTokenExpiresAt: Date.now() + tokenData.expiresIn * 1000,
           });
-          console.log('✅ Token renovado com sucesso');
+          console.log(`   ✅ Token renovado`);
         } catch (error) {
-          console.error(`❌ Erro ao renovar token ML: ${error.message}`);
+          console.error(`   ❌ Erro ao renovar token ML: ${error.message}`);
           throw new HttpException(
             'Token expirado. Por favor, reconecte a loja do Mercado Livre.',
             HttpStatus.UNAUTHORIZED,
@@ -818,33 +864,72 @@ export class MarketplaceService {
     }
 
     try {
-      const response = await fetch(
-        `https://api.mercadolibre.com/answers`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            question_id: parseInt(questionId),
-            text: answer,
-          }),
-        },
-      );
+      // Validar limite de caracteres (máximo 2.000 conforme documentação)
+      if (answer.length > 2000) {
+        console.warn(`   ⚠️ Resposta truncada de ${answer.length} para 2000 caracteres`);
+        answer = answer.substring(0, 2000);
+      }
 
-      if (!response.ok) {
-        const error = await response.text();
-        console.error('❌ Erro ao responder pergunta no ML:', error);
+      // Endpoint oficial: POST /answers
+      const url = 'https://api.mercadolibre.com/answers';
+      
+      // Corpo exato conforme documentação
+      const body = {
+        question_id: parseInt(questionId),
+        text: answer,
+      };
+
+      console.log(`   🌐 POST ${url}`);
+      console.log(`   📦 Body: ${JSON.stringify(body)}`);
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
+
+      // Validar status HTTP esperado (201 para POST conforme documentação)
+      if (response.status !== 201 && response.status !== 200) {
+        const errorText = await response.text();
+        console.error(`   ❌ Erro HTTP ${response.status}: ${errorText}`);
+        
+        // Tratar erros específicos da documentação
+        try {
+          const errorJson = JSON.parse(errorText);
+          if (errorJson.message) {
+            console.error(`   💬 Mensagem de erro: ${errorJson.message}`);
+          }
+        } catch (e) {
+          // Erro não é JSON
+        }
+        
         throw new HttpException(
-          'Erro ao responder pergunta no Mercado Livre',
+          `Erro ao responder pergunta no Mercado Livre: ${errorText.substring(0, 200)}`,
           HttpStatus.BAD_REQUEST,
         );
       }
 
-      return await response.json();
+      const result = await response.json();
+      
+      // Log para auditoria conforme especificação
+      console.log(`   ✅ Resposta enviada com sucesso!`);
+      console.log(`      📋 Question ID: ${questionId}`);
+      console.log(`      📊 Status retornado: ${result.status || 'N/A'}`);
+      console.log(`      📅 Data: ${result.date_created || new Date().toISOString()}`);
+      console.log(`✅ [ANSWER] Operação concluída\n`);
+      
+      return result;
     } catch (error) {
-      console.error('❌ Erro ao responder pergunta no ML:', error);
+      console.error(`❌ [ANSWER] Erro ao responder pergunta:`, error.message);
+      
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      
       throw new HttpException(
         'Erro ao responder pergunta no Mercado Livre',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -861,6 +946,7 @@ export class MarketplaceService {
 
   /**
    * Busca mensagens de vendas (packs) dos pedidos do Mercado Livre
+   * Usando pack_id extraído dos orders para buscar as mensagens
    */
   async getOrderMessages(storeId: string) {
     const Store = await this.getStoreEntity(storeId);
@@ -899,18 +985,16 @@ export class MarketplaceService {
     }
 
     try {
-      // Buscar pedidos dos últimos 60 dias (limite do ML)
       const messages = [];
       let offset = 0;
       const limit = 50;
       let hasMore = true;
-      let totalOrdersProcessed = 0;
 
       console.log(`\n🔍 Iniciando busca de mensagens de pós-venda para loja: ${Store.name} (userId: ${Store.mlUserId})`);
 
       // Buscar até 200 pedidos (4 páginas) para cobrir mais histórico
       while (hasMore && offset < 200) {
-        console.log(`  📄 Buscando página ${Math.floor(offset / limit) + 1}...`);
+        console.log(`  📄 Buscando página ${Math.floor(offset / limit) + 1} de orders (offset: ${offset})...`);
         
         const ordersResponse = await fetch(
           `https://api.mercadolibre.com/orders/search?seller=${Store.mlUserId}&limit=${limit}&offset=${offset}`,
@@ -919,11 +1003,11 @@ export class MarketplaceService {
               'Authorization': `Bearer ${accessToken}`,
             },
           },
-          );
+        );
 
         if (!ordersResponse.ok) {
-          const error = await ordersResponse.text();
-          console.error('❌ Erro ao buscar pedidos do ML:', error);
+          const errorText = await ordersResponse.text();
+          console.error(`❌ Erro ao buscar pedidos do ML (${ordersResponse.status}): ${errorText.substring(0, 100)}`);
           break;
         }
 
@@ -936,63 +1020,148 @@ export class MarketplaceService {
           break;
         }
 
-        console.log(`  📦 Processando ${orders.length} pedidos (offset: ${offset})`);
+        console.log(`  📦 Processando ${orders.length} pedidos...`);
         
-        // Para cada pedido, buscar o pack de mensagens
+        // Para cada pedido, extrair pack_id e buscar as mensagens
         for (const order of orders) {
-          totalOrdersProcessed++;
           try {
-            const packResponse = await fetch(
-              `https://api.mercadolibre.com/messages/packs/${order.id}/sellers/${Store.mlUserId}`,
-              {
-                headers: {
-                  'Authorization': `Bearer ${accessToken}`,
-                },
-              },
-            );
+            // DEBUG: Log completo do order para ver estrutura
+            console.log(`  📋 DEBUG - Estrutura do pedido ${order.id}:`, JSON.stringify({
+              id: order.id,
+              pack_id: order.pack_id,
+              context: order.context,
+              payments: order.payments?.map(p => ({ id: p.id, pack_id: p.pack_id })),
+              messages_available: !!order.messages
+            }, null, 2));
 
-            if (packResponse.ok) {
-              const pack = await packResponse.json();
-              console.log(`    🔗 Pack encontrado para pedido ${order.id}: ${pack.id}`);
-              
-              // Buscar mensagens do pack
-              const messagesResponse = await fetch(
-                `https://api.mercadolibre.com/messages/packs/${pack.id}`,
-                {
-                  headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                  },
-                },
-              );
+            // Extrair pack_id do objeto order
+            // O pack_id pode estar em diferentes locais dependendo da estrutura da API
+            const packId = order.pack_id || 
+                          order.context?.flow_id ||
+                          order.payments?.[0]?.pack_id ||
+                          order.messages?.pack_id;
 
-              if (messagesResponse.ok) {
-                const messagesData = await messagesResponse.json();
-                const lastMessage = messagesData.messages?.[messagesData.messages.length - 1];
-                
-                if (lastMessage && lastMessage.from?.user_id !== Store.mlUserId) {
-                  // Só adicionar se a última mensagem for do comprador
-                  console.log(`    💬 Mensagem encontrada! Cliente: ${lastMessage.from.nickname}, Mensagem: "${lastMessage.text.substring(0, 50)}..."`);
-                  messages.push({
-                    packId: pack.id,
-                    orderId: order.id.toString(),
-                    orderTitle: order.order_items?.[0]?.item?.title || 'Pedido',
-                    customerId: lastMessage.from.user_id,
-                    customerName: lastMessage.from.nickname || 'Cliente',
-                    lastMessage: lastMessage.text,
-                    lastMessageDate: lastMessage.date_created,
-                    origin: SupportOrigin.MERCADO_LIVRE,
-                  });
-                } else {
-                  console.log(`    ✋ Pack sem mensagens do comprador (ou última mensagem foi do vendedor)`);
-                }
-              } else {
-                console.log(`    ⚠️ Erro ao buscar mensagens do pack: ${messagesResponse.status}`);
-              }
-            } else {
-              console.log(`    ⚠️ Pack não encontrado para pedido ${order.id}`);
+            if (!packId) {
+              console.log(`  ⏭️ Pedido ${order.id} - Sem pack_id disponível (talvez sem comunicação)`);
+              continue;
             }
+
+            console.log(`  🔗 Pedido: ${order.id}, Pack: ${packId} ${packId === '2000011363192693' ? '🎯 ENCONTRADO O PACK!' : ''}`);
+            
+            // Tentar buscar mensagens do pack com múltiplas tentativas
+            let messagesResponse = null;
+            let messagesData = null;
+            let successUrl = null;
+            
+            const headers = {
+              'Authorization': `Bearer ${accessToken}`,
+              'Accept': 'application/json',
+            };
+
+            // Lista de URLs para tentar - incluindo API de Claims
+            const urlsToTry = [
+              // API de Claims (usado para mensagens de pós-venda)
+              `https://api.mercadolibre.com/v1/claims/${packId}`,
+              `https://api.mercadolibre.com/claims/${packId}`,
+              // API de Messages (antiga)
+              `https://api.mercadolibre.com/messages/packs/${packId}`,
+              `https://api.mercadolibre.com/messages/packs/${packId}/messages`,
+              `https://api.mercadolibre.com/messages/packs/${packId}/sellers/${Store.mlUserId}`,
+              `https://api.mercadolibre.com/messages/packs/${packId}/sellers/${Store.mlUserId}/messages`,
+              // API de Orders com mensagens
+              `https://api.mercadolibre.com/orders/${order.id}/messages`,
+            ];
+
+            // Tentar cada URL até encontrar uma que funcione
+            for (let i = 0; i < urlsToTry.length; i++) {
+              const url = urlsToTry[i];
+              console.log(`    📨 Tentativa ${i + 1}: GET ${url}`);
+              
+              messagesResponse = await fetch(url, { headers });
+              
+              if (messagesResponse.ok) {
+                successUrl = url;
+                console.log(`    ✅ Sucesso com: ${url}`);
+                break;
+              } else {
+                console.log(`    ❌ Status ${messagesResponse.status} - ${url}`);
+              }
+            }
+
+            // Se nenhuma URL funcionou, logar e continuar
+            if (!messagesResponse || !messagesResponse.ok) {
+              const errorBody = messagesResponse ? await messagesResponse.text() : 'No response';
+              console.log(`    ⚠️ Todas as tentativas falharam para Pack ${packId}`);
+              console.log(`    📄 Última resposta: ${errorBody.substring(0, 200)}`);
+              continue;
+            }
+
+            messagesData = await messagesResponse.json();
+            console.log(`    📦 Estrutura da resposta:`, JSON.stringify(messagesData, null, 2).substring(0, 500));
+            
+            // A resposta pode ter diferentes estruturas dependendo da API
+            let messagesList = [];
+            
+            // API de Claims (mensagens pós-venda)
+            if (messagesData.conversation && messagesData.conversation.messages) {
+              messagesList = messagesData.conversation.messages;
+              console.log(`    🏷️ Resposta da API de Claims detectada`);
+            }
+            // API de Messages padrão
+            else if (messagesData.messages) {
+              messagesList = messagesData.messages;
+              console.log(`    🏷️ Resposta da API de Messages detectada`);
+            }
+            // API de Orders com messages
+            else if (messagesData.results) {
+              messagesList = messagesData.results;
+              console.log(`    🏷️ Resposta da API de Orders/Messages detectada`);
+            }
+            // Se a resposta for um pack com histórico de mensagens
+            else if (messagesData.resource && messagesData.resource.messages) {
+              messagesList = messagesData.resource.messages;
+              console.log(`    🏷️ Resposta com resource.messages detectada`);
+            }
+            // Pode ser que a resposta seja diretamente um array
+            else if (Array.isArray(messagesData)) {
+              messagesList = messagesData;
+              console.log(`    🏷️ Resposta direta como array detectada`);
+            }
+            
+            // Validar se há mensagens
+            if (!messagesList || messagesList.length === 0) {
+              console.log(`    ℹ️ Pack ${packId} sem mensagens na resposta`);
+              continue;
+            }
+
+            console.log(`    📝 Total de ${messagesList.length} mensagens encontradas no pack`);
+            const lastMessage = messagesList[messagesList.length - 1];
+            
+            // Filtrar: só adicionar se a última mensagem for do comprador (não do vendedor)
+            if (lastMessage.from?.user_id === Store.mlUserId) {
+              console.log(`    ⏭️ Pack ${packId} - Última mensagem é do vendedor (ignorando)`);
+              continue;
+            }
+
+            if (!lastMessage.from || !lastMessage.text) {
+              console.log(`    ⚠️ Pack ${packId} - Mensagem sem dados completos (ignorando)`);
+              continue;
+            }
+
+            console.log(`    ✅ Mensagem encontrada! Cliente: ${lastMessage.from.nickname}, Texto: "${lastMessage.text.substring(0, 50)}..."`);
+            
+            messages.push({
+              packId: packId,
+              orderId: order.id.toString(),
+              orderTitle: order.order_items?.[0]?.item?.title || 'Pedido',
+              customerId: lastMessage.from.user_id,
+              customerName: lastMessage.from.nickname || 'Cliente',
+              lastMessage: lastMessage.text,
+              lastMessageDate: lastMessage.date_created,
+              origin: SupportOrigin.MERCADO_LIVRE,
+            });
           } catch (error) {
-            console.error(`    ❌ Erro ao buscar mensagens do pedido ${order.id}:`, error);
+            console.error(`  ❌ Erro ao processar pedido ${order.id}:`, error.message);
           }
         }
 
@@ -1004,7 +1173,7 @@ export class MarketplaceService {
         }
       }
 
-      console.log(`\n✅ Total de ${messages.length} mensagens de vendas encontradas (processados ${totalOrdersProcessed} pedidos)\n`);
+      console.log(`\n✅ Busca concluída! Total de ${messages.length} mensagens de vendas encontradas\n`);
       return messages;
     } catch (error) {
       console.error('❌ Erro ao buscar mensagens de vendas do ML:', error);
@@ -1052,36 +1221,34 @@ export class MarketplaceService {
     }
 
     try {
-      const response = await fetch(
-        `https://api.mercadolibre.com/messages/packs/${packId}/sellers/${Store.mlUserId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from: {
-              user_id: Store.mlUserId,
-            },
-            to: {
-              user_id: 'buyer', // O comprador
-            },
-            text: message,
-          }),
+      // Endpoint correto para enviar mensagem em um pack
+      const sendUrl = `https://api.mercadolibre.com/messages/packs/${packId}`;
+      
+      console.log(`📤 Enviando mensagem para pack ${packId} na loja ${Store.name}`);
+      
+      const response = await fetch(sendUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
         },
-      );
+        body: JSON.stringify({
+          text: message,
+        }),
+      });
 
       if (!response.ok) {
         const error = await response.text();
-        console.error('❌ Erro ao enviar mensagem no ML:', error);
+        console.error(`❌ Erro ao enviar mensagem no ML (${response.status}):`, error);
         throw new HttpException(
           'Erro ao enviar mensagem no Mercado Livre',
           HttpStatus.BAD_REQUEST,
         );
       }
 
-      return await response.json();
+      const result = await response.json();
+      console.log(`✅ Mensagem enviada com sucesso para pack ${packId}`);
+      return result;
     } catch (error) {
       console.error('❌ Erro ao enviar mensagem no ML:', error);
       throw new HttpException(
@@ -1089,5 +1256,99 @@ export class MarketplaceService {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  /**
+   * Busca detalhes de um pack específico (usado por webhooks)
+   * Tenta múltiplos endpoints até encontrar um que funcione
+   */
+  async getPackDetails(storeId: string, packId: string) {
+    const Store = await this.getStoreEntity(storeId);
+    
+    if (!Store?.mlAccessToken) {
+      throw new HttpException(
+        'Loja não possui token de acesso ao Mercado Livre',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Renovar token se estiver expirado
+    let accessToken = Store.mlAccessToken;
+    if (Store.mlTokenExpiresAt && Store.mlRefreshToken) {
+      const now = Date.now();
+      if (now > Store.mlTokenExpiresAt - 5 * 60 * 1000) {
+        console.log(`🔄 Renovando token ML da loja: ${Store.name}`);
+        try {
+          const tokenData = await this.refreshMercadoLivreToken(Store.mlRefreshToken);
+          accessToken = tokenData.accessToken;
+          
+          await this.storesService.update(Store.id, {
+            mlAccessToken: tokenData.accessToken,
+            mlRefreshToken: tokenData.refreshToken,
+            mlTokenExpiresAt: Date.now() + tokenData.expiresIn * 1000,
+          });
+        } catch (error) {
+          console.error(`❌ Erro ao renovar token ML: ${error.message}`);
+        }
+      }
+    }
+
+    const headers = {
+      'Authorization': `Bearer ${accessToken}`,
+      'Accept': 'application/json',
+    };
+
+    // Tentar múltiplos endpoints
+    const urlsToTry = [
+      `https://api.mercadolibre.com/v1/claims/${packId}`,
+      `https://api.mercadolibre.com/claims/${packId}`,
+      `https://api.mercadolibre.com/messages/packs/${packId}`,
+      `https://api.mercadolibre.com/messages/packs/${packId}/messages`,
+    ];
+
+    for (const url of urlsToTry) {
+      try {
+        console.log(`🔍 Tentando: ${url}`);
+        const response = await fetch(url, { headers });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log(`✅ Dados encontrados em: ${url}`);
+          
+          // Processar resposta baseado na estrutura
+          let messagesList = [];
+          
+          if (data.conversation && data.conversation.messages) {
+            messagesList = data.conversation.messages;
+          } else if (data.messages) {
+            messagesList = data.messages;
+          } else if (data.results) {
+            messagesList = data.results;
+          } else if (Array.isArray(data)) {
+            messagesList = data;
+          }
+
+          if (messagesList.length > 0) {
+            const lastMessage = messagesList[messagesList.length - 1];
+            
+            return {
+              packId: packId,
+              orderId: data.order_id || data.resource?.order_id || null,
+              orderTitle: 'Pedido',
+              customerId: lastMessage.from?.user_id,
+              customerName: lastMessage.from?.nickname || 'Cliente',
+              lastMessage: lastMessage.text,
+              lastMessageDate: lastMessage.date_created,
+              origin: SupportOrigin.MERCADO_LIVRE,
+            };
+          }
+        }
+      } catch (error) {
+        console.log(`❌ Falhou: ${url}`);
+      }
+    }
+
+    console.log(`⚠️ Nenhum endpoint funcionou para pack ${packId}`);
+    return null;
   }
 }

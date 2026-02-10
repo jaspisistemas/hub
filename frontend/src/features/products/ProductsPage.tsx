@@ -2,12 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Paper,
   Typography,
   InputAdornment,
@@ -55,6 +49,7 @@ import {
 import PageHeader from '../../components/PageHeader';
 import StatusBadge from '../../components/StatusBadge';
 import EmptyState from '../../components/EmptyState';
+import DataTable, { Column, TableImage, TruncatedText } from '../../components/DataTable';
 import { productsService, Product, CreateProductInput } from '../../services/productsService';
 import { storesService, Store } from '../../services/storesService';
 import * as websocket from '../../services/websocket';
@@ -554,184 +549,113 @@ export default function ProductsPage() {
         />
       </Paper>
 
-      <TableContainer component={Paper} sx={{ borderRadius: 3, overflow: 'hidden' }}>
-        {filteredProducts.length === 0 ? (
-          <Box sx={{ p: 8, textAlign: 'center' }}>
-            <Box
-              sx={{
-                width: 120,
-                height: 120,
-                mx: 'auto',
-                mb: 3,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                bgcolor: theme => theme.palette.mode === 'dark' ? '#0d1117' : '#f3f4f6',
-                borderRadius: 3,
-              }}
-            >
-              <ProductsIcon sx={{ fontSize: 60, color: theme => theme.palette.mode === 'dark' ? '#64748b' : '#9ca3af' }} />
-            </Box>
-            <Typography variant="h5" sx={{ fontWeight: 600, color: 'text.primary', mb: 1 }}>
-              {searchTerm ? 'Nenhum produto encontrado' : 'Nenhum produto cadastrado'}
-            </Typography>
-            <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-              {searchTerm ? 'Tente ajustar os filtros de busca.' : 'Os produtos cadastrados aparecerão aqui.'}
-            </Typography>
-          </Box>
-        ) : (
-        <Table size="small">
-          <TableHead>
-            <TableRow sx={{ backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#0d1117' : '#f5f7fa' }}>
-              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#555555', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Imagem</TableCell>
-              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#555555', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Produto</TableCell>
-              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#555555', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SKU</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#555555', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Preço</TableCell>
-              <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#555555', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Estoque</TableCell>
-              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#555555', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Categoria</TableCell>
-              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#555555', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Status</TableCell>
-              <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#555555', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Ações</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredProducts.map((product) => (
-              <TableRow
-                key={product.id}
+      <DataTable<Product>
+        columns={[
+          {
+            id: 'image',
+            label: 'Imagem',
+            width: 80,
+            format: (_, row) => (
+              <TableImage
+                src={getImageUrl(row.imageUrls?.[0] || row.imageUrl)}
+                alt={row.name}
+              />
+            ),
+          },
+          {
+            id: 'name',
+            label: 'Produto',
+            minWidth: 200,
+            format: (value) => <TruncatedText maxLength={50}>{value}</TruncatedText>,
+          },
+          {
+            id: 'sku',
+            label: 'SKU',
+            format: (value) => (
+              <Chip 
+                label={value} 
+                variant="outlined" 
+                size="small" 
+                sx={{ height: 24, fontSize: '0.75rem' }}
+              />
+            ),
+          },
+          {
+            id: 'price',
+            label: 'Preço',
+            align: 'right',
+            numeric: true,
+            format: (value) => (
+              <Typography sx={{ fontWeight: 600, fontSize: '0.9375rem' }}>
+                {new Intl.NumberFormat('pt-BR', { 
+                  style: 'currency', 
+                  currency: 'BRL' 
+                }).format(Number(value))}
+              </Typography>
+            ),
+          },
+          {
+            id: 'quantity',
+            label: 'Estoque',
+            align: 'center',
+            numeric: true,
+            format: (value) => (
+              <Typography
                 sx={{
-                  '&:hover': { backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(177, 186, 196, 0.08)' : '#fafbfc' },
-                  borderBottom: '1px solid #e8eef5',
-                  height: '64px',
+                  fontWeight: value < 10 ? 600 : 500,
+                  fontSize: '0.9375rem',
+                  color: value === 0 
+                    ? 'text.secondary' 
+                    : value < 10 
+                      ? '#f59e0b' 
+                      : '#10b981',
                 }}
               >
-                <TableCell sx={{ py: 1, px: 1 }}>
-                  <Box
-                    sx={{
-                      width: '56px',
-                      height: '56px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: '#f3f4f6',
-                      borderRadius: '6px',
-                      overflow: 'hidden',
-                      flexShrink: 0,
-                      border: '1px solid #e5e7eb',
-                    }}
-                  >
-                    {product.imageUrls?.[0] || product.imageUrl ? (
-                      <img
-                        src={getImageUrl(product.imageUrls?.[0] || product.imageUrl)}
-                        alt={product.name}
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'contain',
-                          padding: '2px',
-                        }}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <Typography
-                        sx={{
-                          fontSize: '1.5rem',
-                          fontWeight: 600,
-                          color: '#9ca3af',
-                          textTransform: 'uppercase',
-                        }}
-                      >
-                        {product.name[0] || '?'}
-                      </Typography>
-                    )}
-                  </Box>
-                </TableCell>
-                <TableCell sx={{ py: 1 }}>
-                  <Tooltip title={product.name} arrow>
-                    <Typography 
-                      sx={{ 
-                        fontWeight: 500, 
-                        fontSize: '0.875rem',
-                        color: '#1a1a1a',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        maxWidth: '200px',
-                      }}
-                    >
-                      {product.name}
-                    </Typography>
-                  </Tooltip>
-                </TableCell>
-                <TableCell sx={{ py: 1, fontSize: '0.8rem', color: '#666666' }}>
-                  <Chip 
-                    label={product.sku} 
-                    variant="outlined" 
-                    size="small" 
-                    sx={{ height: '24px', fontSize: '0.75rem' }}
-                  />
-                </TableCell>
-                <TableCell align="right" sx={{ py: 1 }}>
-                  <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#1a1a1a' }}>
-                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(product.price))}
-                  </Typography>
-                </TableCell>
-                <TableCell align="center" sx={{ py: 1 }}>
-                  <Typography
-                    sx={{
-                      fontWeight: 500,
-                      fontSize: '0.875rem',
-                      color: product.quantity === 0 ? '#666666' : product.quantity < 10 ? '#f59e0b' : '#10b981',
-                      fontWeight: product.quantity < 10 ? 600 : 500,
-                    }}
-                  >
-                    {product.quantity}
-                  </Typography>
-                </TableCell>
-                <TableCell sx={{ py: 1 }}>
-                  <Chip 
-                    label={product.category} 
-                    variant="outlined" 
-                    size="small"
-                    sx={{ height: '24px', fontSize: '0.75rem' }}
-                  />
-                </TableCell>
-                <TableCell sx={{ py: 1 }}>
-                  <Chip
-                    label={product.quantity > 0 ? 'Ativo' : 'Sem Estoque'}
-                    color={product.quantity > 0 ? 'success' : 'error'}
-                    size="small"
-                    variant="filled"
-                    sx={{ 
-                      height: '24px',
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      minWidth: '90px',
-                    }}
-                  />
-                </TableCell>
-                <TableCell align="center" sx={{ py: 1 }}>
-                  <Tooltip title="Ações" arrow>
-                    <IconButton 
-                      size="small" 
-                      onClick={(e) => {
-                        setAnchorEl(e.currentTarget);
-                        setMenuProductId(product.id);
-                      }}
-                      sx={{ color: '#1976d2' }}
-                    >
-                      ⋯
-                    </IconButton>
-                  </Tooltip>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        )}
-      </TableContainer>
+                {value}
+              </Typography>
+            ),
+          },
+          {
+            id: 'category',
+            label: 'Categoria',
+            format: (value) => (
+              <Chip 
+                label={value} 
+                variant="outlined" 
+                size="small"
+                sx={{ height: 24, fontSize: '0.75rem' }}
+              />
+            ),
+          },
+          {
+            id: 'status',
+            label: 'Status',
+            format: (_, row) => (
+              <Chip
+                label={row.quantity > 0 ? 'Ativo' : 'Sem Estoque'}
+                color={row.quantity > 0 ? 'success' : 'error'}
+                size="small"
+                variant="filled"
+                sx={{ 
+                  height: 24,
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  minWidth: 90,
+                }}
+              />
+            ),
+          },
+        ]}
+        data={filteredProducts}
+        loading={loading}
+        emptyMessage={searchTerm ? 'Nenhum produto encontrado' : 'Nenhum produto cadastrado'}
+        emptyIcon={<ProductsIcon sx={{ fontSize: 60 }} />}
+        showActions
+        onRowAction={(product, event) => {
+          setAnchorEl(event.currentTarget);
+          setMenuProductId(product.id);
+        }}
+      />
 
       <Menu
         anchorEl={anchorEl}

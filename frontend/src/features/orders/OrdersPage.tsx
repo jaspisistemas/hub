@@ -2,15 +2,9 @@ import React, { useEffect, useState } from 'react';
 import {
   Box,
   Button,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
   Chip,
   Paper,
   Typography,
-  TableContainer,
   CircularProgress,
   InputAdornment,
   TextField,
@@ -29,7 +23,6 @@ import {
   Select,
   FormControl,
   InputLabel,
-  TablePagination,
   Menu,
   ListItemIcon,
   useTheme,
@@ -52,6 +45,7 @@ import { ordersService, Order } from '../../services/ordersService';
 import PageHeader from '../../components/PageHeader';
 import StatusBadge from '../../components/StatusBadge';
 import EmptyState from '../../components/EmptyState';
+import DataTable, { Column } from '../../components/DataTable';
 import { storesService, Store } from '../../services/storesService';
 import * as websocket from '../../services/websocket';
 
@@ -216,7 +210,7 @@ export default function OrdersPage() {
     }
   };
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, order: Order) => {
+  const handleMenuOpen = (order: Order, event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
     setSelectedOrderForMenu(order);
   };
@@ -543,139 +537,83 @@ export default function OrdersPage() {
         </Alert>
       )}
 
-      <TableContainer 
-        component={Paper}
-        sx={{
-          borderRadius: 3,
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-          overflow: 'hidden',
+      <DataTable<Order>
+        columns={[
+          {
+            id: 'id',
+            label: 'ID Pedido',
+            minWidth: 150,
+            format: (value) => (
+              <Typography sx={{ fontWeight: 500, fontSize: '0.875rem' }}>
+                {value}
+              </Typography>
+            ),
+          },
+          {
+            id: 'marketplace',
+            label: 'Marketplace',
+            format: (value) => (
+              <Chip 
+                label={value} 
+                size="small" 
+                variant="outlined"
+                sx={{ 
+                  height: 24,
+                  fontSize: '0.75rem',
+                  textTransform: 'capitalize',
+                }}
+              />
+            ),
+          },
+          {
+            id: 'status',
+            label: 'Status',
+            format: (value) => (
+              <Chip
+                label={value === 'paid' ? 'Pago' : value === 'pending' ? 'Pendente' : value === 'shipped' ? 'Enviado' : value === 'delivered' ? 'Entregue' : 'Cancelado'}
+                color={value === 'paid' || value === 'delivered' ? 'success' : value === 'pending' ? 'warning' : value === 'shipped' ? 'info' : 'error'}
+                size="small"
+                variant="filled"
+                sx={{ 
+                  height: 24,
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  minWidth: 90,
+                }}
+              />
+            ),
+          },
+          {
+            id: 'total',
+            label: 'Total',
+            align: 'right',
+            numeric: true,
+            format: (value) => (
+              <Typography sx={{ fontWeight: 600, fontSize: '0.9375rem' }}>
+                {new Intl.NumberFormat('pt-BR', {
+                  style: 'currency',
+                  currency: 'BRL',
+                }).format(Number(value) || 0)}
+              </Typography>
+            ),
+          },
+        ]}
+        data={paginatedOrders.filter((o) => o && o.id)}
+        loading={loading}
+        emptyMessage="Nenhum pedido encontrado"
+        emptyIcon={<ShoppingBagIcon sx={{ fontSize: 60 }} />}
+        pagination
+        page={page}
+        rowsPerPage={rowsPerPage}
+        totalCount={filteredOrders.length}
+        onPageChange={setPage}
+        onRowsPerPageChange={(rows) => {
+          setRowsPerPage(rows);
+          setPage(0);
         }}
-      >
-        {paginatedOrders.length === 0 ? (
-          <Box
-            sx={{
-              p: 8,
-              textAlign: 'center',
-            }}
-          >
-            <Box
-              sx={{
-                width: 120,
-                height: 120,
-                mx: 'auto',
-                mb: 3,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                bgcolor: theme.palette.mode === 'dark' ? '#0d1117' : '#f3f4f6',
-                borderRadius: 3,
-              }}
-            >
-              <ShoppingBagIcon sx={{ fontSize: 60, color: theme.palette.mode === 'dark' ? '#64748b' : '#9ca3af' }} />
-            </Box>
-            <Typography
-              variant="h5"
-              sx={{
-                fontWeight: 600,
-                color: theme.palette.text.primary,
-                mb: 1,
-              }}
-            >
-              Nenhum pedido encontrado
-            </Typography>
-            <Typography
-              variant="body1"
-              sx={{
-                color: theme.palette.text.secondary,
-                mb: 0,
-              }}
-            >
-              Os pedidos sincronizados dos marketplaces aparecerão aqui.
-            </Typography>
-          </Box>
-        ) : (
-          <>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ bgcolor: (theme) => theme.palette.mode === 'dark' ? '#0d1117' : '#f9fafb' }}>
-                  <TableCell sx={{ fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>ID Pedido</TableCell>
-                  <TableCell sx={{ fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>Marketplace</TableCell>
-                  <TableCell sx={{ fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>Status</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>
-                    Total
-                  </TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>
-                    Ações
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {(paginatedOrders || []).map((o) => {
-                  if (!o || !o.id) return null;
-                  return (
-                  <TableRow
-                    key={o.id}
-                    sx={{
-                      '&:hover': { 
-                        bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(177, 186, 196, 0.08)' : '#f9fafb',
-                        cursor: 'pointer'
-                      },
-                      transition: 'background-color 0.2s',
-                    }}
-                  >
-                    <TableCell>
-                      <Typography sx={{ fontWeight: 600, color: theme.palette.text.primary, fontSize: '0.9375rem' }}>
-                        {o.id}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography sx={{ color: theme.palette.text.secondary, fontSize: '0.875rem' }}>
-                        {o.marketplace}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={o.status || 'pending'} size="small" />
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography sx={{ fontWeight: 700, color: theme.palette.text.primary, fontSize: '1rem' }}>
-                        R$ {(Number(o.total) || 0).toFixed(2)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="center">
-                      <IconButton 
-                        size="small" 
-                        onClick={(e) => handleMenuOpen(e, o)}
-                        sx={{
-                          color: '#6b7280',
-                          '&:hover': {
-                            bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(177, 186, 196, 0.08)' : '#f3f4f6',
-                          }
-                        }}
-                      >
-                        <MoreVertIcon />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-            <TablePagination
-              component="div"
-              count={filteredOrders.length}
-              page={page}
-              onPageChange={(e, newPage) => setPage(newPage)}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={(e) => {
-                setRowsPerPage(parseInt(e.target.value, 10));
-                setPage(0);
-              }}
-              labelRowsPerPage="Linhas por página:"
-              labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`}
-            />
-          </>
-        )}
-      </TableContainer>
+        showActions
+        onRowAction={handleMenuOpen}
+      />
 
       {/* Kebab Menu */}
       <Menu

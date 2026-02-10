@@ -10,12 +10,6 @@ import {
   useTheme,
   Tab,
   Tabs,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Chip,
   Select,
   MenuItem,
@@ -49,6 +43,7 @@ import {
 import { dashboardService, DashboardMetrics, StoreMetrics } from '../../services/dashboardService';
 import PageHeader from '../../components/PageHeader';
 import StatusBadge from '../../components/StatusBadge';
+import DataTable, { Column } from '../../components/DataTable';
 
 export default function DashboardPage() {
   const theme = useTheme();
@@ -471,48 +466,87 @@ export default function DashboardPage() {
                 <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, fontSize: '1rem' }}>
                   Pedidos Recentes
                 </Typography>
-                <TableContainer>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell sx={{ fontWeight: 600 }}>ID</TableCell>
-                        <TableCell sx={{ fontWeight: 600 }}>Cliente</TableCell>
-                        <TableCell sx={{ fontWeight: 600 }}>Marketplace</TableCell>
-                        <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 600 }}>Valor</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 600 }}>Data</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {metrics.recentOrders.map((order) => (
-                        <TableRow 
-                          key={order.id}
-                          sx={{ '&:hover': { bgcolor: 'action.hover' } }}
-                        >
-                          <TableCell sx={{ fontSize: '0.875rem' }}>{order.externalId}</TableCell>
-                          <TableCell sx={{ fontSize: '0.875rem' }}>{order.customerName}</TableCell>
-                          <TableCell>
-                            <Chip 
-                              label={order.marketplace} 
-                              size="small"
-                              color={order.marketplace === 'mercadolivre' ? 'warning' : 'primary'}
-                              sx={{ fontSize: '0.75rem' }}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <StatusBadge status={order.status} />
-                          </TableCell>
-                          <TableCell align="right" sx={{ fontSize: '0.875rem', fontWeight: 500 }}>
-                            R$ {order.total.toFixed(2)}
-                          </TableCell>
-                          <TableCell align="right" sx={{ fontSize: '0.875rem' }}>
-                            {new Date(order.createdAt).toLocaleDateString('pt-BR')}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                <DataTable
+                  columns={[
+                    {
+                      id: 'externalId',
+                      label: 'ID',
+                      width: 120,
+                      format: (value) => (
+                        <Typography sx={{ fontWeight: 500, fontSize: '0.875rem' }}>
+                          {value}
+                        </Typography>
+                      ),
+                    },
+                    {
+                      id: 'customerName',
+                      label: 'Cliente',
+                      minWidth: 150,
+                      format: (value) => (
+                        <Typography sx={{ fontSize: '0.875rem' }}>
+                          {value}
+                        </Typography>
+                      ),
+                    },
+                    {
+                      id: 'marketplace',
+                      label: 'Marketplace',
+                      format: (value) => (
+                        <Chip 
+                          label={value} 
+                          size="small"
+                          variant="outlined"
+                          sx={{ height: 24, fontSize: '0.75rem', textTransform: 'capitalize' }}
+                        />
+                      ),
+                    },
+                    {
+                      id: 'status',
+                      label: 'Status',
+                      format: (value) => (
+                        <Chip
+                          label={value === 'paid' ? 'Pago' : value === 'pending' ? 'Pendente' : value === 'shipped' ? 'Enviado' : value === 'delivered' ? 'Entregue' : 'Cancelado'}
+                          color={value === 'paid' || value === 'delivered' ? 'success' : value === 'pending' ? 'warning' : value === 'shipped' ? 'info' : 'error'}
+                          size="small"
+                          variant="filled"
+                          sx={{ 
+                            height: 24,
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            minWidth: 90,
+                          }}
+                        />
+                      ),
+                    },
+                    {
+                      id: 'total',
+                      label: 'Valor',
+                      align: 'right',
+                      numeric: true,
+                      format: (value) => (
+                        <Typography sx={{ fontWeight: 600, fontSize: '0.9375rem' }}>
+                          {new Intl.NumberFormat('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL',
+                          }).format(value)}
+                        </Typography>
+                      ),
+                    },
+                    {
+                      id: 'createdAt',
+                      label: 'Data',
+                      align: 'right',
+                      format: (value) => (
+                        <Typography sx={{ fontSize: '0.875rem' }}>
+                          {new Date(value).toLocaleDateString('pt-BR')}
+                        </Typography>
+                      ),
+                    },
+                  ]}
+                  data={metrics.recentOrders}
+                  dense
+                  hover
+                />
               </Paper>
             </Grid>
           )}
@@ -685,33 +719,48 @@ export default function DashboardPage() {
                     <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, fontSize: '1rem' }}>
                       Top 5 Produtos
                     </Typography>
-                    <TableContainer>
-                      <Table>
-                        <TableHead>
-                          <TableRow>
-                            <TableCell sx={{ fontWeight: 600 }}>Produto</TableCell>
-                            <TableCell align="right" sx={{ fontWeight: 600 }}>Vendas</TableCell>
-                            <TableCell align="right" sx={{ fontWeight: 600 }}>Receita</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {storeMetrics.topProducts.map((product) => (
-                            <TableRow 
-                              key={product.id}
-                              sx={{ '&:hover': { bgcolor: 'action.hover' } }}
-                            >
-                              <TableCell sx={{ fontSize: '0.875rem' }}>{product.name}</TableCell>
-                              <TableCell align="right" sx={{ fontSize: '0.875rem', fontWeight: 500 }}>
-                                {product.sales}
-                              </TableCell>
-                              <TableCell align="right" sx={{ fontSize: '0.875rem', fontWeight: 500 }}>
-                                R$ {product.revenue.toFixed(2)}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
+                    <DataTable
+                      columns={[
+                        {
+                          id: 'name',
+                          label: 'Produto',
+                          minWidth: 200,
+                          format: (value) => (
+                            <Typography sx={{ fontSize: '0.875rem', fontWeight: 500 }}>
+                              {value}
+                            </Typography>
+                          ),
+                        },
+                        {
+                          id: 'sales',
+                          label: 'Vendas',
+                          align: 'center',
+                          numeric: true,
+                          format: (value) => (
+                            <Typography sx={{ fontSize: '0.9375rem', fontWeight: 600 }}>
+                              {value}
+                            </Typography>
+                          ),
+                        },
+                        {
+                          id: 'revenue',
+                          label: 'Receita',
+                          align: 'right',
+                          numeric: true,
+                          format: (value) => (
+                            <Typography sx={{ fontWeight: 600, fontSize: '0.9375rem' }}>
+                              {new Intl.NumberFormat('pt-BR', {
+                                style: 'currency',
+                                currency: 'BRL',
+                              }).format(value)}
+                            </Typography>
+                          ),
+                        },
+                      ]}
+                      data={storeMetrics.topProducts}
+                      dense
+                      hover
+                    />
                   </Paper>
                 </Grid>
               )}

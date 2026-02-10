@@ -58,9 +58,36 @@ Remove-Job -State Completed
 
 ## URLs de Acesso
 
+**Desenvolvimento Local:**
 - **Frontend**: http://localhost:5173
 - **Backend**: https://uneducated-georgiann-personifiant.ngrok-free.dev
 - **Redis**: localhost:6379
+
+**Compartilhado (via Tunnels):**
+- **Frontend**: https://panel-joshua-norfolk-molecular.trycloudflare.com
+- **Backend**: https://uneducated-georgiann-personifiant.ngrok-free.dev
+
+---
+
+## Compartilhar Frontend (Cloudflare Tunnel)
+
+Para expor o frontend publicamente via Cloudflare (igual ao backend com ngrok):
+
+1. **Instale Cloudflare CLI:**
+   ```bash
+   # Windows
+   choco install cloudflare-cli
+   # ou download direto em: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/
+   ```
+
+2. **Execute cloudflared:**
+   ```powershell
+   cloudflared tunnel --url http://localhost:5173
+   ```
+
+3. **Copie a URL gerada** (algo como `https://panel-joshua-norfolk-molecular.trycloudflare.com`)
+
+4. **Atualize CORS no backend** se necessário em `backend/src/main.ts`
 
 ---
 

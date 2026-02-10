@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, List, ListItem, ListItemIcon, ListItemText, Divider, Button, IconButton, Tooltip, useTheme } from '@mui/material';
+import { Box, List, ListItem, ListItemIcon, ListItemText, IconButton, Tooltip, useTheme } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSidebar } from '../contexts/SidebarContext';
 import {
@@ -7,7 +7,6 @@ import {
   ShoppingCart as ShoppingCartIcon,
   Inventory2 as InventoryIcon,
   Store as StoreIcon,
-  Logout as LogoutIcon,
   Menu as MenuIcon,
   ChevronLeft as ChevronLeftIcon,
   SupportAgent as SupportIcon,
@@ -26,12 +25,6 @@ export default function Sidebar() {
     { label: 'Lojas', path: '/lojas', icon: StoreIcon },
     { label: 'Atendimento', path: '/atendimento', icon: SupportIcon },
   ];
-
-  const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user');
-    navigate('/login');
-  };
 
   return (
     <Box
@@ -146,36 +139,6 @@ export default function Sidebar() {
           </Tooltip>
         ))}
       </List>
-
-      <Divider sx={{ 
-        bgcolor: 'rgba(255, 255, 255, 0.1)', 
-        mb: 2 
-      }} />
-
-      <Tooltip title={isCollapsed ? 'Sair' : ''} placement="right">
-        <Button
-          fullWidth
-          variant="outlined"
-          onClick={handleLogout}
-          startIcon={!isCollapsed && <LogoutIcon />}
-          sx={{
-            borderColor: 'rgba(255, 255, 255, 0.3)',
-            color: '#ffffff',
-            textTransform: 'none',
-            fontWeight: 500,
-            borderRadius: 2,
-            py: 1.5,
-            justifyContent: isCollapsed ? 'center' : 'flex-start',
-            '&:hover': {
-              bgcolor: 'rgba(255, 255, 255, 0.1)',
-              borderColor: '#ffffff',
-            },
-          }}
-        >
-          {isCollapsed && <LogoutIcon />}
-          {!isCollapsed && 'Sair'}
-        </Button>
-      </Tooltip>
     </Box>
   );
 }

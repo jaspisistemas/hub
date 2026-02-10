@@ -13,6 +13,7 @@ import {
   Chip,
   Divider,
   Link,
+  useTheme,
 } from '@mui/material';
 import {
   ExpandMore as ExpandMoreIcon,
@@ -43,6 +44,8 @@ interface HelpSection {
 }
 
 const HelpCenterPage: React.FC = () => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const [expandedSection, setExpandedSection] = useState<string | false>(false);
 
   const helpSections: HelpSection[] = [
@@ -175,7 +178,13 @@ const HelpCenterPage: React.FC = () => {
   };
 
   return (
-    <Box sx={{ bgcolor: '#f9fafb', minHeight: '100vh', py: 4 }}>
+    <Box 
+      sx={{ 
+        bgcolor: isDark ? '#0d1117' : '#f9fafb',
+        minHeight: '100vh', 
+        py: 4 
+      }}
+    >
       <PageHeader
         title="Central de Ajuda"
         subtitle="Dúvidas frequentes e guias rápidos para usar o hub"
@@ -184,8 +193,16 @@ const HelpCenterPage: React.FC = () => {
 
       <Container maxWidth="lg" sx={{ mt: 4 }}>
         {/* Ações Rápidas */}
-        <Box sx={{ mb: 6 }}>
-          <Typography variant="h6" sx={{ fontWeight: 700, mb: 3, color: '#1a1a1a' }}>
+        <Box sx={{ mb: 5 }}>
+          <Typography 
+            variant="h6" 
+            sx={{ 
+              fontWeight: 600, 
+              mb: 3, 
+              color: isDark ? '#c9d1d9' : '#1a1a1a',
+              fontSize: '1.125rem',
+            }}
+          >
             Ações Rápidas
           </Typography>
           <Grid container spacing={2}>
@@ -193,20 +210,42 @@ const HelpCenterPage: React.FC = () => {
               <Card
                 sx={{
                   cursor: 'pointer',
-                  '&:hover': { boxShadow: 3, transform: 'translateY(-2px)' },
+                  bgcolor: isDark ? '#161b22' : '#ffffff',
+                  border: `1px solid ${isDark ? '#30363d' : '#e5e7eb'}`,
+                  boxShadow: isDark 
+                    ? 'none'
+                    : '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                  '&:hover': { 
+                    boxShadow: isDark 
+                      ? '0 4px 12px rgba(0, 0, 0, 0.3)'
+                      : '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    transform: 'translateY(-2px)',
+                    borderColor: isDark ? '#58a6ff' : '#3b82f6',
+                  },
                   transition: 'all 0.2s',
-                  border: '1px solid #e5e7eb',
                 }}
               >
-                <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                  <StoreIcon sx={{ fontSize: 32, color: '#3b82f6', mb: 1 }} />
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                <CardContent sx={{ textAlign: 'center', py: 2.5 }}>
+                  <StoreIcon sx={{ fontSize: 36, color: '#58a6ff', mb: 1 }} />
+                  <Typography 
+                    variant="subtitle2" 
+                    sx={{ 
+                      fontWeight: 600,
+                      color: isDark ? '#c9d1d9' : '#1f2937',
+                      fontSize: '0.875rem',
+                    }}
+                  >
                     Conectar Loja
                   </Typography>
                   <Button
                     size="small"
                     variant="text"
-                    sx={{ mt: 1, textTransform: 'none', fontSize: '0.875rem' }}
+                    sx={{ 
+                      mt: 1, 
+                      textTransform: 'none', 
+                      fontSize: '0.8125rem',
+                      color: isDark ? '#58a6ff' : '#3b82f6',
+                    }}
                     onClick={() => window.location.href = '/lojas'}
                   >
                     Ir para Lojas →
@@ -219,20 +258,42 @@ const HelpCenterPage: React.FC = () => {
               <Card
                 sx={{
                   cursor: 'pointer',
-                  '&:hover': { boxShadow: 3, transform: 'translateY(-2px)' },
+                  bgcolor: isDark ? '#161b22' : '#ffffff',
+                  border: `1px solid ${isDark ? '#30363d' : '#e5e7eb'}`,
+                  boxShadow: isDark 
+                    ? 'none'
+                    : '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                  '&:hover': { 
+                    boxShadow: isDark 
+                      ? '0 4px 12px rgba(0, 0, 0, 0.3)'
+                      : '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    transform: 'translateY(-2px)',
+                    borderColor: isDark ? '#f59e0b' : '#f59e0b',
+                  },
                   transition: 'all 0.2s',
-                  border: '1px solid #e5e7eb',
                 }}
               >
-                <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                  <SyncIcon sx={{ fontSize: 32, color: '#f59e0b', mb: 1 }} />
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                <CardContent sx={{ textAlign: 'center', py: 2.5 }}>
+                  <SyncIcon sx={{ fontSize: 36, color: '#f59e0b', mb: 1 }} />
+                  <Typography 
+                    variant="subtitle2" 
+                    sx={{ 
+                      fontWeight: 600,
+                      color: isDark ? '#c9d1d9' : '#1f2937',
+                      fontSize: '0.875rem',
+                    }}
+                  >
                     Sincronizar Agora
                   </Typography>
                   <Button
                     size="small"
                     variant="text"
-                    sx={{ mt: 1, textTransform: 'none', fontSize: '0.875rem' }}
+                    sx={{ 
+                      mt: 1, 
+                      textTransform: 'none', 
+                      fontSize: '0.8125rem',
+                      color: isDark ? '#f59e0b' : '#f59e0b',
+                    }}
                     onClick={() => window.location.href = '/produtos'}
                   >
                     Ir para Produtos →
@@ -245,20 +306,42 @@ const HelpCenterPage: React.FC = () => {
               <Card
                 sx={{
                   cursor: 'pointer',
-                  '&:hover': { boxShadow: 3, transform: 'translateY(-2px)' },
+                  bgcolor: isDark ? '#161b22' : '#ffffff',
+                  border: `1px solid ${isDark ? '#30363d' : '#e5e7eb'}`,
+                  boxShadow: isDark 
+                    ? 'none'
+                    : '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                  '&:hover': { 
+                    boxShadow: isDark 
+                      ? '0 4px 12px rgba(0, 0, 0, 0.3)'
+                      : '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    transform: 'translateY(-2px)',
+                    borderColor: isDark ? '#10b981' : '#10b981',
+                  },
                   transition: 'all 0.2s',
-                  border: '1px solid #e5e7eb',
                 }}
               >
-                <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                  <MessageIcon sx={{ fontSize: 32, color: '#10b981', mb: 1 }} />
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                <CardContent sx={{ textAlign: 'center', py: 2.5 }}>
+                  <MessageIcon sx={{ fontSize: 36, color: '#10b981', mb: 1 }} />
+                  <Typography 
+                    variant="subtitle2" 
+                    sx={{ 
+                      fontWeight: 600,
+                      color: isDark ? '#c9d1d9' : '#1f2937',
+                      fontSize: '0.875rem',
+                    }}
+                  >
                     Ver Atendimentos
                   </Typography>
                   <Button
                     size="small"
                     variant="text"
-                    sx={{ mt: 1, textTransform: 'none', fontSize: '0.875rem' }}
+                    sx={{ 
+                      mt: 1, 
+                      textTransform: 'none', 
+                      fontSize: '0.8125rem',
+                      color: isDark ? '#10b981' : '#10b981',
+                    }}
                     onClick={() => window.location.href = '/atendimento'}
                   >
                     Ir para Atendimento →
@@ -271,20 +354,42 @@ const HelpCenterPage: React.FC = () => {
               <Card
                 sx={{
                   cursor: 'pointer',
-                  '&:hover': { boxShadow: 3, transform: 'translateY(-2px)' },
+                  bgcolor: isDark ? '#161b22' : '#ffffff',
+                  border: `1px solid ${isDark ? '#30363d' : '#e5e7eb'}`,
+                  boxShadow: isDark 
+                    ? 'none'
+                    : '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                  '&:hover': { 
+                    boxShadow: isDark 
+                      ? '0 4px 12px rgba(0, 0, 0, 0.3)'
+                      : '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    transform: 'translateY(-2px)',
+                    borderColor: isDark ? '#ef4444' : '#ef4444',
+                  },
                   transition: 'all 0.2s',
-                  border: '1px solid #e5e7eb',
                 }}
               >
-                <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                  <ErrorIcon sx={{ fontSize: 32, color: '#ef4444', mb: 1 }} />
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                <CardContent sx={{ textAlign: 'center', py: 2.5 }}>
+                  <ErrorIcon sx={{ fontSize: 36, color: '#ef4444', mb: 1 }} />
+                  <Typography 
+                    variant="subtitle2" 
+                    sx={{ 
+                      fontWeight: 600,
+                      color: isDark ? '#c9d1d9' : '#1f2937',
+                      fontSize: '0.875rem',
+                    }}
+                  >
                     Reportar Erro
                   </Typography>
                   <Button
                     size="small"
                     variant="text"
-                    sx={{ mt: 1, textTransform: 'none', fontSize: '0.875rem' }}
+                    sx={{ 
+                      mt: 1, 
+                      textTransform: 'none', 
+                      fontSize: '0.8125rem',
+                      color: isDark ? '#ef4444' : '#ef4444',
+                    }}
                     href="mailto:suporte@hub.com.br"
                   >
                     Enviar Email →
@@ -297,20 +402,57 @@ const HelpCenterPage: React.FC = () => {
 
         {/* Seções de FAQ */}
         <Box>
-          <Typography variant="h6" sx={{ fontWeight: 700, mb: 3, color: '#1a1a1a' }}>
+          <Typography 
+            variant="h6" 
+            sx={{ 
+              fontWeight: 600, 
+              mb: 3, 
+              color: isDark ? '#c9d1d9' : '#1a1a1a',
+              fontSize: '1.125rem',
+            }}
+          >
             Perguntas Frequentes
           </Typography>
 
           {helpSections.map((section, sectionIndex) => (
-            <Box key={sectionIndex} sx={{ mb: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2, px: 2, py: 1.5, bgcolor: '#f3f4f6', borderRadius: 1 }}>
+            <Box key={sectionIndex} sx={{ mb: 4 }}>
+              <Box 
+                sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 2, 
+                  mb: 2, 
+                  px: 2, 
+                  py: 1.5, 
+                  bgcolor: isDark ? '#161b22' : '#f3f4f6',
+                  borderRadius: 2,
+                  border: `1px solid ${isDark ? '#30363d' : 'transparent'}`,
+                }}
+              >
                 <Box sx={{ color: section.color, display: 'flex' }}>
                   {section.icon}
                 </Box>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1a1a1a', flex: 1 }}>
+                <Typography 
+                  variant="subtitle1" 
+                  sx={{ 
+                    fontWeight: 600, 
+                    color: isDark ? '#c9d1d9' : '#1a1a1a',
+                    flex: 1,
+                    fontSize: '1rem',
+                  }}
+                >
                   {section.title}
                 </Typography>
-                <Chip label={`${section.items.length} itens`} size="small" variant="outlined" />
+                <Chip 
+                  label={`${section.items.length} itens`} 
+                  size="small" 
+                  variant="outlined"
+                  sx={{
+                    borderColor: isDark ? '#30363d' : '#e5e7eb',
+                    color: isDark ? '#8b949e' : '#6b7280',
+                    fontSize: '0.75rem',
+                  }}
+                />
               </Box>
 
               {section.items.map((item, itemIndex) => (
@@ -319,35 +461,67 @@ const HelpCenterPage: React.FC = () => {
                   expanded={expandedSection === `${sectionIndex}-${itemIndex}`}
                   onChange={handleAccordionChange(`${sectionIndex}-${itemIndex}`)}
                   sx={{
-                    border: '1px solid #e5e7eb',
-                    mb: 1.5,
+                    bgcolor: isDark ? '#0d1117' : '#ffffff',
+                    border: `1px solid ${isDark ? '#30363d' : '#e5e7eb'}`,
+                    borderRadius: '8px !important',
+                    mb: 1,
                     '&:before': { display: 'none' },
+                    boxShadow: 'none',
                     '&.Mui-expanded': {
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                      bgcolor: isDark ? '#161b22' : '#ffffff',
+                      boxShadow: isDark 
+                        ? '0 2px 8px rgba(0, 0, 0, 0.3)'
+                        : '0 2px 8px rgba(0, 0, 0, 0.08)',
+                      borderColor: isDark ? '#58a6ff' : '#3b82f6',
                     },
                   }}
                 >
                   <AccordionSummary
-                    expandIcon={<ExpandMoreIcon />}
+                    expandIcon={
+                      <ExpandMoreIcon 
+                        sx={{ color: isDark ? '#8b949e' : '#6b7280' }} 
+                      />
+                    }
                     sx={{
-                      '&:hover': { bgcolor: '#f9fafb' },
-                      py: 1.5,
-                      '& .MuiAccordionSummary-content': { m: 0 },
+                      minHeight: '48px !important',
+                      '&:hover': { 
+                        bgcolor: isDark ? 'rgba(88, 166, 255, 0.06)' : '#f9fafb',
+                      },
+                      py: 1,
+                      px: 2,
+                      '& .MuiAccordionSummary-content': { 
+                        my: '10px !important',
+                      },
                     }}
                   >
                     <Typography
                       sx={{
                         fontWeight: 500,
-                        fontSize: '0.95rem',
-                        color: '#1a1a1a',
+                        fontSize: '0.9375rem',
+                        color: isDark ? '#c9d1d9' : '#1f2937',
+                        lineHeight: 1.5,
                       }}
                     >
                       {item.question}
                     </Typography>
                   </AccordionSummary>
-                  <Divider />
-                  <AccordionDetails sx={{ bgcolor: '#fafbfc', pt: 2.5, pb: 2.5 }}>
-                    <Typography variant="body2" sx={{ color: '#4b5563', lineHeight: 1.7 }}>
+                  <Divider sx={{ borderColor: isDark ? '#21262d' : '#e5e7eb' }} />
+                  <AccordionDetails 
+                    sx={{ 
+                      bgcolor: isDark ? '#0d1117' : '#fafbfc',
+                      pt: 2,
+                      pb: 2,
+                      px: 2,
+                    }}
+                  >
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        color: isDark ? '#8b949e' : '#4b5563',
+                        lineHeight: 1.7,
+                        fontSize: '0.875rem',
+                      }}
+                    >
                       {item.answer}
                     </Typography>
                   </AccordionDetails>
@@ -358,19 +532,53 @@ const HelpCenterPage: React.FC = () => {
         </Box>
 
         {/* Rodapé de Suporte */}
-        <Divider sx={{ my: 6 }} />
+        <Divider 
+          sx={{ 
+            my: 5,
+            borderColor: isDark ? '#21262d' : '#e5e7eb',
+          }} 
+        />
 
-        <Card sx={{ bgcolor: '#f0f9ff', borderLeft: '4px solid #0ea5e9' }}>
+        <Card 
+          sx={{ 
+            bgcolor: isDark ? '#0d1521' : '#f0f9ff',
+            borderLeft: `4px solid #0ea5e9`,
+            border: `1px solid ${isDark ? '#1f6feb' : 'transparent'}`,
+            boxShadow: isDark 
+              ? 'none'
+              : '0 1px 3px rgba(0, 0, 0, 0.1)',
+          }}
+        >
           <CardContent sx={{ py: 3 }}>
             <Grid container spacing={3}>
               <Grid item xs={12} md={6}>
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
-                  <EmailIcon sx={{ color: '#0ea5e9', mt: 0.5, flexShrink: 0 }} />
+                  <EmailIcon 
+                    sx={{ 
+                      color: '#58a6ff',
+                      mt: 0.5, 
+                      flexShrink: 0 
+                    }} 
+                  />
                   <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a1a', mb: 0.5 }}>
+                    <Typography 
+                      variant="subtitle2" 
+                      sx={{ 
+                        fontWeight: 600, 
+                        color: isDark ? '#c9d1d9' : '#1a1a1a',
+                        mb: 0.5,
+                        fontSize: '0.875rem',
+                      }}
+                    >
                       Canal de Suporte
                     </Typography>
-                    <Typography variant="body2" sx={{ color: '#4b5563' }}>
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        color: isDark ? '#8b949e' : '#4b5563',
+                        fontSize: '0.8125rem',
+                      }}
+                    >
                       Dúvidas ou problemas? Entre em contato conosco:
                     </Typography>
                     <Link
@@ -379,7 +587,8 @@ const HelpCenterPage: React.FC = () => {
                         display: 'inline-block',
                         mt: 0.5,
                         fontWeight: 600,
-                        color: '#0ea5e9',
+                        fontSize: '0.875rem',
+                        color: '#58a6ff',
                         textDecoration: 'none',
                         '&:hover': { textDecoration: 'underline' },
                       }}
@@ -392,15 +601,43 @@ const HelpCenterPage: React.FC = () => {
 
               <Grid item xs={12} md={6}>
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
-                  <ScheduleIcon sx={{ color: '#0ea5e9', mt: 0.5, flexShrink: 0 }} />
+                  <ScheduleIcon 
+                    sx={{ 
+                      color: '#58a6ff',
+                      mt: 0.5, 
+                      flexShrink: 0 
+                    }} 
+                  />
                   <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1a1a1a', mb: 0.5 }}>
+                    <Typography 
+                      variant="subtitle2" 
+                      sx={{ 
+                        fontWeight: 600, 
+                        color: isDark ? '#c9d1d9' : '#1a1a1a',
+                        mb: 0.5,
+                        fontSize: '0.875rem',
+                      }}
+                    >
                       Horário de Atendimento
                     </Typography>
-                    <Typography variant="body2" sx={{ color: '#4b5563' }}>
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        color: isDark ? '#8b949e' : '#4b5563',
+                        fontSize: '0.8125rem',
+                      }}
+                    >
                       Segunda a sexta, 9h às 18h (Horário de Brasília)
                     </Typography>
-                    <Typography variant="caption" sx={{ color: '#9ca3af', display: 'block', mt: 0.5 }}>
+                    <Typography 
+                      variant="caption" 
+                      sx={{ 
+                        color: isDark ? '#6e7681' : '#9ca3af',
+                        display: 'block', 
+                        mt: 0.5,
+                        fontSize: '0.75rem',
+                      }}
+                    >
                       Feriados: Atendimento por email
                     </Typography>
                   </Box>
@@ -410,8 +647,14 @@ const HelpCenterPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Box sx={{ mt: 4, textAlign: 'center' }}>
-          <Typography variant="caption" sx={{ color: '#9ca3af' }}>
+        <Box sx={{ mt: 4, textAlign: 'center', pb: 2 }}>
+          <Typography 
+            variant="caption" 
+            sx={{ 
+              color: isDark ? '#6e7681' : '#9ca3af',
+              fontSize: '0.75rem',
+            }}
+          >
             Última atualização: 10 de fevereiro de 2026 | v1.0
           </Typography>
         </Box>

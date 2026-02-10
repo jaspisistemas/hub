@@ -528,7 +528,16 @@ export default function ProductsPage() {
         </Alert>
       )}
 
-      <Paper sx={{ mb: 3, p: 2 }}>
+      <Paper 
+        sx={{ 
+          mb: 3, 
+          p: 2,
+          bgcolor: (theme) => theme.palette.mode === 'dark' ? '#0d1117' : '#ffffff',
+          boxShadow: (theme) => theme.palette.mode === 'dark' 
+            ? '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)'
+            : '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+        }}
+      >
         <TextField
           fullWidth
           placeholder="Buscar por nome ou SKU..."
@@ -537,13 +546,28 @@ export default function ProductsPage() {
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon sx={{ color: '#555555' }} />
+                <SearchIcon sx={{ color: (theme) => theme.palette.mode === 'dark' ? '#8b949e' : '#555555' }} />
               </InputAdornment>
             ),
           }}
           sx={{
             '& .MuiOutlinedInput-root': {
               borderRadius: 2,
+              bgcolor: (theme) => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+              color: (theme) => theme.palette.mode === 'dark' ? '#c9d1d9' : '#1f2937',
+              '& fieldset': {
+                borderColor: (theme) => theme.palette.mode === 'dark' ? '#30363d' : '#e5e7eb',
+              },
+              '&:hover fieldset': {
+                borderColor: (theme) => theme.palette.mode === 'dark' ? '#58a6ff' : '#3b82f6',
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: (theme) => theme.palette.mode === 'dark' ? '#58a6ff' : '#3b82f6',
+              },
+              '& input::placeholder': {
+                color: (theme) => theme.palette.mode === 'dark' ? '#8b949e' : '#9ca3af',
+                opacity: 1,
+              },
             },
           }}
         />

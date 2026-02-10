@@ -449,7 +449,10 @@ export default function OrdersPage() {
           mb: 3, 
           p: 3,
           borderRadius: 3,
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+          bgcolor: theme.palette.mode === 'dark' ? '#0d1117' : '#ffffff',
+          boxShadow: theme.palette.mode === 'dark' 
+            ? '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)'
+            : '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
         }}
       >
         <Grid container spacing={2} alignItems="center">
@@ -462,23 +465,28 @@ export default function OrdersPage() {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon sx={{ color: '#9ca3af' }} />
+                    <SearchIcon sx={{ color: theme.palette.mode === 'dark' ? '#8b949e' : '#9ca3af' }} />
                   </InputAdornment>
                 ),
               }}
               sx={{
-                bgcolor: 'white',
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2,
                   height: 48,
+                  bgcolor: theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                  color: theme.palette.mode === 'dark' ? '#c9d1d9' : '#1f2937',
                   '& fieldset': {
-                    borderColor: '#e5e7eb',
+                    borderColor: theme.palette.mode === 'dark' ? '#30363d' : '#e5e7eb',
                   },
                   '&:hover fieldset': {
-                    borderColor: '#3b82f6',
+                    borderColor: theme.palette.mode === 'dark' ? '#58a6ff' : '#3b82f6',
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: '#3b82f6',
+                    borderColor: theme.palette.mode === 'dark' ? '#58a6ff' : '#3b82f6',
+                  },
+                  '& input::placeholder': {
+                    color: theme.palette.mode === 'dark' ? '#8b949e' : '#9ca3af',
+                    opacity: 1,
                   },
                 },
               }}
@@ -486,15 +494,56 @@ export default function OrdersPage() {
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <FormControl fullWidth>
-              <InputLabel>Status</InputLabel>
+              <InputLabel 
+                sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#8b949e' : 'rgba(0, 0, 0, 0.6)',
+                  '&.Mui-focused': {
+                    color: theme.palette.mode === 'dark' ? '#58a6ff' : '#3b82f6',
+                  },
+                }}
+              >
+                Status
+              </InputLabel>
               <Select
                 value={statusFilter}
                 label="Status"
                 onChange={(e) => setStatusFilter(e.target.value)}
+                MenuProps={{
+                  PaperProps: {
+                    sx: {
+                      bgcolor: theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                      '& .MuiMenuItem-root': {
+                        color: theme.palette.mode === 'dark' ? '#c9d1d9' : '#1f2937',
+                        '&:hover': {
+                          bgcolor: theme.palette.mode === 'dark' ? '#21262d' : '#f3f4f6',
+                        },
+                        '&.Mui-selected': {
+                          bgcolor: theme.palette.mode === 'dark' ? '#1f6feb' : '#e0f2fe',
+                          '&:hover': {
+                            bgcolor: theme.palette.mode === 'dark' ? '#1f6feb' : '#bae6fd',
+                          },
+                        },
+                      },
+                    },
+                  },
+                }}
                 sx={{ 
                   borderRadius: 2,
                   height: 48,
-                  bgcolor: 'white',
+                  bgcolor: theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                  color: theme.palette.mode === 'dark' ? '#c9d1d9' : '#1f2937',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: theme.palette.mode === 'dark' ? '#30363d' : '#e5e7eb',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: theme.palette.mode === 'dark' ? '#58a6ff' : '#3b82f6',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: theme.palette.mode === 'dark' ? '#58a6ff' : '#3b82f6',
+                  },
+                  '& .MuiSelect-icon': {
+                    color: theme.palette.mode === 'dark' ? '#8b949e' : '#9ca3af',
+                  },
                 }}
               >
                 <MenuItem value="all">Todos</MenuItem>
@@ -508,15 +557,56 @@ export default function OrdersPage() {
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <FormControl fullWidth>
-              <InputLabel>Marketplace</InputLabel>
+              <InputLabel
+                sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#8b949e' : 'rgba(0, 0, 0, 0.6)',
+                  '&.Mui-focused': {
+                    color: theme.palette.mode === 'dark' ? '#58a6ff' : '#3b82f6',
+                  },
+                }}
+              >
+                Marketplace
+              </InputLabel>
               <Select
                 value={marketplaceFilter}
                 label="Marketplace"
                 onChange={(e) => setMarketplaceFilter(e.target.value)}
+                MenuProps={{
+                  PaperProps: {
+                    sx: {
+                      bgcolor: theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                      '& .MuiMenuItem-root': {
+                        color: theme.palette.mode === 'dark' ? '#c9d1d9' : '#1f2937',
+                        '&:hover': {
+                          bgcolor: theme.palette.mode === 'dark' ? '#21262d' : '#f3f4f6',
+                        },
+                        '&.Mui-selected': {
+                          bgcolor: theme.palette.mode === 'dark' ? '#1f6feb' : '#e0f2fe',
+                          '&:hover': {
+                            bgcolor: theme.palette.mode === 'dark' ? '#1f6feb' : '#bae6fd',
+                          },
+                        },
+                      },
+                    },
+                  },
+                }}
                 sx={{ 
                   borderRadius: 2,
                   height: 48,
-                  bgcolor: 'white',
+                  bgcolor: theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                  color: theme.palette.mode === 'dark' ? '#c9d1d9' : '#1f2937',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: theme.palette.mode === 'dark' ? '#30363d' : '#e5e7eb',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: theme.palette.mode === 'dark' ? '#58a6ff' : '#3b82f6',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: theme.palette.mode === 'dark' ? '#58a6ff' : '#3b82f6',
+                  },
+                  '& .MuiSelect-icon': {
+                    color: theme.palette.mode === 'dark' ? '#8b949e' : '#9ca3af',
+                  },
                 }}
               >
                 <MenuItem value="all">Todos</MenuItem>

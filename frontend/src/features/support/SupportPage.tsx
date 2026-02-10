@@ -187,16 +187,65 @@ const SupportPage: React.FC = () => {
       )}
 
       {/* Filtros */}
-      <Card sx={{ mb: 3 }}>
+      <Card 
+        sx={{ 
+          mb: 3,
+          bgcolor: (theme) => theme.palette.mode === 'dark' ? '#0d1117' : '#ffffff',
+        }}
+      >
         <CardContent>
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} sm={6} md={3}>
               <FormControl fullWidth size="small">
-                <InputLabel>Loja</InputLabel>
+                <InputLabel
+                  sx={{ 
+                    color: (theme) => theme.palette.mode === 'dark' ? '#8b949e' : 'rgba(0, 0, 0, 0.6)',
+                    '&.Mui-focused': {
+                      color: (theme) => theme.palette.mode === 'dark' ? '#58a6ff' : undefined,
+                    },
+                  }}
+                >
+                  Loja
+                </InputLabel>
                 <Select
                   value={filters.storeId || ''}
                   label="Loja"
                   onChange={(e) => setFilters({ ...filters, storeId: e.target.value })}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        bgcolor: (theme) => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                        '& .MuiMenuItem-root': {
+                          color: (theme) => theme.palette.mode === 'dark' ? '#c9d1d9' : '#1f2937',
+                          '&:hover': {
+                            bgcolor: (theme) => theme.palette.mode === 'dark' ? '#21262d' : '#f3f4f6',
+                          },
+                          '&.Mui-selected': {
+                            bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1f6feb' : '#e0f2fe',
+                            '&:hover': {
+                              bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1f6feb' : '#bae6fd',
+                            },
+                          },
+                        },
+                      },
+                    },
+                  }}
+                  sx={{
+                    bgcolor: (theme) => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                    color: (theme) => theme.palette.mode === 'dark' ? '#c9d1d9' : '#1f2937',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: (theme) => theme.palette.mode === 'dark' ? '#30363d' : undefined,
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: (theme) => theme.palette.mode === 'dark' ? '#58a6ff' : undefined,
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: (theme) => theme.palette.mode === 'dark' ? '#58a6ff' : undefined,
+                    },
+                    '& .MuiSelect-icon': {
+                      color: (theme) => theme.palette.mode === 'dark' ? '#8b949e' : undefined,
+                    },
+                  }}
                 >
                   <MenuItem value="">Todas</MenuItem>
                   {stores.map((store) => (
@@ -210,11 +259,55 @@ const SupportPage: React.FC = () => {
 
             <Grid item xs={12} sm={6} md={2}>
               <FormControl fullWidth size="small">
-                <InputLabel>Tipo</InputLabel>
+                <InputLabel
+                  sx={{ 
+                    color: (theme) => theme.palette.mode === 'dark' ? '#8b949e' : 'rgba(0, 0, 0, 0.6)',
+                    '&.Mui-focused': {
+                      color: (theme) => theme.palette.mode === 'dark' ? '#58a6ff' : undefined,
+                    },
+                  }}
+                >
+                  Tipo
+                </InputLabel>
                 <Select
                   value={filters.type || ''}
                   label="Tipo"
                   onChange={(e) => setFilters({ ...filters, type: e.target.value })}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        bgcolor: (theme) => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                        '& .MuiMenuItem-root': {
+                          color: (theme) => theme.palette.mode === 'dark' ? '#c9d1d9' : '#1f2937',
+                          '&:hover': {
+                            bgcolor: (theme) => theme.palette.mode === 'dark' ? '#21262d' : '#f3f4f6',
+                          },
+                          '&.Mui-selected': {
+                            bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1f6feb' : '#e0f2fe',
+                            '&:hover': {
+                              bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1f6feb' : '#bae6fd',
+                            },
+                          },
+                        },
+                      },
+                    },
+                  }}
+                  sx={{
+                    bgcolor: (theme) => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                    color: (theme) => theme.palette.mode === 'dark' ? '#c9d1d9' : '#1f2937',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: (theme) => theme.palette.mode === 'dark' ? '#30363d' : undefined,
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: (theme) => theme.palette.mode === 'dark' ? '#58a6ff' : undefined,
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: (theme) => theme.palette.mode === 'dark' ? '#58a6ff' : undefined,
+                    },
+                    '& .MuiSelect-icon': {
+                      color: (theme) => theme.palette.mode === 'dark' ? '#8b949e' : undefined,
+                    },
+                  }}
                 >
                   <MenuItem value="">Todos</MenuItem>
                   <MenuItem value="pergunta">Pergunta</MenuItem>
@@ -226,11 +319,55 @@ const SupportPage: React.FC = () => {
 
             <Grid item xs={12} sm={6} md={2}>
               <FormControl fullWidth size="small">
-                <InputLabel>Status</InputLabel>
+                <InputLabel
+                  sx={{ 
+                    color: (theme) => theme.palette.mode === 'dark' ? '#8b949e' : 'rgba(0, 0, 0, 0.6)',
+                    '&.Mui-focused': {
+                      color: (theme) => theme.palette.mode === 'dark' ? '#58a6ff' : undefined,
+                    },
+                  }}
+                >
+                  Status
+                </InputLabel>
                 <Select
                   value={filters.status || ''}
                   label="Status"
                   onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        bgcolor: (theme) => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                        '& .MuiMenuItem-root': {
+                          color: (theme) => theme.palette.mode === 'dark' ? '#c9d1d9' : '#1f2937',
+                          '&:hover': {
+                            bgcolor: (theme) => theme.palette.mode === 'dark' ? '#21262d' : '#f3f4f6',
+                          },
+                          '&.Mui-selected': {
+                            bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1f6feb' : '#e0f2fe',
+                            '&:hover': {
+                              bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1f6feb' : '#bae6fd',
+                            },
+                          },
+                        },
+                      },
+                    },
+                  }}
+                  sx={{
+                    bgcolor: (theme) => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                    color: (theme) => theme.palette.mode === 'dark' ? '#c9d1d9' : '#1f2937',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: (theme) => theme.palette.mode === 'dark' ? '#30363d' : undefined,
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: (theme) => theme.palette.mode === 'dark' ? '#58a6ff' : undefined,
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: (theme) => theme.palette.mode === 'dark' ? '#58a6ff' : undefined,
+                    },
+                    '& .MuiSelect-icon': {
+                      color: (theme) => theme.palette.mode === 'dark' ? '#8b949e' : undefined,
+                    },
+                  }}
                 >
                   <MenuItem value="">Todos</MenuItem>
                   <MenuItem value="nao_respondido">Não Respondido</MenuItem>
@@ -248,6 +385,31 @@ const SupportPage: React.FC = () => {
                 placeholder="Buscar na pergunta..."
                 value={filters.search || ''}
                 onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: (theme) => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                    color: (theme) => theme.palette.mode === 'dark' ? '#c9d1d9' : '#1f2937',
+                    '& fieldset': {
+                      borderColor: (theme) => theme.palette.mode === 'dark' ? '#30363d' : undefined,
+                    },
+                    '&:hover fieldset': {
+                      borderColor: (theme) => theme.palette.mode === 'dark' ? '#58a6ff' : undefined,
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: (theme) => theme.palette.mode === 'dark' ? '#58a6ff' : undefined,
+                    },
+                    '& input::placeholder': {
+                      color: (theme) => theme.palette.mode === 'dark' ? '#8b949e' : '#9ca3af',
+                      opacity: 1,
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: (theme) => theme.palette.mode === 'dark' ? '#8b949e' : 'rgba(0, 0, 0, 0.6)',
+                    '&.Mui-focused': {
+                      color: (theme) => theme.palette.mode === 'dark' ? '#58a6ff' : undefined,
+                    },
+                  },
+                }}
               />
             </Grid>
 

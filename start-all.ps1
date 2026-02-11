@@ -38,7 +38,14 @@ Write-Host "[OK] Backend iniciado" -ForegroundColor $Success
 
 Start-Sleep -Seconds 2
 
-# 3. Iniciar Frontend
+# 3. Iniciar Cloudflare Tunnel para Frontend
+Write-Host "Iniciando Cloudflare Tunnel..." -ForegroundColor $Info
+Start-Job -Name "cloudflare" -ScriptBlock {
+    cloudflared tunnel --url http://localhost:5173 2>&1
+} > $null
+Write-Host "[OK] Cloudflare Tunnel iniciado" -ForegroundColor $Success
+
+# 4. Iniciar Frontend
 Write-Host "Iniciando Frontend..." -ForegroundColor $Info
 Start-Job -Name "frontend" -ScriptBlock {
     Set-Location "C:\hub\frontend"
@@ -52,14 +59,16 @@ Write-Host "TUDO INICIADO COM SUCESSO!" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "URLs de acesso:" -ForegroundColor $Info
-Write-Host "  Frontend:  http://localhost:5173" -ForegroundColor Cyan
-Write-Host "  Backend:   https://uneducated-georgiann-personifiant.ngrok-free.dev" -ForegroundColor Cyan
-Write-Host "  Redis:     localhost:6379" -ForegroundColor Cyan
+Write-Host "  Frontend (Cloudflare):  Verifique o link no log do Cloudflare" -ForegroundColor Cyan
+Write-Host "  Frontend (Local):       http://localhost:5173" -ForegroundColor Cyan
+Write-Host "  Backend (ngrok):        https://uneducated-georgiann-personifiant.ngrok-free.dev" -ForegroundColor Cyan
+Write-Host "  Redis:                  localhost:6379" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Comandos uteis:" -ForegroundColor $Info
-Write-Host "  Ver status:   Get-Job" -ForegroundColor Yellow
-Write-Host "  Ver logs:     Get-Job -Name backend | Receive-Job -Keep" -ForegroundColor Yellow
-Write-Host "  Parar tudo:   Get-Job | Stop-Job" -ForegroundColor Yellow
+Write-Host "  Ver status:             Get-Job" -ForegroundColor Yellow
+Write-Host "  Ver logs backend:       Get-Job -Name backend | Receive-Job -Keep" -ForegroundColor Yellow
+Write-Host "  Ver logs cloudflare:    Get-Job -Name cloudflare | Receive-Job -Keep" -ForegroundColor Yellow
+Write-Host "  Parar tudo:             Get-Job | Stop-Job" -ForegroundColor Yellow
 Write-Host ""
 
 # Mostrar jobs

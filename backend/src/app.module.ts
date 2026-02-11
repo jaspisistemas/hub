@@ -14,6 +14,8 @@ import { Support } from './domains/support/entities/support.entity';
 import { ProductsModule } from './domains/products/products.module';
 import { StoresModule } from './domains/stores/stores.module';
 import { SupportModule } from './domains/support/support.module';
+import { InvoicesModule } from './domains/invoices/invoices.module';
+import { Invoice } from './domains/invoices/entities/invoice.entity';
 
 @Module({
   imports: [
@@ -25,7 +27,7 @@ import { SupportModule } from './domains/support/support.module';
       username: process.env.DB_USERNAME || 'postgres',
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME || 'jaspi_hub',
-      entities: [User, Product, Store, Order, Support],
+      entities: [User, Product, Store, Order, Support, Invoice],
       synchronize: true, // Sincroniza automaticamente as mudanças na estrutura
     }),
     AuthModule,
@@ -33,6 +35,7 @@ import { SupportModule } from './domains/support/support.module';
     StoresModule,
     SupportModule,
     OrdersModule,
+    InvoicesModule,
     MarketplaceModule,
     QueueModule,
     WebsocketModule,

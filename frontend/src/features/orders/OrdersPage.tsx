@@ -40,6 +40,7 @@ import {
   ShoppingBag as ShoppingBagIcon,
   FilterList as FilterListIcon,
   Refresh as RefreshIcon,
+  Receipt as ReceiptIcon,
 } from '@mui/icons-material';
 import { ordersService, Order } from '../../services/ordersService';
 import PageHeader from '../../components/PageHeader';
@@ -48,6 +49,7 @@ import EmptyState from '../../components/EmptyState';
 import DataTable, { Column } from '../../components/DataTable';
 import { storesService, Store } from '../../services/storesService';
 import * as websocket from '../../services/websocket';
+import invoicesService, { Invoice } from '../../services/invoicesService';
 
 export default function OrdersPage() {
   const theme = useTheme();
@@ -66,6 +68,9 @@ export default function OrdersPage() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedOrderForMenu, setSelectedOrderForMenu] = useState<Order | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [loadingInvoice, setLoadingInvoice] = useState(false);
+  const [issuingInvoice, setIssuingInvoice] = useState(false);
 
   console.log('OrdersPage renderizando', { loading, ordersCount: orders?.length });
 
@@ -175,10 +180,66 @@ export default function OrdersPage() {
       const fullOrder = await ordersService.getOne(order.id);
       setSelectedOrder(fullOrder);
       setDetailsOpen(true);
+      
+      // Carregar nota fiscal se existir
+      loadInvoiceForOrder(fullOrder.id);
     } catch (err) {
       console.error('Erro ao carregar detalhes:', err);
       setError(err instanceof Error ? err.message : 'Erro ao carregar detalhes do pedido');
     }
+  };
+
+  const loadInvoiceForOrder = async (orderId: string) => {
+    try {
+      setLoadingInvoice(true);
+      const invoiceData = await invoicesService.getByOrderId(orderId);
+      setInvoice(invoiceData);
+    } catch (err) {
+      console.error('Erro ao carregar nota fiscal:', err);
+      setInvoice(null);
+    } finally {
+      setLoadingInvoice(false);
+    }
+  };
+
+  const handleAttachInvoice = async () => {
+    if (!selectedOrder) return;
+
+    // Criar input file invisível
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf,.xml';
+    input.multiple = false;
+
+    input.onchange = async (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      const file = target.files?.[0];
+      
+      if (!file) return;
+
+      // Validar tipo de arquivo
+      const validTypes = ['application/pdf', 'text/xml', 'application/xml'];
+      if (!validTypes.includes(file.type) && !file.name.match(/\.(pdf|xml)$/i)) {
+        setNotification('Por favor, selecione um arquivo PDF ou XML');
+        return;
+      }
+
+      try {
+        setIssuingInvoice(true);
+        const newInvoice = await invoicesService.uploadFile(selectedOrder.id, file);
+        setInvoice(newInvoice);
+        setNotification('Nota fiscal anexada com sucesso!');
+      } catch (err: any) {
+        console.error('Erro ao anexar nota fiscal:', err);
+        const errorMsg = err.message || 'Erro ao anexar nota fiscal';
+        setNotification(errorMsg);
+      } finally {
+        setIssuingInvoice(false);
+      }
+    };
+
+    // Abrir seletor de arquivos
+    input.click();
   };
 
   const getParsedRawData = (rawData?: string) => {
@@ -188,6 +249,56 @@ export default function OrdersPage() {
     } catch {
       return rawData;
     }
+  };
+
+  const toNumber = (value: any) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  };
+
+  const formatMoney = (value?: number) =>
+    value !== undefined ? `R$ ${value.toFixed(2)}` : 'N/A';
+
+  const getOrderItems = (raw: any) => {
+    if (!raw) return [] as any[];
+    const items = raw.items || raw.order_items || raw.orderItems || raw?.order?.items;
+    return Array.isArray(items) ? items : [];
+  };
+
+  const getItemTitle = (item: any) =>
+    item?.title || item?.item?.title || item?.item?.name || 'Produto';
+
+  const getItemQuantity = (item: any) => toNumber(item?.quantity) ?? 1;
+
+  const getMarketplaceFee = (item: any) =>
+    toNumber(item?.sale_fee) ??
+    toNumber(item?.sale_fee_amount) ??
+    toNumber(item?.marketplace_fee) ??
+    toNumber(item?.fees?.marketplace);
+
+  const getShippingFee = (item: any, raw: any) =>
+    toNumber(item?.shipping_cost) ??
+    toNumber(item?.shipping?.cost) ??
+    toNumber(item?.shipping?.shipping_cost) ??
+    toNumber(raw?.shipping?.cost) ??
+    toNumber(raw?.shipping?.shipping_cost);
+
+  const getAddressJson = (order: Order, raw: any) => {
+    const addr = raw?.shipping?.receiver_address || raw?.receiver_address || {};
+    const hasRawAddress = addr && Object.keys(addr).length > 0;
+
+    const composed = {
+      address_line: order.customerAddress || addr.address_line,
+      city: order.customerCity || addr.city?.name || addr.city,
+      state: order.customerState || addr.state?.id || addr.state,
+      zip_code: order.customerZipCode || addr.zip_code || addr.zipcode,
+      country: addr.country?.id || addr.country,
+      neighborhood: addr.neighborhood?.name || addr.neighborhood,
+      receiver_name: addr.receiver_name || order.customerName,
+    };
+
+    const hasComposed = Object.values(composed).some((v) => v);
+    return hasRawAddress || hasComposed ? composed : null;
   };
 
   const handleCloseDetails = () => {
@@ -241,6 +352,14 @@ export default function OrdersPage() {
     handleMenuClose();
   };
 
+  const selectedOrderRaw = selectedOrder?.rawData
+    ? getParsedRawData(selectedOrder.rawData)
+    : null;
+  const selectedOrderItems = selectedOrder ? getOrderItems(selectedOrderRaw) : [];
+  const selectedOrderAddressJson = selectedOrder
+    ? getAddressJson(selectedOrder, selectedOrderRaw)
+    : null;
+
   const filteredOrders = (orders || [])
     .filter((o) => {
       if (!o) return false;
@@ -263,7 +382,12 @@ export default function OrdersPage() {
   const stats = {
     total: (orders || []).length || 0,
     pending: (orders || []).filter((o) => o?.status === 'pending').length || 0,
-    revenue: (orders || []).reduce((sum, o) => sum + (Number(o?.total) || 0), 0) || 0,
+    revenue: (orders || [])
+      .filter((o) => {
+        const status = (o?.status || '').toLowerCase();
+        return status !== 'cancelled' && status !== 'canceled' && status !== 'cancelado';
+      })
+      .reduce((sum, o) => sum + (Number(o?.total) || 0), 0) || 0,
   };
 
   if (loading) {
@@ -970,6 +1094,218 @@ export default function OrdersPage() {
                 </Box>
               )}
 
+              {/* Produtos e Taxas */}
+              <Box sx={{ mt: 3 }}>
+                <Divider sx={{ mb: 2 }} />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <ShoppingBagIcon sx={{ color: '#10b981' }} />
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    Produtos e Taxas
+                  </Typography>
+                </Box>
+                {selectedOrderItems.length === 0 ? (
+                  <Typography variant="body2" color="textSecondary">
+                    Nenhum item encontrado no pedido.
+                  </Typography>
+                ) : (
+                  <Grid container spacing={2}>
+                    {selectedOrderItems.map((item, idx) => (
+                      <Grid item xs={12} key={`${selectedOrder?.id}-item-${idx}`}>
+                        <Paper sx={{ p: 2, border: '1px solid #e5e7eb' }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                            {getItemTitle(item)}
+                          </Typography>
+                          <Grid container spacing={2} sx={{ mt: 1 }}>
+                            <Grid item xs={12} sm={4}>
+                              <Typography variant="body2" color="textSecondary">
+                                Quantidade
+                              </Typography>
+                              <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                {getItemQuantity(item)}
+                              </Typography>
+                            </Grid>
+                            <Grid item xs={12} sm={4}>
+                              <Typography variant="body2" color="textSecondary">
+                                Taxa Mercado Livre
+                              </Typography>
+                              <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                {formatMoney(getMarketplaceFee(item))}
+                              </Typography>
+                            </Grid>
+                            <Grid item xs={12} sm={4}>
+                              <Typography variant="body2" color="textSecondary">
+                                Taxa de Envio
+                              </Typography>
+                              <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                {formatMoney(getShippingFee(item, selectedOrderRaw))}
+                              </Typography>
+                            </Grid>
+                          </Grid>
+                        </Paper>
+                      </Grid>
+                    ))}
+                  </Grid>
+                )}
+              </Box>
+
+              {/* Nota Fiscal */}
+              <Divider sx={{ my: 3 }} />
+              <Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <ReceiptIcon sx={{ fontSize: 20 }} />
+                    Nota Fiscal
+                  </Typography>
+                </Box>
+
+                {loadingInvoice && (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                    <CircularProgress size={24} />
+                  </Box>
+                )}
+
+                {!loadingInvoice && !invoice && (
+                  <Alert severity="info" sx={{ mb: 2 }}>
+                    Nenhuma nota fiscal emitida para este pedido.
+                  </Alert>
+                )}
+
+                {!loadingInvoice && invoice && (
+                  <Paper 
+                    elevation={0}
+                    sx={{ 
+                      p: 2.5, 
+                      bgcolor: (theme) => theme.palette.mode === 'dark' 
+                        ? 'rgba(76, 175, 80, 0.08)'
+                        : 'rgba(76, 175, 80, 0.04)',
+                      border: '1px solid',
+                      borderColor: (theme) => theme.palette.mode === 'dark'
+                        ? 'rgba(76, 175, 80, 0.3)'
+                        : 'rgba(76, 175, 80, 0.2)',
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="caption" color="textSecondary" display="block">
+                          Número
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
+                          {invoice.number || 'N/A'}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="caption" color="textSecondary" display="block">
+                          Série
+                        </Typography>
+
+                        <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
+                          {invoice.series || 'N/A'}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={12}>
+                        <Typography variant="caption" color="textSecondary" display="block">
+                          Chave de Acesso
+                        </Typography>
+                        <Typography 
+                          variant="body2" 
+                          sx={{ 
+                            fontFamily: 'monospace', 
+                            fontSize: '0.8rem',
+                            mt: 0.5,
+                            wordBreak: 'break-all',
+                          }}
+                        >
+                          {invoice.accessKey || 'N/A'}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="caption" color="textSecondary" display="block">
+                          Status
+                        </Typography>
+                        <Box sx={{ mt: 0.5 }}>
+                          <Chip
+                            label={invoice.status === 'generated' ? 'Gerada' : 
+                                   invoice.status === 'sent' ? 'Enviada' : 
+                                   invoice.status === 'failed' ? 'Erro' : 
+                                   invoice.status}
+                            size="small"
+                            color={invoice.status === 'generated' ? 'success' : 
+                                   invoice.status === 'sent' ? 'primary' : 
+                                   invoice.status === 'failed' ? 'error' : 
+                                   'default'}
+                          />
+                        </Box>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="caption" color="textSecondary" display="block">
+                          Data de Emissão
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 500, mt: 0.5 }}>
+                          {invoice.issueDate 
+                            ? new Date(invoice.issueDate).toLocaleString('pt-BR')
+                            : 'N/A'}
+                        </Typography>
+                      </Grid>
+                      {invoice.sentToMarketplace && (
+                        <Grid item xs={12}>
+                          <Alert severity="success" sx={{ mt: 1 }}>
+                            Nota fiscal enviada ao marketplace em {' '}
+                            {invoice.sentAt 
+                              ? new Date(invoice.sentAt).toLocaleString('pt-BR')
+                              : 'data desconhecida'}
+                          </Alert>
+                        </Grid>
+                      )}
+                      {invoice.errorMessage && (
+                        <Grid item xs={12}>
+                          <Alert severity="error" sx={{ mt: 1 }}>
+                            {invoice.errorMessage}
+                          </Alert>
+                        </Grid>
+                      )}
+                    </Grid>
+                  </Paper>
+                )}
+              </Box>
+
+              {/* Endereço (JSON) */}
+              {selectedOrderAddressJson && (
+                <Box sx={{ mt: 3 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+                    {!invoice && (
+                      <Button
+                        variant="contained"
+                        size="small"
+                        startIcon={issuingInvoice ? <CircularProgress size={16} color="inherit" /> : <ReceiptIcon />}
+                        onClick={handleAttachInvoice}
+                        disabled={issuingInvoice || loadingInvoice}
+                      >
+                        {issuingInvoice ? 'Anexando...' : 'Anexar Nota Fiscal'}
+                      </Button>
+                    )}
+                  </Box>
+                  <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+                    Endereço (JSON)
+                  </Typography>
+                  <Divider sx={{ mb: 2 }} />
+                  <Paper
+                    sx={{
+                      p: 2,
+                      bgcolor: '#f5f5f5',
+                      maxHeight: 200,
+                      overflow: 'auto',
+                      fontFamily: 'monospace',
+                      fontSize: '0.875rem',
+                    }}
+                  >
+                    <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                      {JSON.stringify(selectedOrderAddressJson, null, 2)}
+                    </pre>
+                  </Paper>
+                </Box>
+              )}
+
               {selectedOrder.rawData && (
                 <>
                   <Divider sx={{ my: 3 }} />
@@ -987,7 +1323,7 @@ export default function OrdersPage() {
                     }}
                   >
                     <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                      {JSON.stringify(getParsedRawData(selectedOrder.rawData), null, 2)}
+                      {JSON.stringify(selectedOrderRaw, null, 2)}
                     </pre>
                   </Paper>
                 </>

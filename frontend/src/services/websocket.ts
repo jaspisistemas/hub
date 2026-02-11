@@ -2,9 +2,9 @@ import { io, Socket } from 'socket.io-client';
 
 let socket: Socket | null = null;
 
-export const connect = (url = 'https://uneducated-georgiann-personifiant.ngrok-free.dev') => {
+export const connect = () => {
   if (!socket) {
-    socket = io(url);
+    socket = io({ path: '/socket.io' });
     
     socket.on('connect', () => {
       console.log('WebSocket conectado');

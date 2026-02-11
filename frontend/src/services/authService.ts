@@ -1,4 +1,6 @@
-const API_URL = 'https://uneducated-georgiann-personifiant.ngrok-free.dev';
+import { API_BASE_URL } from './api';
+
+const API_URL = API_BASE_URL;
 
 export interface LoginResponse {
   accessToken: string;

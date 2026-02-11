@@ -1,4 +1,4 @@
-import { apiFetch } from './api';
+import { apiFetch, getApiBaseUrl } from './api';
 
 export interface Product {
   id: string;
@@ -51,7 +51,7 @@ export const productsService = {
 
   createWithImage: async (formData: FormData): Promise<Product> => {
     const token = localStorage.getItem('authToken');
-    const response = await fetch('https://uneducated-georgiann-personifiant.ngrok-free.dev/products', {
+    const response = await fetch(`${getApiBaseUrl()}/products`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -64,7 +64,7 @@ export const productsService = {
 
   updateWithImage: async (id: string, formData: FormData): Promise<Product> => {
     const token = localStorage.getItem('authToken');
-    const response = await fetch(`https://uneducated-georgiann-personifiant.ngrok-free.dev/products/${id}`, {
+    const response = await fetch(`${getApiBaseUrl()}/products/${id}`, {
       method: 'PATCH',
       headers: {
         'Authorization': `Bearer ${token}`,

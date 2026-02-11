@@ -1,6 +1,14 @@
 import { authService } from './authService';
 
-const API_URL = 'https://uneducated-georgiann-personifiant.ngrok-free.dev';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+
+export const getApiBaseUrl = () =>
+  API_BASE_URL.startsWith('http') ? API_BASE_URL : `${window.location.origin}${API_BASE_URL}`;
+
+export const getBackendOrigin = () => {
+  const base = getApiBaseUrl();
+  return base.endsWith('/api') ? base.slice(0, -4) : base;
+};
 
 export interface FetchOptions extends RequestInit {
   needsAuth?: boolean;
@@ -24,7 +32,7 @@ export async function apiFetch<T = any>(
     Object.assign(headers, authHeader);
   }
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...fetchOptions,
     headers,
   });

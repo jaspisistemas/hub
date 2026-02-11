@@ -53,6 +53,7 @@ import DataTable, { Column, TableImage, TruncatedText } from '../../components/D
 import { productsService, Product, CreateProductInput } from '../../services/productsService';
 import { storesService, Store } from '../../services/storesService';
 import * as websocket from '../../services/websocket';
+import { getApiBaseUrl, getBackendOrigin } from '../../services/api';
 import { CategorySelector } from '../../components/CategorySelector';
 import { DynamicProductForm } from '../../components/DynamicProductForm';
 
@@ -190,10 +191,10 @@ export default function ProductsPage() {
     }
     // Se é um caminho relativo de uploads, adiciona o prefixo do backend
     if (url.startsWith('/')) {
-      return `https://uneducated-georgiann-personifiant.ngrok-free.dev${url}`;
+      return `${getBackendOrigin()}${url}`;
     }
     // Caso padrão: adiciona o prefixo
-    return `https://uneducated-georgiann-personifiant.ngrok-free.dev${url}`;
+    return `${getBackendOrigin()}${url}`;
   };
 
   const handleEditProduct = (product: Product) => {
@@ -456,7 +457,7 @@ export default function ProductsPage() {
     try {
       setSyncing(true);
       // Chama endpoint de sincronização
-      const response = await fetch(`https://uneducated-georgiann-personifiant.ngrok-free.dev/marketplace/${syncMarketplace.toLowerCase()}/sync-products`, {
+      const response = await fetch(`${getApiBaseUrl()}/marketplace/${syncMarketplace.toLowerCase()}/sync-products`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

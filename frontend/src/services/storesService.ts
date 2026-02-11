@@ -1,4 +1,4 @@
-import { apiFetch } from './api';
+import { apiFetch, getApiBaseUrl } from './api';
 
 export interface Store {
   id: string;
@@ -92,7 +92,8 @@ export const storesService = {
     
     // Abrir autenticação em uma POPUP separada
     const timestamp = Date.now();
-    const authUrl = `https://uneducated-georgiann-personifiant.ngrok-free.dev/marketplace/mercadolivre/auth?userId=${user.id}&t=${timestamp}`;
+    const baseUrl = getApiBaseUrl();
+    const authUrl = `${baseUrl}/marketplace/mercadolivre/auth?userId=${user.id}&t=${timestamp}`;
     
     console.log('Abrindo popup de autenticação:', authUrl);
     

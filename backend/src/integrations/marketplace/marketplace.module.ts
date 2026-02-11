@@ -10,8 +10,8 @@ import { SupportModule } from '../../domains/support/support.module';
 
 @Module({
   imports: [
-    OrdersModule, 
-    StoresModule, 
+    forwardRef(() => OrdersModule),
+    StoresModule,
     ProductsModule,
     forwardRef(() => SupportModule),
   ],

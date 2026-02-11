@@ -42,7 +42,7 @@ export class Order {
   @Column({ nullable: true, length: 100 })
   customerCity?: string;
 
-  @Column({ nullable: true, length: 2 })
+  @Column({ nullable: true, length: 10 })
   customerState?: string;
 
   @Column({ nullable: true, type: 'text' })

@@ -166,6 +166,39 @@ export class MarketplaceService {
       }
 
       const orderData = await response.json();
+
+      // Se o pedido traz apenas o shipping.id, buscar o shipment para obter endereço completo
+      try {
+        const shippingId = orderData?.shipping?.id;
+        const hasReceiverAddress = !!orderData?.shipping?.receiver_address;
+
+        if (shippingId && !hasReceiverAddress) {
+          const shipmentResponse = await fetch(
+            `https://api.mercadolibre.com/shipments/${shippingId}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+              },
+            },
+          );
+
+          if (shipmentResponse.ok) {
+            const shipmentData = await shipmentResponse.json();
+            orderData.shipping = {
+              ...orderData.shipping,
+              receiver_address: shipmentData?.receiver_address || orderData.shipping?.receiver_address,
+              shipping_cost: shipmentData?.shipping_cost ?? orderData.shipping?.shipping_cost,
+              cost: shipmentData?.cost ?? orderData.shipping?.cost,
+            };
+          } else {
+            const error = await shipmentResponse.text();
+            console.warn(`⚠️ Erro ao buscar shipment ${shippingId}:`, error);
+          }
+        }
+      } catch (shippingError) {
+        console.warn('⚠️ Falha ao enriquecer shipping do pedido ML:', shippingError);
+      }
+
       return this.mlAdapter.mapOrderFromApi(orderData);
     } catch (error) {
       console.error('❌ Erro ao buscar pedido do ML:', error);
@@ -174,6 +207,62 @@ export class MarketplaceService {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  /**
+   * Busca detalhes do shipment do Mercado Livre
+   */
+  async getMercadoLivreShipment(storeId: string, shippingId: string) {
+    const Store = await this.getStoreEntity(storeId);
+
+    if (!Store?.mlAccessToken) {
+      throw new HttpException(
+        'Loja não possui token de acesso ao Mercado Livre',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Renovar token se estiver expirado
+    let accessToken = Store.mlAccessToken;
+    if (Store.mlTokenExpiresAt && Store.mlRefreshToken) {
+      const now = Date.now();
+      if (now > Store.mlTokenExpiresAt - 5 * 60 * 1000) {
+        try {
+          const tokenData = await this.refreshMercadoLivreToken(Store.mlRefreshToken);
+          accessToken = tokenData.accessToken;
+
+          await this.storesService.update(Store.id, {
+            mlAccessToken: tokenData.accessToken,
+            mlRefreshToken: tokenData.refreshToken,
+            mlTokenExpiresAt: Date.now() + tokenData.expiresIn * 1000,
+          });
+        } catch (error: any) {
+          throw new HttpException(
+            'Token expirado. Por favor, reconecte a loja do Mercado Livre.',
+            HttpStatus.UNAUTHORIZED,
+          );
+        }
+      }
+    }
+
+    const response = await fetch(
+      `https://api.mercadolibre.com/shipments/${shippingId}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      },
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new HttpException(
+        `Erro ao buscar shipment do Mercado Livre: ${error}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return response.json();
   }
 
   /**

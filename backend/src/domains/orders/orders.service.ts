@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan, In, IsNull } from 'typeorm';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -7,6 +7,7 @@ import { OrderCreatedEvent, OrderIntegrationFailedEvent } from './events';
 import { Order } from './entities/order.entity';
 import { WebsocketGateway } from '../../infra/websocket/websocket.gateway';
 import { Store } from '../stores/entities/store.entity';
+import { MarketplaceService } from '../../integrations/marketplace/marketplace.service';
 
 /**
  * OrdersService: contém APENAS regras de negócio.
@@ -21,6 +22,8 @@ export class OrdersService {
     @InjectRepository(Store)
     private readonly storesRepository: Repository<Store>,
     private readonly websocketGateway: WebsocketGateway,
+    @Inject(forwardRef(() => MarketplaceService))
+    private readonly marketplaceService: MarketplaceService,
   ) {}
 
   private normalizeMarketplace(value?: string) {
@@ -76,6 +79,44 @@ export class OrdersService {
     if (!order) {
       throw new NotFoundException('Pedido não encontrado');
     }
+
+    if (order.marketplace === 'mercadolivre' && order.rawData && order.storeId) {
+      try {
+        const raw = JSON.parse(order.rawData);
+        const shippingId = raw?.shipping?.id;
+        const hasReceiverAddress = !!raw?.shipping?.receiver_address;
+
+        if (shippingId && !hasReceiverAddress) {
+          const shipment = await this.marketplaceService.getMercadoLivreShipment(
+            order.storeId,
+            shippingId.toString(),
+          );
+
+          if (shipment?.receiver_address) {
+            raw.shipping = {
+              ...raw.shipping,
+              receiver_address: shipment.receiver_address,
+              shipping_cost: shipment.shipping_cost ?? raw.shipping?.shipping_cost,
+              cost: shipment.cost ?? raw.shipping?.cost,
+            };
+
+            order.rawData = JSON.stringify(raw);
+
+            order.customerAddress = order.customerAddress || shipment.receiver_address?.address_line;
+            order.customerCity = order.customerCity || shipment.receiver_address?.city?.name;
+            // Extrair apenas sigla do estado (BR-SP -> SP)
+            const stateId = shipment.receiver_address?.state?.id;
+            order.customerState = order.customerState || (stateId?.includes('-') ? stateId.split('-').pop() : stateId);
+            order.customerZipCode = order.customerZipCode || shipment.receiver_address?.zip_code;
+
+            await this.ordersRepository.save(order);
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ Falha ao enriquecer endereço do pedido ML:', error);
+      }
+    }
+
     return order;
   }
 
@@ -210,21 +251,28 @@ export class OrdersService {
       relations: ['store'],
     });
 
+    const isCancelled = (status?: string) => {
+      const normalized = (status || '').toLowerCase();
+      return normalized === 'cancelled' || normalized === 'canceled' || normalized === 'cancelado';
+    };
+
+    const revenueOrders = orders.filter((order) => !isCancelled(order.status));
+
     // Calcular overview
-    const totalRevenue = orders.reduce((sum, order) => sum + Number(order.total), 0);
+    const totalRevenue = revenueOrders.reduce((sum, order) => sum + Number(order.total), 0);
     const totalOrders = orders.length;
-    const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+    const averageOrderValue = revenueOrders.length > 0 ? totalRevenue / revenueOrders.length : 0;
     const uniqueStores = new Set(orders.map(o => o.store?.id).filter(Boolean));
     const totalStores = uniqueStores.size;
 
     // Vendas por período (por dia)
-    const salesByPeriod = this.calculateSalesByPeriod(orders, days);
+    const salesByPeriod = this.calculateSalesByPeriod(revenueOrders, days);
 
     // Pedidos por status
     const ordersByStatus = this.calculateOrdersByStatus(orders);
 
     // Vendas por loja
-    const salesByStore = await this.calculateSalesByStore(orders);
+    const salesByStore = await this.calculateSalesByStore(revenueOrders);
 
     // Pedidos recentes (últimos 10)
     const recentOrders = orders

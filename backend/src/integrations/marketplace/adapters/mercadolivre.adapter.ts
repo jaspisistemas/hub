@@ -1,6 +1,18 @@
 import { CreateOrderDto } from '../../../domains/orders/dto/create-order.dto';
 
 /**
+ * Extrai apenas a sigla do estado de códigos como 'BR-SP' -> 'SP'
+ */
+function extractStateCode(stateId?: string): string | undefined {
+  if (!stateId) return undefined;
+  // Se tem formato 'BR-XX', pega só 'XX'
+  if (stateId.includes('-')) {
+    return stateId.split('-').pop();
+  }
+  return stateId;
+}
+
+/**
  * Adapter MercadoLibre: mapeia payload externo -> CreateOrderDto interno
  * NÃO contém regras de negócio.
  */
@@ -25,7 +37,7 @@ export class MercadoLivreAdapter {
       customerEmail: payload.buyer?.email || `ml-${orderId}@marketplace.com`,
       customerPhone: payload.buyer?.phone?.number,
       customerCity: payload.shipping?.receiver_address?.city?.name,
-      customerState: payload.shipping?.receiver_address?.state?.id,
+      customerState: extractStateCode(payload.shipping?.receiver_address?.state?.id),
       customerAddress: payload.shipping?.receiver_address?.address_line,
       customerZipCode: payload.shipping?.receiver_address?.zip_code,
       raw: payload,
@@ -49,7 +61,7 @@ export class MercadoLivreAdapter {
       customerEmail: orderData.buyer?.email || `ml-${orderData.id}@marketplace.com`,
       customerPhone: orderData.buyer?.phone?.number,
       customerCity: orderData.shipping?.receiver_address?.city?.name,
-      customerState: orderData.shipping?.receiver_address?.state?.id,
+      customerState: extractStateCode(orderData.shipping?.receiver_address?.state?.id),
       customerAddress: orderData.shipping?.receiver_address?.address_line,
       customerZipCode: orderData.shipping?.receiver_address?.zip_code,
       raw: {

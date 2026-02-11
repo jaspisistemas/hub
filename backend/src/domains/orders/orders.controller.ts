@@ -30,8 +30,31 @@ export class OrdersController {
   }
 
   @Get()
-  async findAll(@Request() req: any) {
-    return this.ordersService.listOrdersByUser(req.user.id);
+  async findAll(
+    @Request() req: any,
+    @Query('status') status?: string,
+    @Query('paidOnly') paidOnly?: string,
+    @Query('updatedSince') updatedSince?: string,
+  ) {
+    const statusList = status
+      ? status.split(',').map((item) => item.trim()).filter(Boolean)
+      : undefined;
+    const paidOnlyFlag = paidOnly === 'true' || paidOnly === '1';
+
+    return this.ordersService.listOrdersByUser(
+      req.user.id,
+      statusList,
+      paidOnlyFlag,
+      updatedSince,
+    );
+  }
+
+  @Get('paid')
+  async findPaid(
+    @Request() req: any,
+    @Query('updatedSince') updatedSince?: string,
+  ) {
+    return this.ordersService.listOrdersByUser(req.user.id, undefined, true, updatedSince);
   }
 
   @Get(':id')

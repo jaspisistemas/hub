@@ -256,6 +256,13 @@ Content-Type: application/json
 4. **Send**
 5. Copie um `id` de pedido
 
+**Filtros opcionais:**
+- Apenas pedidos pagos: `http://localhost:3000/orders?paidOnly=true`
+- Filtrar por status: `http://localhost:3000/orders?status=paid,approved`
+- Filtrar por data de atualização: `http://localhost:3000/orders?updatedSince=2026-02-11T00:00:00.000Z`
+- Atalho para pagos: `http://localhost:3000/orders/paid`
+- Pagos + data: `http://localhost:3000/orders/paid?updatedSince=2026-02-11T00:00:00.000Z`
+
 ### 4. Buscar Dados Fiscais
 1. Nova requisição → `GET`
 2. URL: `http://localhost:3000/invoices/order/COLE_O_ID_AQUI/invoice-data`
@@ -282,6 +289,11 @@ POST   /auth/login                                  - Login
 POST   /auth/register                               - Registrar usuário
 
 GET    /orders                                      - Listar pedidos
+GET    /orders?paidOnly=true                         - Listar apenas pedidos pagos
+GET    /orders?status=paid,approved                  - Listar pedidos por status
+GET    /orders?updatedSince=2026-02-11T00:00:00.000Z - Listar pedidos atualizados após a data
+GET    /orders/paid                                  - Listar apenas pedidos pagos (atalho)
+GET    /orders/paid?updatedSince=2026-02-11T00:00:00.000Z - Pagos atualizados após a data
 POST   /orders                                      - Criar pedido
 GET    /orders/:id                                  - Buscar pedido
 

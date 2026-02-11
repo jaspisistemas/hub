@@ -124,9 +124,23 @@ export class OrdersService {
     return this.ordersRepository.find();
   }
 
-  async listOrdersByUser(userId: string) {
+  async listOrdersByUser(
+    userId: string,
+    statusList?: string[],
+    paidOnly?: boolean,
+    updatedSince?: string,
+  ) {
     const stores = await this.storesRepository.find({ where: { userId } });
     const storeIds = stores.map((s) => s.id);
+
+    const normalizeStatus = (value?: string) => (value || '').toLowerCase().trim();
+    const paidStatuses = ['paid', 'approved', 'completed'];
+    const filteredStatuses = paidOnly
+      ? paidStatuses
+      : (statusList || []).map(normalizeStatus).filter(Boolean);
+
+    const sinceDate = updatedSince ? new Date(updatedSince) : undefined;
+    const hasValidSinceDate = sinceDate instanceof Date && !Number.isNaN(sinceDate.getTime());
 
     const baseOrders = await this.ordersRepository
       .createQueryBuilder('order')
@@ -161,12 +175,34 @@ export class OrdersService {
       }
 
       const combined = [...matchedOrphans, ...baseOrders];
-      return combined.sort(
+      const sortedCombined = combined.sort(
         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+
+      const sinceFiltered = hasValidSinceDate
+        ? sortedCombined.filter((order) => new Date(order.updatedAt).getTime() >= sinceDate!.getTime())
+        : sortedCombined;
+
+      if (filteredStatuses.length) {
+        return sinceFiltered.filter((order) =>
+          filteredStatuses.includes(normalizeStatus(order.status)),
+        );
+      }
+
+      return sinceFiltered;
+    }
+
+    const sinceFiltered = hasValidSinceDate
+      ? baseOrders.filter((order) => new Date(order.updatedAt).getTime() >= sinceDate!.getTime())
+      : baseOrders;
+
+    if (filteredStatuses.length) {
+      return sinceFiltered.filter((order) =>
+        filteredStatuses.includes(normalizeStatus(order.status)),
       );
     }
 
-    return baseOrders;
+    return sinceFiltered;
   }
 
   async updateOrder(id: string, dto: UpdateOrderDto) {

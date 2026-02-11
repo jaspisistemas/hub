@@ -1292,14 +1292,15 @@ export default function OrdersPage() {
                   <Paper
                     sx={{
                       p: 2,
-                      bgcolor: '#f5f5f5',
+                      bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1e1e1e' : '#f5f5f5',
+                      color: (theme) => theme.palette.mode === 'dark' ? '#d4d4d4' : '#333333',
                       maxHeight: 200,
                       overflow: 'auto',
                       fontFamily: 'monospace',
                       fontSize: '0.875rem',
                     }}
                   >
-                    <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                    <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: 'inherit' }}>
                       {JSON.stringify(selectedOrderAddressJson, null, 2)}
                     </pre>
                   </Paper>
@@ -1315,14 +1316,15 @@ export default function OrdersPage() {
                   <Paper 
                     sx={{ 
                       p: 2, 
-                      bgcolor: '#f5f5f5', 
+                      bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1e1e1e' : '#f5f5f5',
+                      color: (theme) => theme.palette.mode === 'dark' ? '#d4d4d4' : '#333333',
                       maxHeight: 300, 
                       overflow: 'auto',
                       fontFamily: 'monospace',
                       fontSize: '0.875rem'
                     }}
                   >
-                    <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                    <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: 'inherit' }}>
                       {JSON.stringify(selectedOrderRaw, null, 2)}
                     </pre>
                   </Paper>

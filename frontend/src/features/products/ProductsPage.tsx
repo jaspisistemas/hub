@@ -777,7 +777,14 @@ export default function ProductsPage() {
           </Box>
         )}
 
-        <DialogContent sx={{ px: 3, py: 3 }}>
+        <DialogContent sx={{ 
+          px: { xs: 2, sm: 4 }, 
+          py: 4, 
+          bgcolor: (theme) => theme.palette.mode === 'dark' ? '#111827' : '#f9fafb',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 4
+        }}>
           {/* Step 0: Seleção de Categoria */}
           {!editingId && productStep === 0 && stores.length > 0 && (
             <Box sx={{ py: 2 }}>
@@ -793,39 +800,112 @@ export default function ProductsPage() {
 
           {/* Step 1: Formulário do Produto */}
           {(editingId || productStep === 1) && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               {/* Seção de Imagens */}
-              <Paper elevation={0} sx={{ p: 3, bgcolor: 'white', borderRadius: 2, border: '1px solid #e0e0e0' }}>
-                <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <CloudUploadIcon color="primary" />
+              <Box sx={{ 
+                p: { xs: 3, sm: 4 }, 
+                bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1f2937' : '#ffffff',
+                borderRadius: 2, 
+                border: (theme) => theme.palette.mode === 'dark' ? '1px solid #374151' : '1px solid #e5e7eb',
+                boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 1px 3px rgba(0,0,0,0.2)' : '0 1px 2px rgba(0,0,0,0.05)'
+              }}>
+                <Typography variant="h6" sx={{ 
+                  mb: 3, 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 1,
+                  color: (theme) => theme.palette.mode === 'dark' ? '#e5e7eb' : '#1f2937',
+                  fontWeight: 600
+                }}>
+                  <CloudUploadIcon sx={{ color: '#42A5F5' }} />
                   Imagens do Produto
                 </Typography>
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                   {imagePreviews.length > 0 && (
-                    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 2, width: '100%' }}>
+                    <Box sx={{ 
+                      display: 'grid', 
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', 
+                      gap: 2, 
+                      width: '100%',
+                      pb: 2
+                    }}>
                       {imagePreviews.map((preview, index) => (
-                        <Box key={index} sx={{ position: 'relative', borderRadius: 2, overflow: 'hidden', boxShadow: 1 }}>
-                          <Avatar
+                        <Box key={index} sx={{ 
+                          position: 'relative', 
+                          borderRadius: 1.5, 
+                          overflow: 'hidden',
+                          aspectRatio: '1/1',
+                          boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 2px 8px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.1)',
+                          transition: 'all 0.2s ease-in-out',
+                          '&:hover': {
+                            boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 4px 12px rgba(66,165,245,0.2)' : '0 4px 12px rgba(66,165,245,0.15)',
+                            transform: 'translateY(-2px)'
+                          }
+                        }}>
+                          <img
                             src={preview}
                             alt={`Preview ${index + 1}`}
-                            variant="rounded"
-                            sx={{ width: '100%', height: 120 }}
-                          />
-                          <IconButton
-                            size="small"
-                            onClick={() => handleRemoveImage(index)}
-                            sx={{
-                              position: 'absolute',
-                              top: 4,
-                              right: 4,
-                              bgcolor: 'rgba(0,0,0,0.6)',
-                              color: 'white',
-                              '&:hover': { bgcolor: 'error.main' },
-                              backdropFilter: 'blur(4px)'
+                            style={{ 
+                              width: '100%', 
+                              height: '100%', 
+                              objectFit: 'cover',
+                              display: 'block'
                             }}
-                          >
-                            <DeleteOutlineIcon fontSize="small" />
-                          </IconButton>
+                          />
+                          <Box sx={{
+                            position: 'absolute',
+                            inset: 0,
+                            bgcolor: 'rgba(0,0,0,0)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'all 0.2s ease-in-out',
+                            '&:hover': {
+                              bgcolor: 'rgba(0,0,0,0.4)'
+                            }
+                          }}>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleRemoveImage(index)}
+                              sx={{
+                                opacity: 0,
+                                transition: 'all 0.2s ease-in-out',
+                                bgcolor: 'rgba(239,68,68,0.9)',
+                                color: 'white',
+                                '&:hover': { bgcolor: 'rgb(220,38,38)' },
+                                '&:hover ~ &, &:hover': {
+                                  opacity: 1
+                                }
+                              }}
+                            >
+                              <DeleteOutlineIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
+                          <Box sx={{
+                            position: 'absolute',
+                            inset: 0,
+                            opacity: 0,
+                            transition: 'all 0.2s ease-in-out',
+                            '&:hover, &:active': {
+                              opacity: 1
+                            },
+                            display: 'flex',
+                            alignItems: 'flex-end',
+                            justifyContent: 'flex-end',
+                            p: 1
+                          }}>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleRemoveImage(index)}
+                              sx={{
+                                bgcolor: 'rgba(239,68,68,0.9)',
+                                color: 'white',
+                                '&:hover': { bgcolor: 'rgb(220,38,38)' }
+                              }}
+                            >
+                              <DeleteOutlineIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
                         </Box>
                       ))}
                     </Box>
@@ -835,7 +915,22 @@ export default function ProductsPage() {
                     variant={imagePreviews.length === 0 ? 'contained' : 'outlined'}
                     startIcon={<CloudUploadIcon />}
                     disabled={imagePreviews.length >= 5}
-                    sx={{ minWidth: 250 }}
+                    sx={{ 
+                      alignSelf: 'flex-start',
+                      mt: imagePreviews.length > 0 ? 1 : 0,
+                      fontWeight: 600,
+                      textTransform: 'none',
+                      fontSize: '1rem',
+                      py: 1.5,
+                      px: 3,
+                      ...(imagePreviews.length > 0 && {
+                        borderColor: (theme) => theme.palette.mode === 'dark' ? '#42A5F5' : '#42A5F5',
+                        color: (theme) => theme.palette.mode === 'dark' ? '#42A5F5' : '#42A5F5',
+                        '&:hover': {
+                          bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(66,165,245,0.08)' : 'rgba(66,165,245,0.08)'
+                        }
+                      })
+                    }}
                   >
                     {imagePreviews.length >= 5 ? 'Máximo de 5 imagens' : imagePreviews.length === 0 ? 'Adicionar Imagens' : `Adicionar Mais (${imagePreviews.length}/5)`}
                     <input
@@ -847,20 +942,33 @@ export default function ProductsPage() {
                     />
                   </Button>
                   {imagePreviews.length === 0 && (
-                    <Typography variant="caption" color="textSecondary">
-                      Adicione até 5 imagens do produto
+                    <Typography variant="caption" sx={{ color: (theme) => theme.palette.mode === 'dark' ? '#9ca3af' : '#6b7280' }}>
+                      Adicione até 5 imagens do produto. Dimensão recomendada: 1200x1200px
                     </Typography>
                   )}
                 </Box>
-              </Paper>
+              </Box>
 
               {/* Seção de Informações Básicas */}
-              <Paper elevation={0} sx={{ p: 3, bgcolor: 'white', borderRadius: 2, border: '1px solid #e0e0e0' }}>
-                <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <EditIcon color="primary" />
+              <Box sx={{ 
+                p: { xs: 3, sm: 4 }, 
+                bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1f2937' : '#ffffff',
+                borderRadius: 2, 
+                border: (theme) => theme.palette.mode === 'dark' ? '1px solid #374151' : '1px solid #e5e7eb',
+                boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 1px 3px rgba(0,0,0,0.2)' : '0 1px 2px rgba(0,0,0,0.05)'
+              }}>
+                <Typography variant="h6" sx={{ 
+                  mb: 3, 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 1,
+                  color: (theme) => theme.palette.mode === 'dark' ? '#e5e7eb' : '#1f2937',
+                  fontWeight: 600
+                }}>
+                  <EditIcon sx={{ color: '#42A5F5' }} />
                   Informações Básicas
                 </Typography>
-                <Grid container spacing={2}>
+                <Grid container spacing={3}>
                   <Grid item xs={12}>
                     <TextField
                       fullWidth
@@ -871,6 +979,30 @@ export default function ProductsPage() {
                       placeholder="Ex: PROD001"
                       helperText="Código único do produto"
                       variant="outlined"
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          color: (theme) => theme.palette.mode === 'dark' ? '#e5e7eb' : '#1f2937',
+                          backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#111827' : '#ffffff',
+                          '& fieldset': {
+                            borderColor: (theme) => theme.palette.mode === 'dark' ? '#374151' : '#d1d5db',
+                          },
+                          '&:hover fieldset': {
+                            borderColor: (theme) => theme.palette.mode === 'dark' ? '#4b5563' : '#9ca3af',
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: (theme) => theme.palette.mode === 'dark' ? '#42A5F5' : '#3b82f6',
+                          }
+                        },
+                        '& .MuiInputLabel-root': {
+                          color: (theme) => theme.palette.mode === 'dark' ? '#9ca3af' : '#9ca3af',
+                        },
+                        '& .MuiInputLabel-root.Mui-focused': {
+                          color: (theme) => theme.palette.mode === 'dark' ? '#42A5F5' : '#3b82f6',
+                        },
+                        '& .MuiFormHelperText-root': {
+                          color: (theme) => theme.palette.mode === 'dark' ? '#6b7280' : '#6b7280',
+                        }
+                      }}
                     />
                   </Grid>
                   <Grid item xs={12}>
@@ -882,6 +1014,27 @@ export default function ProductsPage() {
                       required
                       placeholder="Ex: Smartphone Samsung Galaxy S21"
                       variant="outlined"
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          color: (theme) => theme.palette.mode === 'dark' ? '#e5e7eb' : '#1f2937',
+                          backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#111827' : '#ffffff',
+                          '& fieldset': {
+                            borderColor: (theme) => theme.palette.mode === 'dark' ? '#374151' : '#d1d5db',
+                          },
+                          '&:hover fieldset': {
+                            borderColor: (theme) => theme.palette.mode === 'dark' ? '#4b5563' : '#9ca3af',
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: (theme) => theme.palette.mode === 'dark' ? '#42A5F5' : '#3b82f6',
+                          }
+                        },
+                        '& .MuiInputLabel-root': {
+                          color: (theme) => theme.palette.mode === 'dark' ? '#9ca3af' : '#9ca3af',
+                        },
+                        '& .MuiInputLabel-root.Mui-focused': {
+                          color: (theme) => theme.palette.mode === 'dark' ? '#42A5F5' : '#3b82f6',
+                        }
+                      }}
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -893,10 +1046,31 @@ export default function ProductsPage() {
                       onChange={handleInputChange('price')}
                       required
                       InputProps={{
-                        startAdornment: <InputAdornment position="start">R$</InputAdornment>,
+                        startAdornment: <InputAdornment position="start" sx={{ color: (theme) => theme.palette.mode === 'dark' ? '#9ca3af' : '#6b7280' }}>R$</InputAdornment>,
                       }}
                       inputProps={{ min: 0, step: 0.01 }}
                       variant="outlined"
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          color: (theme) => theme.palette.mode === 'dark' ? '#e5e7eb' : '#1f2937',
+                          backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#111827' : '#ffffff',
+                          '& fieldset': {
+                            borderColor: (theme) => theme.palette.mode === 'dark' ? '#374151' : '#d1d5db',
+                          },
+                          '&:hover fieldset': {
+                            borderColor: (theme) => theme.palette.mode === 'dark' ? '#4b5563' : '#9ca3af',
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: (theme) => theme.palette.mode === 'dark' ? '#42A5F5' : '#3b82f6',
+                          }
+                        },
+                        '& .MuiInputLabel-root': {
+                          color: (theme) => theme.palette.mode === 'dark' ? '#9ca3af' : '#9ca3af',
+                        },
+                        '& .MuiInputLabel-root.Mui-focused': {
+                          color: (theme) => theme.palette.mode === 'dark' ? '#42A5F5' : '#3b82f6',
+                        }
+                      }}
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -909,6 +1083,27 @@ export default function ProductsPage() {
                       required
                       inputProps={{ min: 0, step: 1 }}
                       variant="outlined"
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          color: (theme) => theme.palette.mode === 'dark' ? '#e5e7eb' : '#1f2937',
+                          backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#111827' : '#ffffff',
+                          '& fieldset': {
+                            borderColor: (theme) => theme.palette.mode === 'dark' ? '#374151' : '#d1d5db',
+                          },
+                          '&:hover fieldset': {
+                            borderColor: (theme) => theme.palette.mode === 'dark' ? '#4b5563' : '#9ca3af',
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: (theme) => theme.palette.mode === 'dark' ? '#42A5F5' : '#3b82f6',
+                          }
+                        },
+                        '& .MuiInputLabel-root': {
+                          color: (theme) => theme.palette.mode === 'dark' ? '#9ca3af' : '#9ca3af',
+                        },
+                        '& .MuiInputLabel-root.Mui-focused': {
+                          color: (theme) => theme.palette.mode === 'dark' ? '#42A5F5' : '#3b82f6',
+                        }
+                      }}
                     />
                   </Grid>
                   <Grid item xs={12}>
@@ -921,15 +1116,49 @@ export default function ProductsPage() {
                       rows={4}
                       placeholder="Descreva as características, benefícios e detalhes técnicos do produto..."
                       variant="outlined"
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          color: (theme) => theme.palette.mode === 'dark' ? '#e5e7eb' : '#1f2937',
+                          backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#111827' : '#ffffff',
+                          '& fieldset': {
+                            borderColor: (theme) => theme.palette.mode === 'dark' ? '#374151' : '#d1d5db',
+                          },
+                          '&:hover fieldset': {
+                            borderColor: (theme) => theme.palette.mode === 'dark' ? '#4b5563' : '#9ca3af',
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: (theme) => theme.palette.mode === 'dark' ? '#42A5F5' : '#3b82f6',
+                          }
+                        },
+                        '& .MuiInputLabel-root': {
+                          color: (theme) => theme.palette.mode === 'dark' ? '#9ca3af' : '#9ca3af',
+                        },
+                        '& .MuiInputLabel-root.Mui-focused': {
+                          color: (theme) => theme.palette.mode === 'dark' ? '#42A5F5' : '#3b82f6',
+                        }
+                      }}
                     />
                   </Grid>
                 </Grid>
-              </Paper>
+              </Box>
 
               {/* Atributos obrigatórios do Mercado Livre */}
               {selectedCategoryId && stores.length > 0 && (
-                <Paper elevation={0} sx={{ p: 3, bgcolor: 'white', borderRadius: 2, border: '1px solid #e0e0e0' }}>
-                  <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1, color: 'primary.main' }}>
+                <Box sx={{ 
+                  p: { xs: 3, sm: 4 }, 
+                  bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1f2937' : '#ffffff',
+                  borderRadius: 2, 
+                  border: (theme) => theme.palette.mode === 'dark' ? '1px solid #374151' : '1px solid #e5e7eb',
+                  boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 1px 3px rgba(0,0,0,0.2)' : '0 1px 2px rgba(0,0,0,0.05)'
+                }}>
+                  <Typography variant="h6" sx={{ 
+                    mb: 3, 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 1, 
+                    color: (theme) => theme.palette.mode === 'dark' ? '#e5e7eb' : '#1f2937',
+                    fontWeight: 600
+                  }}>
                     <img 
                       src="https://http2.mlstatic.com/frontend-assets/ui-navigation/5.21.1/mercadolibre/logo__large_plus.png" 
                       alt="ML" 
@@ -943,24 +1172,53 @@ export default function ProductsPage() {
                     formData={mlAttributes}
                     onChange={handleMlAttributeChange}
                   />
-                </Paper>
+                </Box>
               )}
             </Box>
           )}
         </DialogContent>
         
-        <DialogActions sx={{ px: 3, py: 2, bgcolor: (theme) => theme.palette.mode === 'dark' ? '#0d1117' : '#f5f7fa', borderTop: (theme) => theme.palette.mode === 'dark' ? '1px solid #30363d' : 'none', gap: 1 }}>
+        <DialogActions sx={{ 
+          px: { xs: 2, sm: 4 }, 
+          py: 3, 
+          bgcolor: (theme) => theme.palette.mode === 'dark' ? '#111827' : '#f9fafb', 
+          borderTop: (theme) => theme.palette.mode === 'dark' ? '1px solid #374151' : '1px solid #e5e7eb',
+          gap: 2,
+          justifyContent: 'flex-end'
+        }}>
           {!editingId && productStep === 1 && (
             <Button 
               onClick={handlePreviousProductStep} 
               disabled={saving}
               startIcon={<SearchIcon />}
-              sx={{ mr: 'auto' }}
+              sx={{ 
+                mr: 'auto',
+                color: (theme) => theme.palette.mode === 'dark' ? '#9ca3af' : '#6b7280',
+                '&:hover': {
+                  bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(156,163,175,0.08)' : 'rgba(107,114,128,0.05)'
+                }
+              }}
             >
               Voltar
             </Button>
           )}
-          <Button onClick={handleCloseDialog} disabled={saving} variant="outlined">
+          <Button 
+            onClick={handleCloseDialog} 
+            disabled={saving} 
+            variant="outlined"
+            sx={{
+              color: (theme) => theme.palette.mode === 'dark' ? '#9ca3af' : '#6b7280',
+              borderColor: (theme) => theme.palette.mode === 'dark' ? '#374151' : '#d1d5db',
+              '&:hover': {
+                bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(156,163,175,0.08)' : 'rgba(107,114,128,0.05)',
+                borderColor: (theme) => theme.palette.mode === 'dark' ? '#4b5563' : '#9ca3af'
+              },
+              textTransform: 'none',
+              fontWeight: 500,
+              py: 1.2,
+              px: 3
+            }}
+          >
             Cancelar
           </Button>
           {!editingId && productStep === 0 ? (
@@ -968,7 +1226,22 @@ export default function ProductsPage() {
               onClick={handleNextProductStep} 
               variant="contained"
               disabled={!selectedCategoryId}
-              sx={{ minWidth: 120 }}
+              sx={{ 
+                minWidth: 120,
+                py: 1.2,
+                px: 3,
+                textTransform: 'none',
+                fontWeight: 600,
+                bgcolor: '#42A5F5',
+                '&:hover': {
+                  bgcolor: '#1E88E5',
+                  boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 4px 12px rgba(66,165,245,0.3)' : '0 4px 12px rgba(30,136,229,0.2)'
+                },
+                '&:disabled': {
+                  bgcolor: (theme) => theme.palette.mode === 'dark' ? '#374151' : '#e5e7eb',
+                  color: (theme) => theme.palette.mode === 'dark' ? '#6b7280' : '#9ca3af'
+                }
+              }}
             >
               Avançar
             </Button>
@@ -977,8 +1250,23 @@ export default function ProductsPage() {
               onClick={handleSaveProduct} 
               variant="contained" 
               disabled={saving}
-              startIcon={saving ? <CircularProgress size={20} /> : <AddIcon />}
-              sx={{ minWidth: 120 }}
+              startIcon={saving ? <CircularProgress size={20} sx={{ color: 'inherit' }} /> : <AddIcon />}
+              sx={{ 
+                minWidth: 140,
+                py: 1.2,
+                px: 3,
+                textTransform: 'none',
+                fontWeight: 600,
+                bgcolor: '#10b981',
+                '&:hover': {
+                  bgcolor: '#059669',
+                  boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 4px 12px rgba(16,185,129,0.3)' : '0 4px 12px rgba(5,150,105,0.2)'
+                },
+                '&:disabled': {
+                  bgcolor: (theme) => theme.palette.mode === 'dark' ? '#374151' : '#e5e7eb',
+                  color: (theme) => theme.palette.mode === 'dark' ? '#6b7280' : '#9ca3af'
+                }
+              }}
             >
               {saving ? 'Salvando...' : 'Salvar Produto'}
             </Button>

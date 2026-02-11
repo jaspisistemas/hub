@@ -8,6 +8,7 @@ import {
   MenuItem,
   CircularProgress,
   Alert,
+  useTheme,
 } from '@mui/material';
 import { apiFetch } from '../services/api';
 
@@ -88,6 +89,7 @@ export function DynamicProductForm({ categoryId, storeId, formData, onChange }: 
 
     // Campo com valores predefinidos (dropdown)
     if (attr.values && attr.values.length > 0) {
+      const theme = useTheme();
       return (
         <FormControl fullWidth key={attr.id} required={isRequired}>
           <InputLabel>{label}</InputLabel>
@@ -100,6 +102,27 @@ export function DynamicProductForm({ categoryId, storeId, formData, onChange }: 
               onChange(attr.id, selectedOption?.name || selectedValue);
             }}
             label={label}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                color: (theme) => theme.palette.mode === 'dark' ? '#c9d1d9' : '#1f2937',
+                backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                '& fieldset': {
+                  borderColor: (theme) => theme.palette.mode === 'dark' ? '#30363d' : '#e5e7eb',
+                },
+                '&:hover fieldset': {
+                  borderColor: (theme) => theme.palette.mode === 'dark' ? '#444c56' : '#d1d5db',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: (theme) => theme.palette.mode === 'dark' ? '#58a6ff' : '#3b82f6',
+                }
+              },
+              '& .MuiInputLabel-root': {
+                color: (theme) => theme.palette.mode === 'dark' ? '#8b949e' : '#9ca3af',
+              },
+              '& .MuiInputLabel-root.Mui-focused': {
+                color: (theme) => theme.palette.mode === 'dark' ? '#58a6ff' : '#3b82f6',
+              }
+            }}
           >
             <MenuItem value="">
               <em>Selecione...</em>
@@ -116,6 +139,7 @@ export function DynamicProductForm({ categoryId, storeId, formData, onChange }: 
 
     // Campo numérico
     if (attr.value_type === 'number' || attr.value_type === 'number_unit') {
+      const theme = useTheme();
       return (
         <TextField
           key={attr.id}
@@ -125,11 +149,30 @@ export function DynamicProductForm({ categoryId, storeId, formData, onChange }: 
           type="number"
           value={savedValue}
           onChange={(e) => onChange(attr.id, e.target.value)}
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              color: (theme) => theme.palette.mode === 'dark' ? '#c9d1d9' : '#1f2937',
+              backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+              '& fieldset': {
+                borderColor: (theme) => theme.palette.mode === 'dark' ? '#30363d' : '#e5e7eb',
+              },
+              '&:hover fieldset': {
+                borderColor: (theme) => theme.palette.mode === 'dark' ? '#444c56' : '#d1d5db',
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: (theme) => theme.palette.mode === 'dark' ? '#58a6ff' : '#3b82f6',
+              }
+            },
+            '& .MuiInputLabel-root': {
+              color: (theme) => theme.palette.mode === 'dark' ? '#8b949e' : '#9ca3af',
+            }
+          }}
         />
       );
     }
 
     // Campo de texto padrão
+    const theme = useTheme();
     return (
       <TextField
         key={attr.id}
@@ -138,6 +181,27 @@ export function DynamicProductForm({ categoryId, storeId, formData, onChange }: 
         label={label}
         value={savedValue}
         onChange={(e) => onChange(attr.id, e.target.value)}
+        sx={{
+          '& .MuiOutlinedInput-root': {
+            color: (theme) => theme.palette.mode === 'dark' ? '#c9d1d9' : '#1f2937',
+            backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+            '& fieldset': {
+              borderColor: (theme) => theme.palette.mode === 'dark' ? '#30363d' : '#e5e7eb',
+            },
+            '&:hover fieldset': {
+              borderColor: (theme) => theme.palette.mode === 'dark' ? '#444c56' : '#d1d5db',
+            },
+            '&.Mui-focused fieldset': {
+              borderColor: (theme) => theme.palette.mode === 'dark' ? '#58a6ff' : '#3b82f6',
+            }
+          },
+          '& .MuiInputLabel-root': {
+            color: (theme) => theme.palette.mode === 'dark' ? '#8b949e' : '#9ca3af',
+          },
+          '& .MuiInputLabel-root.Mui-focused': {
+            color: (theme) => theme.palette.mode === 'dark' ? '#58a6ff' : '#3b82f6',
+          }
+        }}
       />
     );
   };

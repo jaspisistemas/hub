@@ -423,6 +423,7 @@ export default function DashboardPage() {
                       outerRadius={90}
                       fill="#8884d8"
                       dataKey="count"
+                      nameKey="status"
                     >
                       {metrics.ordersByStatus.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
@@ -437,7 +438,10 @@ export default function DashboardPage() {
                     />
                     <Legend 
                       wrapperStyle={{ fontSize: '0.75rem' }}
-                      formatter={(value) => value.charAt(0).toUpperCase() + value.slice(1)}
+                      formatter={(value, entry) => {
+                        const status = entry?.payload?.status;
+                        return status ? status.charAt(0).toUpperCase() + status.slice(1) : value;
+                      }}
                     />
                   </PieChart>
                 </ResponsiveContainer>

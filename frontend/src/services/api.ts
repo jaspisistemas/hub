@@ -32,7 +32,7 @@ export async function apiFetch<T = any>(
     Object.assign(headers, authHeader);
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
     ...fetchOptions,
     headers,
   });

@@ -35,6 +35,7 @@ export function DynamicProductForm({ categoryId, storeId, formData, onChange }: 
   const [attributes, setAttributes] = useState<ProductAttribute[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const theme = useTheme();
 
   useEffect(() => {
     if (categoryId && storeId) {
@@ -89,7 +90,6 @@ export function DynamicProductForm({ categoryId, storeId, formData, onChange }: 
 
     // Campo com valores predefinidos (dropdown)
     if (attr.values && attr.values.length > 0) {
-      const theme = useTheme();
       return (
         <FormControl fullWidth key={attr.id} required={isRequired}>
           <InputLabel>{label}</InputLabel>
@@ -139,7 +139,6 @@ export function DynamicProductForm({ categoryId, storeId, formData, onChange }: 
 
     // Campo numérico
     if (attr.value_type === 'number' || attr.value_type === 'number_unit') {
-      const theme = useTheme();
       return (
         <TextField
           key={attr.id}
@@ -172,7 +171,6 @@ export function DynamicProductForm({ categoryId, storeId, formData, onChange }: 
     }
 
     // Campo de texto padrão
-    const theme = useTheme();
     return (
       <TextField
         key={attr.id}

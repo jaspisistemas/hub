@@ -64,4 +64,3 @@ const analyticsService = {
 };
 
 export default analyticsService;
-docker-compose -f [docker-compose.redis.yml](http://_vscodecontentref_/9) up -ddocker-compose -f [docker-compose.redis.yml](http://_vscodecontentref_/9) up -ddocker-compose -f [docker-compose.redis.yml](http://_vscodecontentref_/9) up -ddocker-compose -f [docker-compose.redis.yml](http://_vscodecontentref_/9) up -ddocker-compose -f [docker-compose.redis.yml](http://_vscodecontentref_/9) up -d

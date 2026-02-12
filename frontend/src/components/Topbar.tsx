@@ -1,27 +1,18 @@
 import React from 'react';
-import { AppBar, Toolbar, Typography, Box, Avatar, Menu, MenuItem, IconButton, Tooltip, Badge, Dialog, DialogTitle, DialogContent, DialogActions, Button, Divider, Switch, FormControlLabel, List, ListItem, ListItemText, ListItemAvatar, Paper, ListItemIcon } from '@mui/material';
+import { AppBar, Toolbar, Typography, Box, Avatar, Menu, MenuItem, IconButton, Tooltip, Badge, Divider, List, ListItem, ListItemText, ListItemAvatar, Paper, ListItemIcon } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { 
   ExpandMore as ExpandMoreIcon,
-  LightMode as LightModeIcon,
-  DarkMode as DarkModeIcon,
-  Help as HelpIcon,
-  Settings as SettingsIcon,
   Notifications as NotificationsIcon,
   NotificationsNone as NotificationsNoneIcon,
   Logout as LogoutIcon,
   Person as PersonIcon,
 } from '@mui/icons-material';
-import { useThemeMode } from '../contexts/ThemeContext';
 
 export default function Topbar() {
-  const { isDarkMode, toggleTheme } = useThemeMode();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [notificationsAnchor, setNotificationsAnchor] = React.useState<null | HTMLElement>(null);
-  const [settingsAnchor, setSettingsAnchor] = React.useState<null | HTMLElement>(null);
-  const [preferencesOpen, setPreferencesOpen] = React.useState(false);
-  const [aboutOpen, setAboutOpen] = React.useState(false);
   const user = JSON.parse(localStorage.getItem('user') || '{"email":""}');
   const [notificationCount] = React.useState(0);
 
@@ -48,133 +39,36 @@ export default function Topbar() {
     setNotificationsAnchor(null);
   };
 
-  const handleSettingsOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setSettingsAnchor(event.currentTarget);
-  };
-
-  const handleSettingsClose = () => {
-    setSettingsAnchor(null);
-  };
-
-  const handleHelp = () => {
-    navigate('/ajuda');
-  };
-
   return (
     <AppBar 
       position="static" 
       color="default" 
       elevation={0} 
       sx={{ 
-        bgcolor: 'background.paper', 
-        borderBottom: 1,
-        borderColor: 'divider',
+        bgcolor: '#FFFFFF', 
+        borderBottom: '1px solid rgba(0,0,0,0.06)',
+        boxShadow: 'none',
+        '& .MuiIconButton-root': {
+          width: 40,
+          height: 40,
+          borderRadius: 2,
+          color: '#6E6E73',
+          transition: 'all 0.2s ease',
+          '&:hover': {
+            bgcolor: '#F2F2F7',
+          },
+        },
+        '& .MuiBadge-badge': {
+          minWidth: 8,
+          height: 8,
+          padding: 0,
+          backgroundColor: '#FF3B30',
+        },
       }}
     >
-      <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', py: 2 }}>
+      <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', px: 4, py: 2 }}>
         <Box></Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <Tooltip title="Ajuda">
-            <IconButton 
-              size="small"
-              onClick={handleHelp}
-              sx={{ color: 'text.secondary' }}
-            >
-              <HelpIcon />
-            </IconButton>
-          </Tooltip>
-
-          <Tooltip title="Configurações">
-            <IconButton 
-              size="small"
-              onClick={handleSettingsOpen}
-              sx={{ color: 'text.secondary' }}
-            >
-              <SettingsIcon />
-            </IconButton>
-          </Tooltip>
-          <Menu
-            anchorEl={settingsAnchor}
-            open={Boolean(settingsAnchor)}
-            onClose={handleSettingsClose}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-            slotProps={{
-              paper: {
-                sx: {
-                  mt: 1.5,
-                  minWidth: 200,
-                  borderRadius: 2,
-                  boxShadow: (theme) => theme.palette.mode === 'dark'
-                    ? '0 8px 24px rgba(0, 0, 0, 0.4)'
-                    : '0 8px 24px rgba(0, 0, 0, 0.12)',
-                  overflow: 'visible',
-                  '&:before': {
-                    content: '""',
-                    display: 'block',
-                    position: 'absolute',
-                    top: 0,
-                    right: 20,
-                    width: 10,
-                    height: 10,
-                    bgcolor: 'background.paper',
-                    transform: 'translateY(-50%) rotate(45deg)',
-                    zIndex: 0,
-                  },
-                }
-              }
-            }}
-          >
-            <MenuItem 
-              onClick={() => {
-                setPreferencesOpen(true);
-                handleSettingsClose();
-              }}
-              sx={{
-                py: 1.5,
-                px: 2,
-                '&:hover': {
-                  bgcolor: (theme) => theme.palette.mode === 'dark'
-                    ? 'rgba(255, 255, 255, 0.08)'
-                    : 'rgba(0, 0, 0, 0.04)',
-                },
-              }}
-            >
-              Preferências
-            </MenuItem>
-            <MenuItem 
-              onClick={handleSettingsClose}
-              sx={{
-                py: 1.5,
-                px: 2,
-                '&:hover': {
-                  bgcolor: (theme) => theme.palette.mode === 'dark'
-                    ? 'rgba(255, 255, 255, 0.08)'
-                    : 'rgba(0, 0, 0, 0.04)',
-                },
-              }}
-            >
-              Privacidade
-            </MenuItem>
-            <MenuItem 
-              onClick={() => {
-                setAboutOpen(true);
-                handleSettingsClose();
-              }}
-              sx={{
-                py: 1.5,
-                px: 2,
-                '&:hover': {
-                  bgcolor: (theme) => theme.palette.mode === 'dark'
-                    ? 'rgba(255, 255, 255, 0.08)'
-                    : 'rgba(0, 0, 0, 0.04)',
-                },
-              }}
-            >
-              Sobre
-            </MenuItem>
-          </Menu>
-
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Tooltip title="Notificações">
             <IconButton 
               size="small"
@@ -355,7 +249,10 @@ export default function Topbar() {
             </Box>
             
             <MenuItem 
-              onClick={handleClose}
+              onClick={() => {
+                handleClose();
+                navigate('/perfil');
+              }}
               sx={{
                 py: 1.5,
                 px: 2,
@@ -398,230 +295,6 @@ export default function Topbar() {
         </Box>
       </Toolbar>
 
-      {/* Dialog de Preferências */}
-      <Dialog 
-        open={preferencesOpen} 
-        onClose={() => setPreferencesOpen(false)} 
-        maxWidth="sm" 
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            boxShadow: (theme) => theme.palette.mode === 'dark' 
-              ? '0 8px 32px rgba(0, 0, 0, 0.4)'
-              : '0 8px 32px rgba(0, 0, 0, 0.12)',
-          }
-        }}
-      >
-        <DialogTitle sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between',
-          pb: 2,
-          px: 3,
-          pt: 3,
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box sx={{
-              width: 40,
-              height: 40,
-              borderRadius: 2,
-              bgcolor: (theme) => theme.palette.mode === 'dark' 
-                ? 'rgba(66, 165, 245, 0.15)'
-                : 'rgba(66, 165, 245, 0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-              <SettingsIcon sx={{ color: '#42A5F5', fontSize: 24 }} />
-            </Box>
-            <Typography variant="h6" fontWeight={600}>
-              Preferências
-            </Typography>
-          </Box>
-        </DialogTitle>
-        
-        <DialogContent sx={{ px: 3, py: 3 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-            {/* Seção: Aparência */}
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: 'text.secondary', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Aparência
-              </Typography>
-              
-              <Paper 
-                variant="outlined" 
-                sx={{ 
-                  p: 2.5,
-                  borderRadius: 2,
-                  bgcolor: (theme) => theme.palette.mode === 'dark' 
-                    ? 'rgba(66, 165, 245, 0.05)'
-                    : 'rgba(66, 165, 245, 0.03)',
-                  borderColor: (theme) => theme.palette.mode === 'dark' 
-                    ? 'rgba(66, 165, 245, 0.2)'
-                    : 'rgba(66, 165, 245, 0.3)',
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Box sx={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 2,
-                      bgcolor: (theme) => theme.palette.mode === 'dark' 
-                        ? 'rgba(66, 165, 245, 0.15)'
-                        : 'rgba(66, 165, 245, 0.1)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}>
-                      {isDarkMode ? (
-                        <DarkModeIcon sx={{ color: '#42A5F5', fontSize: 20 }} />
-                      ) : (
-                        <LightModeIcon sx={{ color: '#42A5F5', fontSize: 20 }} />
-                      )}
-                    </Box>
-                    <Box>
-                      <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.25 }}>
-                        Modo Escuro
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {isDarkMode ? 'Tema escuro ativado' : 'Tema claro ativado'}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Switch 
-                    checked={isDarkMode} 
-                    onChange={toggleTheme}
-                    sx={{
-                      '& .MuiSwitch-switchBase.Mui-checked': {
-                        color: '#42A5F5',
-                      },
-                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                        backgroundColor: '#42A5F5',
-                      },
-                    }}
-                  />
-                </Box>
-              </Paper>
-            </Box>
-
-            <Divider sx={{ mb: 3 }} />
-
-            {/* Seção: Notificações */}
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: 'text.secondary', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Notificações
-              </Typography>
-              
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1 }}>
-                  <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.25 }}>
-                      Novos pedidos
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Receba alertas de novos pedidos
-                    </Typography>
-                  </Box>
-                  <Switch defaultChecked />
-                </Box>
-                
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1 }}>
-                  <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.25 }}>
-                      Notificações por e-mail
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Enviar resumos diários por e-mail
-                    </Typography>
-                  </Box>
-                  <Switch defaultChecked />
-                </Box>
-              </Box>
-            </Box>
-
-            <Divider sx={{ mb: 3 }} />
-
-            {/* Seção: Sincronização */}
-            <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: 'text.secondary', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Sincronização
-              </Typography>
-              
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1 }}>
-                <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.25 }}>
-                    Sincronização automática
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Atualizar produtos e pedidos automaticamente
-                  </Typography>
-                </Box>
-                <Switch />
-              </Box>
-            </Box>
-          </Box>
-        </DialogContent>
-        
-        <DialogActions sx={{ px: 3, pb: 3, pt: 2, gap: 1 }}>
-          <Button 
-            onClick={() => setPreferencesOpen(false)}
-            sx={{ textTransform: 'none', color: 'text.secondary' }}
-          >
-            Cancelar
-          </Button>
-          <Button 
-            onClick={() => setPreferencesOpen(false)} 
-            variant="contained"
-            sx={{
-              textTransform: 'none',
-              bgcolor: '#42A5F5',
-              px: 3,
-              py: 1,
-              fontWeight: 600,
-              '&:hover': {
-                bgcolor: '#1E88E5',
-              },
-            }}
-          >
-            Salvar Preferências
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Dialog Sobre */}
-      <Dialog open={aboutOpen} onClose={() => setAboutOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Sobre o JASPI HUB</DialogTitle>
-        <DialogContent dividers>
-          <Box sx={{ textAlign: 'center', py: 2 }}>
-            <Typography variant="h4" fontWeight={700} gutterBottom sx={{
-              background: 'linear-gradient(135deg, #0099FF 0%, #0066CC 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}>
-              JASPI HUB
-            </Typography>
-            <Typography variant="body2" color="text.secondary" paragraph>
-              Sistema para gerenciamento de marketplaces
-            </Typography>
-            <Typography variant="h6" gutterBottom>Versão 1.0.0</Typography>
-            <Divider sx={{ my: 3 }} />
-            <Typography variant="body2" color="text.secondary" paragraph>
-              Desenvolvido por <strong>JASPI Sistemas</strong>
-            </Typography>
-            <Typography variant="body2" color="text.secondary" paragraph>
-              © 2026 Todos os direitos reservados
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              contato@jaspi.com.br | www.jaspi.com.br
-            </Typography>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setAboutOpen(false)} variant="contained">Fechar</Button>
-        </DialogActions>
-      </Dialog>
     </AppBar>
   );
 }

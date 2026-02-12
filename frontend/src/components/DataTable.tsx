@@ -14,8 +14,6 @@ import {
   Tooltip,
   IconButton,
   Checkbox,
-  alpha,
-  useTheme,
 } from '@mui/material';
 import { MoreVert as MoreVertIcon } from '@mui/icons-material';
 import EmptyState from './EmptyState';
@@ -23,21 +21,21 @@ import EmptyState from './EmptyState';
 // Constantes de estilo padronizadas
 export const TABLE_CONSTANTS = {
   ROW_HEIGHT: 64,
-  HEADER_HEIGHT: 56,
-  CELL_PADDING: '12px 16px',
-  IMAGE_SIZE: 48,
-  BORDER_RADIUS: '12px',
+  HEADER_HEIGHT: 48,
+  CELL_PADDING: '16px 24px',
+  IMAGE_SIZE: 32,
+  BORDER_RADIUS: '16px',
   HEADER: {
-    FONT_SIZE: '0.875rem',
+    FONT_SIZE: '0.75rem',
     FONT_WEIGHT: 600,
     TEXT_TRANSFORM: 'uppercase' as const,
-    LETTER_SPACING: '0.5px',
+    LETTER_SPACING: '0.1em',
   },
   BODY: {
-    FONT_SIZE: '0.9375rem',
+    FONT_SIZE: '0.875rem',
     FONT_WEIGHT: 400,
   },
-  HOVER_ALPHA: 0.04,
+  HOVER_ALPHA: 0.02,
   SELECTED_ALPHA: 0.08,
 };
 
@@ -133,9 +131,6 @@ export default function DataTable<T = any>({
   order,
   onSort,
 }: DataTableProps<T>) {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
-
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
       const newSelected = data.map(row => getRowId(row));
@@ -199,18 +194,18 @@ export default function DataTable<T = any>({
         width: '100%', 
         overflow: 'hidden',
         borderRadius: TABLE_CONSTANTS.BORDER_RADIUS,
-        boxShadow: isDark 
-          ? '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)'
-          : '0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1)',
+        border: '1px solid rgba(0,0,0,0.04)',
+        backgroundColor: '#FFFFFF',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
       }}
     >
-      <TableContainer sx={{ maxHeight }}>
-        <Table stickyHeader={stickyHeader} size={dense ? 'small' : 'medium'}>
+      <TableContainer sx={{ maxHeight: 'none' }}>
+        <Table stickyHeader={stickyHeader} size={dense ? 'small' : 'medium'} sx={{ width: '100%' }}>
           <TableHead>
             <TableRow 
               sx={{ 
                 height: TABLE_CONSTANTS.HEADER_HEIGHT,
-                bgcolor: isDark ? '#0d1117' : '#f8fafc',
+                bgcolor: '#FAFAFA',
               }}
             >
               {selectable && (
@@ -218,7 +213,7 @@ export default function DataTable<T = any>({
                   padding="checkbox"
                   sx={{
                     bgcolor: 'inherit',
-                    borderBottom: `1px solid ${isDark ? '#30363d' : '#e5e7eb'}`,
+                    borderBottom: '1px solid rgba(0,0,0,0.04)',
                   }}
                 >
                   <Checkbox
@@ -239,13 +234,13 @@ export default function DataTable<T = any>({
                     minWidth: column.minWidth,
                     width: column.width,
                     padding: TABLE_CONSTANTS.CELL_PADDING,
-                    color: isDark ? '#8b949e' : '#6b7280',
+                    color: '#6E6E73',
                     bgcolor: 'inherit',
-                    borderBottom: `1px solid ${isDark ? '#30363d' : '#e5e7eb'}`,
+                    borderBottom: '1px solid rgba(0,0,0,0.04)',
                     cursor: column.sortable ? 'pointer' : 'default',
                     userSelect: 'none',
                     '&:hover': column.sortable ? {
-                      color: isDark ? '#c9d1d9' : '#374151',
+                      color: '#1D1D1F',
                     } : {},
                   }}
                   onClick={() => column.sortable && onSort?.(column.id)}
@@ -266,9 +261,9 @@ export default function DataTable<T = any>({
                     ...TABLE_CONSTANTS.HEADER,
                     width: 60,
                     padding: TABLE_CONSTANTS.CELL_PADDING,
-                    color: isDark ? '#8b949e' : '#6b7280',
+                    color: '#6E6E73',
                     bgcolor: 'inherit',
-                    borderBottom: `1px solid ${isDark ? '#30363d' : '#e5e7eb'}`,
+                    borderBottom: '1px solid rgba(0,0,0,0.04)',
                   }}
                 >
                   Ações
@@ -292,18 +287,12 @@ export default function DataTable<T = any>({
                     height: dense ? 52 : TABLE_CONSTANTS.ROW_HEIGHT,
                     cursor: onRowClick && !selectable ? 'pointer' : 'default',
                     '&:hover': hover ? {
-                      bgcolor: isDark 
-                        ? alpha(theme.palette.primary.main, TABLE_CONSTANTS.HOVER_ALPHA)
-                        : alpha(theme.palette.primary.main, TABLE_CONSTANTS.HOVER_ALPHA),
+                      bgcolor: '#F9F9FB',
                     } : {},
                     '&.Mui-selected': {
-                      bgcolor: isDark
-                        ? alpha(theme.palette.primary.main, TABLE_CONSTANTS.SELECTED_ALPHA)
-                        : alpha(theme.palette.primary.main, TABLE_CONSTANTS.SELECTED_ALPHA),
+                      bgcolor: 'rgba(79,156,249,0.08)',
                       '&:hover': {
-                        bgcolor: isDark
-                          ? alpha(theme.palette.primary.main, TABLE_CONSTANTS.SELECTED_ALPHA + 0.04)
-                          : alpha(theme.palette.primary.main, TABLE_CONSTANTS.SELECTED_ALPHA + 0.04),
+                        bgcolor: 'rgba(79,156,249,0.12)',
                       },
                     },
                   }}
@@ -329,8 +318,8 @@ export default function DataTable<T = any>({
                         sx={{
                           ...TABLE_CONSTANTS.BODY,
                           padding: TABLE_CONSTANTS.CELL_PADDING,
-                          color: isDark ? '#c9d1d9' : '#1f2937',
-                          borderBottom: `1px solid ${isDark ? '#21262d' : '#f3f4f6'}`,
+                          color: '#1D1D1F',
+                          borderBottom: '1px solid rgba(0,0,0,0.04)',
                         }}
                       >
                         {formattedValue}
@@ -343,7 +332,7 @@ export default function DataTable<T = any>({
                       align="center"
                       sx={{
                         padding: TABLE_CONSTANTS.CELL_PADDING,
-                        borderBottom: `1px solid ${isDark ? '#21262d' : '#f3f4f6'}`,
+                        borderBottom: '1px solid rgba(0,0,0,0.04)',
                       }}
                     >
                       <IconButton
@@ -352,8 +341,18 @@ export default function DataTable<T = any>({
                           e.stopPropagation();
                           onRowAction?.(row, e);
                         }}
+                        sx={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: 2,
+                          color: '#6E6E73',
+                          transition: 'all 0.2s ease',
+                          '&:hover': {
+                            bgcolor: '#F2F2F7',
+                          },
+                        }}
                       >
-                        <MoreVertIcon fontSize="small" />
+                        <MoreVertIcon sx={{ fontSize: 16 }} />
                       </IconButton>
                     </TableCell>
                   )}
@@ -378,10 +377,10 @@ export default function DataTable<T = any>({
             `${from}–${to} de ${count !== -1 ? count : `mais de ${to}`}`
           }
           sx={{
-            borderTop: `1px solid ${isDark ? '#21262d' : '#f3f4f6'}`,
+            borderTop: '1px solid rgba(0,0,0,0.04)',
             '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
               fontSize: '0.875rem',
-              color: isDark ? '#8b949e' : '#6b7280',
+              color: '#6E6E73',
             },
           }}
         />
@@ -422,8 +421,6 @@ export function TableImage({
   size?: number;
 }) {
   const [error, setError] = React.useState(false);
-  const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
   
   if (!src || error) {
     return (
@@ -432,11 +429,11 @@ export function TableImage({
           width: size,
           height: size,
           borderRadius: 1,
-          bgcolor: isDark ? '#21262d' : '#f3f4f6',
+          bgcolor: '#F2F2F7',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: isDark ? '#8b949e' : '#9ca3af',
+          color: '#6E6E73',
           fontSize: '0.75rem',
           fontWeight: 600,
         }}
@@ -457,8 +454,8 @@ export function TableImage({
         height: size,
         objectFit: 'contain',
         borderRadius: 1,
-        bgcolor: isDark ? '#21262d' : '#f9fafb',
-        border: `1px solid ${isDark ? '#30363d' : '#e5e7eb'}`,
+        bgcolor: '#F9FAFB',
+        border: '1px solid rgba(0,0,0,0.06)',
       }}
     />
   );

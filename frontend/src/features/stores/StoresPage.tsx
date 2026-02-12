@@ -261,7 +261,7 @@ export default function StoresPage() {
   return (
     <Box>
       <PageHeader 
-        title="Lojas Conectadas"
+        title="Integrações"
         subtitle="Gerenciar integrações com marketplaces"
       />
 
@@ -274,7 +274,7 @@ export default function StoresPage() {
       {stores.length === 0 ? (
         <EmptyState 
           icon={<StorefrontIcon sx={{ fontSize: 64 }} />}
-          title="Nenhuma loja conectada"
+          title="Nenhuma integração conectada"
           description="Conecte sua primeira loja para começar a sincronizar produtos e pedidos dos marketplaces"
         />
       ) : (
@@ -286,10 +286,17 @@ export default function StoresPage() {
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
+                borderRadius: 3,
+                border: (theme) => theme.palette.mode === 'dark' ? '1px solid #1f2937' : '1px solid #e5e7eb',
+                boxShadow: (theme) => theme.palette.mode === 'dark'
+                  ? '0 10px 28px rgba(0, 0, 0, 0.45)'
+                  : '0 10px 28px rgba(15, 23, 42, 0.12)',
                 transition: 'all 0.3s ease',
                 '&:hover': {
                   transform: 'translateY(-4px)',
-                  boxShadow: '0 12px 20px rgba(0, 153, 255, 0.15)',
+                  boxShadow: (theme) => theme.palette.mode === 'dark'
+                    ? '0 16px 36px rgba(0, 0, 0, 0.55)'
+                    : '0 16px 36px rgba(15, 23, 42, 0.18)',
                 },
               }}
             >

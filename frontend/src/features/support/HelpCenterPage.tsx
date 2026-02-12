@@ -211,14 +211,15 @@ const HelpCenterPage: React.FC = () => {
                 sx={{
                   cursor: 'pointer',
                   bgcolor: isDark ? '#161b22' : '#ffffff',
-                  border: `1px solid ${isDark ? '#30363d' : '#e5e7eb'}`,
+                  border: `1px solid ${isDark ? '#1f2937' : '#e5e7eb'}`,
+                  borderRadius: 3,
                   boxShadow: isDark 
-                    ? 'none'
-                    : '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                    ? '0 8px 20px rgba(0, 0, 0, 0.45)'
+                    : '0 8px 20px rgba(15, 23, 42, 0.12)',
                   '&:hover': { 
                     boxShadow: isDark 
-                      ? '0 4px 12px rgba(0, 0, 0, 0.3)'
-                      : '0 4px 12px rgba(0, 0, 0, 0.1)',
+                      ? '0 14px 28px rgba(0, 0, 0, 0.55)'
+                      : '0 14px 28px rgba(15, 23, 42, 0.18)',
                     transform: 'translateY(-2px)',
                     borderColor: isDark ? '#58a6ff' : '#3b82f6',
                   },
@@ -259,14 +260,15 @@ const HelpCenterPage: React.FC = () => {
                 sx={{
                   cursor: 'pointer',
                   bgcolor: isDark ? '#161b22' : '#ffffff',
-                  border: `1px solid ${isDark ? '#30363d' : '#e5e7eb'}`,
+                  border: `1px solid ${isDark ? '#1f2937' : '#e5e7eb'}`,
+                  borderRadius: 3,
                   boxShadow: isDark 
-                    ? 'none'
-                    : '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                    ? '0 8px 20px rgba(0, 0, 0, 0.45)'
+                    : '0 8px 20px rgba(15, 23, 42, 0.12)',
                   '&:hover': { 
                     boxShadow: isDark 
-                      ? '0 4px 12px rgba(0, 0, 0, 0.3)'
-                      : '0 4px 12px rgba(0, 0, 0, 0.1)',
+                      ? '0 14px 28px rgba(0, 0, 0, 0.55)'
+                      : '0 14px 28px rgba(15, 23, 42, 0.18)',
                     transform: 'translateY(-2px)',
                     borderColor: isDark ? '#f59e0b' : '#f59e0b',
                   },
@@ -307,14 +309,15 @@ const HelpCenterPage: React.FC = () => {
                 sx={{
                   cursor: 'pointer',
                   bgcolor: isDark ? '#161b22' : '#ffffff',
-                  border: `1px solid ${isDark ? '#30363d' : '#e5e7eb'}`,
+                  border: `1px solid ${isDark ? '#1f2937' : '#e5e7eb'}`,
+                  borderRadius: 3,
                   boxShadow: isDark 
-                    ? 'none'
-                    : '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                    ? '0 8px 20px rgba(0, 0, 0, 0.45)'
+                    : '0 8px 20px rgba(15, 23, 42, 0.12)',
                   '&:hover': { 
                     boxShadow: isDark 
-                      ? '0 4px 12px rgba(0, 0, 0, 0.3)'
-                      : '0 4px 12px rgba(0, 0, 0, 0.1)',
+                      ? '0 14px 28px rgba(0, 0, 0, 0.55)'
+                      : '0 14px 28px rgba(15, 23, 42, 0.18)',
                     transform: 'translateY(-2px)',
                     borderColor: isDark ? '#10b981' : '#10b981',
                   },
@@ -355,14 +358,15 @@ const HelpCenterPage: React.FC = () => {
                 sx={{
                   cursor: 'pointer',
                   bgcolor: isDark ? '#161b22' : '#ffffff',
-                  border: `1px solid ${isDark ? '#30363d' : '#e5e7eb'}`,
+                  border: `1px solid ${isDark ? '#1f2937' : '#e5e7eb'}`,
+                  borderRadius: 3,
                   boxShadow: isDark 
-                    ? 'none'
-                    : '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                    ? '0 8px 20px rgba(0, 0, 0, 0.45)'
+                    : '0 8px 20px rgba(15, 23, 42, 0.12)',
                   '&:hover': { 
                     boxShadow: isDark 
-                      ? '0 4px 12px rgba(0, 0, 0, 0.3)'
-                      : '0 4px 12px rgba(0, 0, 0, 0.1)',
+                      ? '0 14px 28px rgba(0, 0, 0, 0.55)'
+                      : '0 14px 28px rgba(15, 23, 42, 0.18)',
                     transform: 'translateY(-2px)',
                     borderColor: isDark ? '#ef4444' : '#ef4444',
                   },
@@ -425,8 +429,9 @@ const HelpCenterPage: React.FC = () => {
                   px: 2, 
                   py: 1.5, 
                   bgcolor: isDark ? '#161b22' : '#f3f4f6',
-                  borderRadius: 2,
-                  border: `1px solid ${isDark ? '#30363d' : 'transparent'}`,
+                  borderRadius: 3,
+                  border: `1px solid ${isDark ? '#1f2937' : '#e5e7eb'}`,
+                  boxShadow: isDark ? '0 8px 20px rgba(0, 0, 0, 0.35)' : '0 8px 20px rgba(15, 23, 42, 0.08)',
                 }}
               >
                 <Box sx={{ color: section.color, display: 'flex' }}>
@@ -543,10 +548,11 @@ const HelpCenterPage: React.FC = () => {
           sx={{ 
             bgcolor: isDark ? '#0d1521' : '#f0f9ff',
             borderLeft: `4px solid #0ea5e9`,
-            border: `1px solid ${isDark ? '#1f6feb' : 'transparent'}`,
+            border: `1px solid ${isDark ? '#1f6feb' : '#e5e7eb'}`,
+            borderRadius: 3,
             boxShadow: isDark 
-              ? 'none'
-              : '0 1px 3px rgba(0, 0, 0, 0.1)',
+              ? '0 10px 28px rgba(0, 0, 0, 0.45)'
+              : '0 10px 28px rgba(15, 23, 42, 0.12)',
           }}
         >
           <CardContent sx={{ py: 3 }}>

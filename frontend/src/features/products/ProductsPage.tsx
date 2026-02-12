@@ -33,6 +33,7 @@ import {
   Tooltip,
   Menu,
   MenuItem,
+  LinearProgress,
 } from '@mui/material';
 import {
   Add as AddIcon, 
@@ -86,6 +87,7 @@ export default function ProductsPage() {
   const [productStep, setProductStep] = useState(0); // 0 = selecionar categoria, 1 = preencher dados
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [mlAttributes, setMlAttributes] = useState<Record<string, any>>({});
+  const [productProgressBar, setProductProgressBar] = useState(0);
   
   const [formData, setFormData] = useState<CreateProductInput>({
     sku: '',
@@ -306,6 +308,15 @@ export default function ProductsPage() {
       }
 
       setSaving(true);
+      setProductProgressBar(0);
+      
+      // Simular animação de preenchimento
+      const progressInterval = setInterval(() => {
+        setProductProgressBar(prev => {
+          const next = prev + Math.random() * 30;
+          return next > 90 ? 90 : next;
+        });
+      }, 200);
       
       const formDataToSend = new FormData();
       formDataToSend.append('sku', formData.sku);
@@ -359,6 +370,9 @@ export default function ProductsPage() {
         setNotification('Produto criado com sucesso!');
       }
       
+      clearInterval(progressInterval);
+      setProductProgressBar(100); // Completar barra
+      await new Promise(resolve => setTimeout(resolve, 600)); // Aguardar animação
       await loadProducts();
       handleCloseDialog();
       setError(null);
@@ -534,9 +548,11 @@ export default function ProductsPage() {
           mb: 3, 
           p: 2,
           bgcolor: (theme) => theme.palette.mode === 'dark' ? '#0d1117' : '#ffffff',
+          borderRadius: 3,
+          border: (theme) => theme.palette.mode === 'dark' ? '1px solid #1f2937' : '1px solid #e5e7eb',
           boxShadow: (theme) => theme.palette.mode === 'dark' 
-            ? '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)'
-            : '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+            ? '0 10px 30px rgba(0, 0, 0, 0.45)'
+            : '0 10px 30px rgba(15, 23, 42, 0.12)',
         }}
       >
         <TextField
@@ -579,7 +595,6 @@ export default function ProductsPage() {
           {
             id: 'image',
             label: 'Imagem',
-            width: 80,
             format: (_, row) => (
               <TableImage
                 src={getImageUrl(row.imageUrls?.[0] || row.imageUrl)}
@@ -590,8 +605,11 @@ export default function ProductsPage() {
           {
             id: 'name',
             label: 'Produto',
-            minWidth: 200,
-            format: (value) => <TruncatedText maxLength={50}>{value}</TruncatedText>,
+            format: (value) => (
+              <Typography sx={{ fontWeight: 500, fontSize: '0.875rem', whiteSpace: 'nowrap' }}>
+                <TruncatedText maxLength={50}>{value}</TruncatedText>
+              </Typography>
+            ),
           },
           {
             id: 'sku',
@@ -655,6 +673,7 @@ export default function ProductsPage() {
           {
             id: 'status',
             label: 'Status',
+            align: 'center',
             format: (_, row) => (
               <Chip
                 label={row.quantity > 0 ? 'Ativo' : 'Sem Estoque'}
@@ -766,14 +785,29 @@ export default function ProductsPage() {
         
         {!editingId && (
           <Box sx={{ px: 3, pt: 2, pb: 2, bgcolor: (theme) => theme.palette.mode === 'dark' ? '#0d1117' : '#f5f7fa', borderBottom: (theme) => theme.palette.mode === 'dark' ? '1px solid #30363d' : 'none' }}>
-            <Stepper activeStep={productStep} alternativeLabel>
+            <Stepper activeStep={productStep}>
               <Step>
-                <StepLabel>Categoria</StepLabel>
+                <StepLabel icon={<></>}>Categoria</StepLabel>
               </Step>
               <Step>
-                <StepLabel>Dados Básicos</StepLabel>
+                <StepLabel icon={<></>}>Dados Básicos</StepLabel>
               </Step>
             </Stepper>
+            <LinearProgress
+              variant="determinate"
+              value={saving ? productProgressBar : (productStep === 0 ? 0 : productStep === 1 ? 50 : 100)}
+              sx={{
+                mt: 2,
+                height: 6,
+                borderRadius: 999,
+                backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#30363d' : '#e0e7ff',
+                '& .MuiLinearProgress-bar': {
+                  borderRadius: 999,
+                  background: 'linear-gradient(90deg, #4F9CF9 0%, #357FD7 100%)',
+                  transition: 'width 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+                }
+              }}
+            />
           </Box>
         )}
 
@@ -1320,17 +1354,33 @@ export default function ProductsPage() {
           </IconButton>
         </DialogTitle>
         <DialogContent sx={{ px: 3, py: 3 }}>
-          <Stepper activeStep={publishStep} sx={{ mb: 3 }}>
+          <Stepper activeStep={publishStep}>
             <Step>
-              <StepLabel>Selecionar Produtos</StepLabel>
+              <StepLabel icon={<></>}>Selecionar Produtos</StepLabel>
             </Step>
             <Step>
-              <StepLabel>Escolher Marketplace</StepLabel>
+              <StepLabel icon={<></>}>Escolher Marketplace</StepLabel>
             </Step>
             <Step>
-              <StepLabel>Confirmar</StepLabel>
+              <StepLabel icon={<></>}>Confirmar</StepLabel>
             </Step>
           </Stepper>
+          <LinearProgress
+            variant="determinate"
+            value={((publishStep + 1) / 3) * 100}
+            sx={{
+              mt: 2,
+              mb: 3,
+              height: 6,
+              borderRadius: 999,
+              backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#30363d' : '#e0e7ff',
+              '& .MuiLinearProgress-bar': {
+                borderRadius: 999,
+                background: 'linear-gradient(90deg, #4F9CF9 0%, #357FD7 100%)',
+                transition: 'width 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+              }
+            }}
+          />
 
           {publishStep === 0 && (
             <Box>

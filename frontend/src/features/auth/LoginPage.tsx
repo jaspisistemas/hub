@@ -266,17 +266,6 @@ export default function LoginPage() {
               </Button>
             </Box>
           </form>
-
-              {!isRegistering && (
-                <Box sx={{ textAlign: 'center', mt: 3 }}>
-                  <Typography variant="caption" color="textSecondary">
-                    Credenciais de demonstração:
-                  </Typography>
-                  <Typography variant="caption" color="textSecondary" display="block" sx={{ mt: 0.5 }}>
-                    demo@example.com | demo123
-                  </Typography>
-                </Box>
-              )}
               </Box>
             </Paper>
           </Grid>

@@ -25,6 +25,8 @@ import {
   InputLabel,
   Menu,
   ListItemIcon,
+  Avatar,
+  Tooltip,
   useTheme,
 } from '@mui/material';
 import {
@@ -41,6 +43,7 @@ import {
   FilterList as FilterListIcon,
   Refresh as RefreshIcon,
   Receipt as ReceiptIcon,
+  ContentCopy as ContentCopyIcon,
 } from '@mui/icons-material';
 import { ordersService, Order } from '../../services/ordersService';
 import PageHeader from '../../components/PageHeader';
@@ -50,6 +53,16 @@ import DataTable, { Column } from '../../components/DataTable';
 import { storesService, Store } from '../../services/storesService';
 import * as websocket from '../../services/websocket';
 import invoicesService, { Invoice } from '../../services/invoicesService';
+
+// Helper para formatar ID curto
+const formatOrderId = (id: string) => `#${id.substring(0, 6)}`;
+
+// Helper para copiar texto
+const copyToClipboard = (text: string, message: string, setNotification: (msg: string) => void) => {
+  navigator.clipboard.writeText(text).then(() => {
+    setNotification(message);
+  });
+};
 
 export default function OrdersPage() {
   const theme = useTheme();
@@ -378,6 +391,25 @@ export default function OrdersPage() {
 
   const uniqueMarketplaces = Array.from(new Set((orders || []).map((o) => o?.marketplace).filter(Boolean)));
 
+  const getMarketplaceBadge = (marketplace?: string) => {
+    const key = (marketplace || '').toLowerCase();
+    if (key.includes('mercado')) {
+      return { label: 'Mercado Livre', text: 'ML', bg: '#fff3c2', color: '#1e3a8a', border: '#facc15', logo: '/marketplace-logos/mercadolivre.png' };
+    }
+    if (key.includes('shopee')) {
+      return { label: 'Shopee', text: 'SH', bg: '#ffe1d6', color: '#9a3412', border: '#fb923c', logo: '/marketplace-logos/shopee.png' };
+    }
+    if (key.includes('amazon')) {
+      return { label: 'Amazon', text: 'AM', bg: '#e5e7eb', color: '#111827', border: '#9ca3af', logo: '/marketplace-logos/amazon.png' };
+    }
+    if (key.includes('magalu')) {
+      return { label: 'Magalu', text: 'MG', bg: '#dbeafe', color: '#1d4ed8', border: '#60a5fa', logo: '/marketplace-logos/magalu.png' };
+    }
+
+    const fallback = marketplace || 'Outro';
+    return { label: fallback, text: fallback.slice(0, 2).toUpperCase(), bg: '#e2e8f0', color: '#334155', border: '#cbd5e1' };
+  };
+
   // Estatísticas
   const stats = {
     total: (orders || []).length || 0,
@@ -425,10 +457,15 @@ export default function OrdersPage() {
           <Card
             sx={{
               borderRadius: 3,
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+              border: (theme) => theme.palette.mode === 'dark' ? '1px solid #1f2937' : '1px solid #e5e7eb',
+              boxShadow: (theme) => theme.palette.mode === 'dark'
+                ? '0 10px 28px rgba(0, 0, 0, 0.45)'
+                : '0 10px 28px rgba(15, 23, 42, 0.12)',
               transition: 'all 0.3s ease',
               '&:hover': {
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                boxShadow: (theme) => theme.palette.mode === 'dark'
+                  ? '0 16px 36px rgba(0, 0, 0, 0.55)'
+                  : '0 16px 36px rgba(15, 23, 42, 0.18)',
               },
             }}
           >
@@ -473,10 +510,15 @@ export default function OrdersPage() {
           <Card
             sx={{
               borderRadius: 3,
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+              border: (theme) => theme.palette.mode === 'dark' ? '1px solid #1f2937' : '1px solid #e5e7eb',
+              boxShadow: (theme) => theme.palette.mode === 'dark'
+                ? '0 10px 28px rgba(0, 0, 0, 0.45)'
+                : '0 10px 28px rgba(15, 23, 42, 0.12)',
               transition: 'all 0.3s ease',
               '&:hover': {
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                boxShadow: (theme) => theme.palette.mode === 'dark'
+                  ? '0 16px 36px rgba(0, 0, 0, 0.55)'
+                  : '0 16px 36px rgba(15, 23, 42, 0.18)',
               },
             }}
           >
@@ -521,10 +563,15 @@ export default function OrdersPage() {
           <Card
             sx={{
               borderRadius: 3,
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+              border: (theme) => theme.palette.mode === 'dark' ? '1px solid #1f2937' : '1px solid #e5e7eb',
+              boxShadow: (theme) => theme.palette.mode === 'dark'
+                ? '0 10px 28px rgba(0, 0, 0, 0.45)'
+                : '0 10px 28px rgba(15, 23, 42, 0.12)',
               transition: 'all 0.3s ease',
               '&:hover': {
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                boxShadow: (theme) => theme.palette.mode === 'dark'
+                  ? '0 16px 36px rgba(0, 0, 0, 0.55)'
+                  : '0 16px 36px rgba(15, 23, 42, 0.18)',
               },
             }}
           >
@@ -755,33 +802,76 @@ export default function OrdersPage() {
         columns={[
           {
             id: 'id',
-            label: 'ID Pedido',
-            minWidth: 150,
+            label: 'ID',
             format: (value) => (
-              <Typography sx={{ fontWeight: 500, fontSize: '0.875rem' }}>
-                {value}
-              </Typography>
+              <Tooltip title="Clique para copiar o ID completo" arrow>
+                <Box
+                  onClick={() => copyToClipboard(String(value), 'ID copiado!', setNotification)}
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    cursor: 'pointer',
+                    '&:hover': {
+                      opacity: 0.8,
+                    },
+                  }}
+                >
+                  <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', fontFamily: 'monospace', color: '#6366f1' }}>
+                    {formatOrderId(String(value))}
+                  </Typography>
+                  <ContentCopyIcon sx={{ fontSize: 14, color: '#6366f1', opacity: 0.6 }} />
+                </Box>
+              </Tooltip>
+            ),
+          },
+          {
+            id: 'customerName',
+            label: 'Cliente',
+            format: (value) => (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Avatar sx={{ width: 32, height: 32, fontSize: '0.875rem', bgcolor: '#3b82f6' }}>
+                  {value ? String(value).charAt(0).toUpperCase() : '?'}
+                </Avatar>
+                <Typography sx={{ fontWeight: 500, fontSize: '0.875rem', whiteSpace: 'nowrap' }}>
+                  {value || 'Sem nome'}
+                </Typography>
+              </Box>
             ),
           },
           {
             id: 'marketplace',
-            label: 'Marketplace',
-            format: (value) => (
-              <Chip 
-                label={value} 
-                size="small" 
-                variant="outlined"
-                sx={{ 
-                  height: 24,
-                  fontSize: '0.75rem',
-                  textTransform: 'capitalize',
-                }}
-              />
-            ),
+            label: 'Loja',
+            align: 'center',
+            format: (value) => {
+              const badge = getMarketplaceBadge(String(value || ''));
+              return (
+                <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                  <Tooltip title={badge.label} arrow>
+                    <Avatar
+                      src={badge.logo}
+                      imgProps={{ style: { objectFit: 'contain' } }}
+                      sx={{
+                        width: 48,
+                        height: 48,
+                        bgcolor: 'transparent',
+                        color: badge.color,
+                        fontWeight: 700,
+                        fontSize: '0.7rem',
+                        border: 'none',
+                      }}
+                    >
+                      {badge.text}
+                    </Avatar>
+                  </Tooltip>
+                </Box>
+              );
+            },
           },
           {
             id: 'status',
             label: 'Status',
+            align: 'center',
             format: (value) => (
               <Chip
                 label={value === 'paid' ? 'Pago' : value === 'pending' ? 'Pendente' : value === 'shipped' ? 'Enviado' : value === 'delivered' ? 'Entregue' : 'Cancelado'}
@@ -799,7 +889,7 @@ export default function OrdersPage() {
           },
           {
             id: 'total',
-            label: 'Total',
+            label: 'Valor',
             align: 'right',
             numeric: true,
             format: (value) => (
@@ -810,6 +900,26 @@ export default function OrdersPage() {
                 }).format(Number(value) || 0)}
               </Typography>
             ),
+          },
+          {
+            id: 'orderCreatedAt',
+            label: 'Data',
+            align: 'center',
+            format: (value, row) => {
+              // Usa orderCreatedAt se disponível, senão cai para createdAt
+              const dateToUse = value || (row as any)?.createdAt;
+              return (
+                <Typography sx={{ fontSize: '0.8125rem' }}>
+                  {dateToUse ? new Date(dateToUse).toLocaleString('pt-BR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  }) : '-'}
+                </Typography>
+              );
+            },
           },
         ]}
         data={paginatedOrders.filter((o) => o && o.id)}
@@ -957,9 +1067,20 @@ export default function OrdersPage() {
                   <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
                     ID do Pedido
                   </Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                    {selectedOrder.id}
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="body1" sx={{ fontWeight: 500, fontFamily: 'monospace' }}>
+                      {formatOrderId(selectedOrder.id)}
+                    </Typography>
+                    <Tooltip title="Copiar ID completo" arrow>
+                      <IconButton
+                        size="small"
+                        onClick={() => copyToClipboard(selectedOrder.id, 'ID copiado!', setNotification)}
+                        sx={{ p: 0.5 }}
+                      >
+                        <ContentCopyIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
@@ -981,14 +1102,13 @@ export default function OrdersPage() {
                   <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
                     Status
                   </Typography>
-                  <FormControl fullWidth>
-                    <InputLabel id="status-label">Atualizar Status</InputLabel>
+                  <FormControl fullWidth size="small">
                     <Select
-                      labelId="status-label"
-                      id="status-select"
                       value={selectedOrder.status || ''}
-                      label="Atualizar Status"
                       onChange={(e) => handleUpdateStatus(selectedOrder.id, e.target.value as string)}
+                      sx={{
+                        bgcolor: (theme) => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                      }}
                     >
                       <MenuItem value="created">Criado</MenuItem>
                       <MenuItem value="pending">Pendente</MenuItem>
@@ -1007,13 +1127,13 @@ export default function OrdersPage() {
                     R$ {(Number(selectedOrder.total) || 0).toFixed(2)}
                   </Typography>
                 </Grid>
-                {selectedOrder.createdAt && (
+                {((selectedOrder as any).orderCreatedAt || selectedOrder.createdAt) && (
                   <Grid item xs={12} sm={6}>
                     <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
-                      Data de Criação
+                      Data do Pedido
                     </Typography>
                     <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                      {new Date(selectedOrder.createdAt).toLocaleString('pt-BR')}
+                      {new Date((selectedOrder as any).orderCreatedAt || selectedOrder.createdAt).toLocaleString('pt-BR')}
                     </Typography>
                   </Grid>
                 )}
@@ -1097,9 +1217,9 @@ export default function OrdersPage() {
               {/* Produtos e Taxas */}
               <Box sx={{ mt: 3 }}>
                 <Divider sx={{ mb: 2 }} />
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                  <ShoppingBagIcon sx={{ color: '#10b981' }} />
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                <Box sx={{ mb: 2 }}>
+                  <ShoppingBagIcon sx={{ color: '#10b981', mr: 1, verticalAlign: 'middle' }} />
+                  <Typography variant="h6" sx={{ fontWeight: 600, display: 'inline' }}>
                     Produtos e Taxas
                   </Typography>
                 </Box>
@@ -1111,7 +1231,7 @@ export default function OrdersPage() {
                   <Grid container spacing={2}>
                     {selectedOrderItems.map((item, idx) => (
                       <Grid item xs={12} key={`${selectedOrder?.id}-item-${idx}`}>
-                        <Paper sx={{ p: 2, border: '1px solid #e5e7eb' }}>
+                        <Box sx={{ pb: 2 }}>
                           <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                             {getItemTitle(item)}
                           </Typography>
@@ -1141,7 +1261,7 @@ export default function OrdersPage() {
                               </Typography>
                             </Grid>
                           </Grid>
-                        </Paper>
+                        </Box>
                       </Grid>
                     ))}
                   </Grid>

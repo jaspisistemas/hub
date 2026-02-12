@@ -14,15 +14,17 @@ import ProductsPage from './features/products/ProductsPage';
 import StoresPage from './features/stores/StoresPage';
 import SupportPage from './features/support/SupportPage';
 import HelpCenterPage from './features/support/HelpCenterPage';
+import ProfilePage from './features/profile/ProfilePage';
+import ReportsPage from './features/reports/ReportsPage';
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
-  const sidebarWidth = isCollapsed ? '80px' : '260px';
+  const sidebarWidth = isCollapsed ? '80px' : '256px';
 
   return (
     <Box display="flex" height="100vh">
       <Sidebar />
-      <Box flexGrow={1} ml={sidebarWidth} display="flex" flexDirection="column" sx={{ transition: 'margin-left 0.3s ease' }}>
+      <Box flexGrow={1} ml={sidebarWidth} display="flex" flexDirection="column" sx={{ transition: 'margin-left 0.2s ease' }}>
         <Topbar />
         <Box
           component="main"
@@ -120,6 +122,50 @@ export default function App() {
             <ProtectedRoute>
               <AppLayout>
                 <HelpCenterPage />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/relatorios"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <ReportsPage />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/integracoes"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <StoresPage />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/configuracoes"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <ProfilePage />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/perfil"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <ProfilePage />
               </AppLayout>
             </ProtectedRoute>
           }

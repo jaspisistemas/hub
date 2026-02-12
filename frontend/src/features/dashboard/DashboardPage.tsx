@@ -11,6 +11,8 @@ import {
   Tab,
   Tabs,
   Chip,
+  Avatar,
+  Tooltip,
   Select,
   MenuItem,
   FormControl,
@@ -36,7 +38,7 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   Legend,
   ResponsiveContainer,
 } from 'recharts';
@@ -44,6 +46,25 @@ import { dashboardService, DashboardMetrics, StoreMetrics } from '../../services
 import PageHeader from '../../components/PageHeader';
 import StatusBadge from '../../components/StatusBadge';
 import DataTable, { Column } from '../../components/DataTable';
+
+const getMarketplaceBadge = (marketplace?: string) => {
+  const key = (marketplace || '').toLowerCase();
+  if (key.includes('mercado')) {
+    return { label: 'Mercado Livre', text: 'ML', bg: '#fff3c2', color: '#1e3a8a', border: '#facc15', logo: '/marketplace-logos/mercadolivre.png' };
+  }
+  if (key.includes('shopee')) {
+    return { label: 'Shopee', text: 'SH', bg: '#ffe1d6', color: '#9a3412', border: '#fb923c', logo: '/marketplace-logos/shopee.png' };
+  }
+  if (key.includes('amazon')) {
+    return { label: 'Amazon', text: 'AM', bg: '#e5e7eb', color: '#111827', border: '#9ca3af', logo: '/marketplace-logos/amazon.png' };
+  }
+  if (key.includes('magalu')) {
+    return { label: 'Magalu', text: 'MG', bg: '#dbeafe', color: '#1d4ed8', border: '#60a5fa', logo: '/marketplace-logos/magalu.png' };
+  }
+
+  const fallback = marketplace || 'Outro';
+  return { label: fallback, text: fallback.slice(0, 2).toUpperCase(), bg: '#e2e8f0', color: '#334155', border: '#cbd5e1' };
+};
 
 export default function DashboardPage() {
   const theme = useTheme();
@@ -106,7 +127,7 @@ export default function DashboardPage() {
     return (
       <Box sx={{ minHeight: '100vh', p: 3 }}>
         <PageHeader title="Dashboard" subtitle="Visão geral do seu negócio" />
-        <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 2 }}>
+        <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 3, border: '1px solid #e5e7eb', boxShadow: '0 10px 30px rgba(15, 23, 42, 0.12)' }}>
           <InfoIcon sx={{ fontSize: 64, color: theme.palette.text.disabled, mb: 2 }} />
           <Typography variant="h6" color="text.secondary" gutterBottom>
             Não foi possível carregar os dados
@@ -213,9 +234,11 @@ export default function DashboardPage() {
         sx={{ 
           p: 4, 
           mb: 3,
-          borderRadius: 2,
+          borderRadius: 3,
           border: `2px solid ${primaryMetric.color}`,
+          outline: '1px solid rgba(15, 23, 42, 0.08)',
           bgcolor: primaryMetric.bgColor,
+          boxShadow: '0 10px 30px rgba(15, 23, 42, 0.12)',
         }}
       >
         <Stack direction="row" alignItems="center" spacing={2}>
@@ -349,7 +372,7 @@ export default function DashboardPage() {
                       tick={{ fontSize: 12 }}
                       stroke={theme.palette.text.secondary}
                     />
-                    <Tooltip 
+                    <RechartsTooltip 
                       contentStyle={{
                         backgroundColor: theme.palette.background.paper,
                         border: `1px solid ${theme.palette.divider}`,
@@ -429,7 +452,7 @@ export default function DashboardPage() {
                         <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip 
+                    <RechartsTooltip 
                       contentStyle={{
                         backgroundColor: theme.palette.background.paper,
                         border: `1px solid ${theme.palette.divider}`,
@@ -475,9 +498,8 @@ export default function DashboardPage() {
                     {
                       id: 'externalId',
                       label: 'ID',
-                      width: 120,
                       format: (value) => (
-                        <Typography sx={{ fontWeight: 500, fontSize: '0.875rem' }}>
+                        <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', fontFamily: 'monospace', color: '#6366f1' }}>
                           {value}
                         </Typography>
                       ),
@@ -485,28 +507,50 @@ export default function DashboardPage() {
                     {
                       id: 'customerName',
                       label: 'Cliente',
-                      minWidth: 150,
                       format: (value) => (
-                        <Typography sx={{ fontSize: '0.875rem' }}>
-                          {value}
-                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Avatar sx={{ width: 32, height: 32, fontSize: '0.875rem', bgcolor: '#3b82f6' }}>
+                            {value ? String(value).charAt(0).toUpperCase() : '?'}
+                          </Avatar>
+                          <Typography sx={{ fontWeight: 500, fontSize: '0.875rem', whiteSpace: 'nowrap' }}>
+                            {value || 'Sem nome'}
+                          </Typography>
+                        </Box>
                       ),
                     },
                     {
                       id: 'marketplace',
-                      label: 'Marketplace',
-                      format: (value) => (
-                        <Chip 
-                          label={value} 
-                          size="small"
-                          variant="outlined"
-                          sx={{ height: 24, fontSize: '0.75rem', textTransform: 'capitalize' }}
-                        />
-                      ),
+                      label: 'Loja',
+                      align: 'center',
+                      format: (value) => {
+                        const badge = getMarketplaceBadge(value);
+                        return (
+                          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                            <Tooltip title={badge.label} arrow>
+                              <Avatar
+                                src={badge.logo}
+                                imgProps={{ style: { objectFit: 'contain' } }}
+                                sx={{
+                                  width: 48,
+                                  height: 48,
+                                  bgcolor: 'transparent',
+                                  color: badge.color,
+                                  fontWeight: 700,
+                                  fontSize: '0.7rem',
+                                  border: 'none',
+                                }}
+                              >
+                                {badge.text}
+                              </Avatar>
+                            </Tooltip>
+                          </Box>
+                        );
+                      },
                     },
                     {
                       id: 'status',
                       label: 'Status',
+                      align: 'center',
                       format: (value) => (
                         <Chip
                           label={value === 'paid' ? 'Pago' : value === 'pending' ? 'Pendente' : value === 'shipped' ? 'Enviado' : value === 'delivered' ? 'Entregue' : 'Cancelado'}
@@ -539,16 +583,24 @@ export default function DashboardPage() {
                     {
                       id: 'createdAt',
                       label: 'Data',
-                      align: 'right',
-                      format: (value) => (
-                        <Typography sx={{ fontSize: '0.875rem' }}>
-                          {new Date(value).toLocaleDateString('pt-BR')}
-                        </Typography>
-                      ),
+                      align: 'center',
+                      format: (_value, row) => {
+                        const dateValue = (row as any).orderDate || (row as any).createdAt;
+                        return (
+                          <Typography sx={{ fontSize: '0.8125rem' }}>
+                            {dateValue ? new Date(dateValue).toLocaleString('pt-BR', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            }) : '-'}
+                          </Typography>
+                        );
+                      },
                     },
                   ]}
                   data={metrics.recentOrders}
-                  dense
                   hover
                 />
               </Paper>
@@ -701,7 +753,7 @@ export default function DashboardPage() {
                         stroke={theme.palette.text.secondary}
                       />
                       <YAxis tick={{ fontSize: 12 }} stroke={theme.palette.text.secondary} />
-                      <Tooltip 
+                      <RechartsTooltip 
                         contentStyle={{
                           backgroundColor: theme.palette.background.paper,
                           border: `1px solid ${theme.palette.divider}`,
@@ -728,9 +780,8 @@ export default function DashboardPage() {
                         {
                           id: 'name',
                           label: 'Produto',
-                          minWidth: 200,
                           format: (value) => (
-                            <Typography sx={{ fontSize: '0.875rem', fontWeight: 500 }}>
+                            <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, whiteSpace: 'nowrap' }}>
                               {value}
                             </Typography>
                           ),
@@ -762,7 +813,6 @@ export default function DashboardPage() {
                         },
                       ]}
                       data={storeMetrics.topProducts}
-                      dense
                       hover
                     />
                   </Paper>

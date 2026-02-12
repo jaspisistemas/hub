@@ -33,6 +33,7 @@ export interface DashboardMetrics {
     status: string;
     total: number;
     createdAt: string;
+    orderDate?: string;
   }>;
 }
 

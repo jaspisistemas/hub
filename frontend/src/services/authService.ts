@@ -1,6 +1,6 @@
-import { API_BASE_URL } from './api';
+import { API_BASE_URL, getApiBaseUrl } from './api';
 
-const API_URL = API_BASE_URL;
+const API_URL = getApiBaseUrl();
 
 export interface LoginResponse {
   accessToken: string;

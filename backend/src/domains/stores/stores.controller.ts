@@ -12,18 +12,27 @@ export class StoresController {
   @Post()
   create(@Request() req: any, @Body() dto: CreateStoreDto) {
     dto.userId = req.user.id;
+    dto.companyId = req.user.companyId;
     return this.storesService.create(dto);
   }
 
   @Get()
   findAll(@Request() req: any) {
+    // Se usuário tem company, retorna lojas da empresa
+    if (req.user.companyId) {
+      return this.storesService.findAllByCompany(req.user.companyId);
+    }
+    // Senão retorna lojas do usuário
     return this.storesService.findAllByUser(req.user.id);
   }
 
   @Get(':id')
   async findOne(@Request() req: any, @Param('id') id: string) {
     const store = await this.storesService.findOne(id);
-    if (store.userId !== req.user.id) {
+    // Validar acesso por company ou user
+    const hasCompanyAccess = store.companyId && req.user.companyId && store.companyId === req.user.companyId;
+    const hasUserAccess = store.userId === req.user.id;
+    if (!hasCompanyAccess && !hasUserAccess) {
       throw new Error('Acesso negado');
     }
     return store;
@@ -32,7 +41,10 @@ export class StoresController {
   @Patch(':id')
   async update(@Request() req: any, @Param('id') id: string, @Body() dto: UpdateStoreDto) {
     const store = await this.storesService.findOne(id);
-    if (store.userId !== req.user.id) {
+    // Validar acesso por company ou user
+    const hasCompanyAccess = store.companyId && req.user.companyId && store.companyId === req.user.companyId;
+    const hasUserAccess = store.userId === req.user.id;
+    if (!hasCompanyAccess && !hasUserAccess) {
       throw new Error('Acesso negado');
     }
     return this.storesService.update(id, dto);
@@ -41,7 +53,10 @@ export class StoresController {
   @Delete(':id')
   async remove(@Request() req: any, @Param('id') id: string) {
     const store = await this.storesService.findOne(id);
-    if (store.userId !== req.user.id) {
+    // Validar acesso por company ou user
+    const hasCompanyAccess = store.companyId && req.user.companyId && store.companyId === req.user.companyId;
+    const hasUserAccess = store.userId === req.user.id;
+    if (!hasCompanyAccess && !hasUserAccess) {
       throw new Error('Acesso negado');
     }
     return this.storesService.remove(id);

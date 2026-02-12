@@ -5,6 +5,7 @@ import { OrdersService } from '../../domains/orders/orders.service';
 import { StoresService } from '../../domains/stores/stores.service';
 import { ProductsService } from '../../domains/products/products.service';
 import { SupportService } from '../../domains/support/support.service';
+import { QueueService } from '../../infra/queue/queue.service';
 
 /**
  * Controller para receber webhooks e gerenciar integrações com marketplaces
@@ -17,6 +18,7 @@ export class MarketplaceController {
     private readonly storesService: StoresService,
     private readonly productsService: ProductsService,
     private readonly supportService: SupportService,
+    private readonly queueService: QueueService,
   ) {}
 
   /**
@@ -194,7 +196,7 @@ export class MarketplaceController {
     try {
       if (!code) {
         console.error('❌ Code não fornecido no callback');
-        const errorUrl = `https://panel-joshua-norfolk-molecular.trycloudflare.com/lojas?ml_auth=error&reason=no_code`;
+        const errorUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/lojas?ml_auth=error&reason=no_code`;
         
         // Retornar HTML que notifica popup pai
         return res.send(`
@@ -249,8 +251,14 @@ export class MarketplaceController {
 
       console.log('✅ Loja ML autorizada com sucesso:', store.name, 'ID:', store.id);
       
+      // 🚀 Sincronizar produtos automaticamente após conectar
+      console.log('🔄 Iniciando sincronização automática de produtos...');
+      this.queueService.enqueueSyncProducts(store.id).catch(err => {
+        console.error('❌ Erro ao enfileirar sincronização:', err);
+      });
+      
       // Redirecionar para o frontend com sucesso
-      const redirectUrl = `https://panel-joshua-norfolk-molecular.trycloudflare.com/lojas?ml_auth=success&store_id=${store.id}`;
+      const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/lojas?ml_auth=success&store_id=${store.id}`;
       console.log('🔄 Redirecionando para:', redirectUrl);
       
       // Retornar HTML que notifica popup pai e depois redireciona
@@ -278,7 +286,7 @@ export class MarketplaceController {
         reason = 'store_already_connected';
       }
       
-      const errorUrl = `https://panel-joshua-norfolk-molecular.trycloudflare.com/lojas?ml_auth=error&reason=${reason}`;
+      const errorUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/lojas?ml_auth=error&reason=${reason}`;
       
       // Retornar HTML que notifica popup pai
       return res.send(`

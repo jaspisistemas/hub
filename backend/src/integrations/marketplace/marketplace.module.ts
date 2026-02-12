@@ -7,6 +7,7 @@ import { OrdersModule } from '../../domains/orders/orders.module';
 import { StoresModule } from '../../domains/stores/stores.module';
 import { ProductsModule } from '../../domains/products/products.module';
 import { SupportModule } from '../../domains/support/support.module';
+import { QueueModule } from '../../infra/queue/queue.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { SupportModule } from '../../domains/support/support.module';
     StoresModule,
     ProductsModule,
     forwardRef(() => SupportModule),
+    QueueModule,
   ],
   controllers: [MarketplaceController],
   providers: [MarketplaceService, MercadoLivreAdapter, ShopeeAdapter],

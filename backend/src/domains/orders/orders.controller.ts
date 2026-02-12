@@ -16,6 +16,10 @@ export class OrdersController {
   @Get('metrics/dashboard')
   async getDashboardMetrics(@Query('days') days: string, @Request() req: any) {
     const daysNumber = days ? parseInt(days) : 30;
+    // Se usuário tem company, retorna métricas da empresa
+    if (req.user.companyId) {
+      return this.ordersService.getDashboardMetricsByCompany(req.user.companyId, daysNumber);
+    }
     return this.ordersService.getDashboardMetrics(req.user.id, daysNumber);
   }
 
@@ -41,6 +45,17 @@ export class OrdersController {
       : undefined;
     const paidOnlyFlag = paidOnly === 'true' || paidOnly === '1';
 
+    // Se usuário tem company, retorna pedidos da empresa
+    if (req.user.companyId) {
+      return this.ordersService.listOrdersByCompany(
+        req.user.companyId,
+        statusList,
+        paidOnlyFlag,
+        updatedSince,
+      );
+    }
+
+    // Senão retorna pedidos do usuário
     return this.ordersService.listOrdersByUser(
       req.user.id,
       statusList,

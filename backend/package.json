@@ -6,7 +6,10 @@
   "scripts": {
     "start": "node dist/main.js",
     "start:dev": "ts-node-dev --respawn --transpile-only src/main.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "migration:run": "typeorm migration:run -d src/data-source.ts",
+    "migration:generate": "typeorm migration:generate src/migrations",
+    "migration:create": "typeorm migration:create src/migrations"
   },
   "dependencies": {
     "@nestjs/bull": "^10.0.0",

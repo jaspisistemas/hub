@@ -49,6 +49,7 @@ export class OrdersService {
       marketplace: dto.marketplace,
       status: dto.raw?.status || 'created',
       total: dto.total,
+      orderCreatedAt: dto.orderCreatedAt ? new Date(dto.orderCreatedAt) : undefined,
       rawData: dto.raw ? JSON.stringify(dto.raw) : undefined,
       storeId: dto.storeId,
       customerName: dto.customerName,
@@ -205,6 +206,44 @@ export class OrdersService {
     return sinceFiltered;
   }
 
+  async listOrdersByCompany(
+    companyId: string,
+    statusList?: string[],
+    paidOnly?: boolean,
+    updatedSince?: string,
+  ) {
+    const stores = await this.storesRepository.find({ where: { companyId } });
+    const storeIds = stores.map((s) => s.id);
+
+    const normalizeStatus = (value?: string) => (value || '').toLowerCase().trim();
+    const paidStatuses = ['paid', 'approved', 'completed'];
+    const filteredStatuses = paidOnly
+      ? paidStatuses
+      : (statusList || []).map(normalizeStatus).filter(Boolean);
+
+    const sinceDate = updatedSince ? new Date(updatedSince) : undefined;
+    const hasValidSinceDate = sinceDate instanceof Date && !Number.isNaN(sinceDate.getTime());
+
+    const baseOrders = await this.ordersRepository
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.store', 'store')
+      .where(storeIds.length ? 'order.storeId IN (:...storeIds)' : '1=0', { storeIds })
+      .orderBy('order.createdAt', 'DESC')
+      .getMany();
+
+    const sinceFiltered = hasValidSinceDate
+      ? baseOrders.filter((order) => new Date(order.updatedAt).getTime() >= sinceDate!.getTime())
+      : baseOrders;
+
+    if (filteredStatuses.length) {
+      return sinceFiltered.filter((order) =>
+        filteredStatuses.includes(normalizeStatus(order.status)),
+      );
+    }
+
+    return sinceFiltered;
+  }
+
   async updateOrder(id: string, dto: UpdateOrderDto) {
     const order = await this.getOrderById(id);
     
@@ -241,6 +280,7 @@ export class OrdersService {
         marketplace: dto.marketplace || existing.marketplace,
         status: dto.raw?.status || existing.status,
         total: dto.total !== undefined ? dto.total : existing.total,
+        orderCreatedAt: dto.orderCreatedAt ? new Date(dto.orderCreatedAt) : existing.orderCreatedAt,
         rawData: dto.raw ? JSON.stringify(dto.raw) : existing.rawData,
         storeId: dto.storeId || existing.storeId,
         customerName: dto.customerName || existing.customerName,
@@ -312,7 +352,11 @@ export class OrdersService {
 
     // Pedidos recentes (últimos 10)
     const recentOrders = orders
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .sort((a, b) => {
+        const bDate = b.orderCreatedAt ?? b.createdAt;
+        const aDate = a.orderCreatedAt ?? a.createdAt;
+        return new Date(bDate).getTime() - new Date(aDate).getTime();
+      })
       .slice(0, 10)
       .map(order => ({
         id: order.id,
@@ -322,6 +366,82 @@ export class OrdersService {
         status: order.status,
         total: Number(order.total),
         createdAt: order.createdAt,
+        orderDate: order.orderCreatedAt ?? order.createdAt,
+      }));
+
+    return {
+      overview: {
+        totalRevenue,
+        totalOrders,
+        averageOrderValue,
+        totalStores,
+      },
+      salesByPeriod,
+      ordersByStatus,
+      salesByStore,
+      recentOrders,
+    };
+  }
+
+  async getDashboardMetricsByCompany(companyId: string, days: number = 30) {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    // Buscar todas as lojas da empresa
+    const stores = await this.storesRepository.find({ where: { companyId } });
+    const storeIds = stores.map(s => s.id);
+
+    // Buscar todos os pedidos do período das lojas da empresa
+    const orders = storeIds.length 
+      ? await this.ordersRepository.find({
+          where: {
+            storeId: In(storeIds),
+            createdAt: MoreThan(startDate),
+          },
+          relations: ['store'],
+        })
+      : [];
+
+    const isCancelled = (status?: string) => {
+      const normalized = (status || '').toLowerCase();
+      return normalized === 'cancelled' || normalized === 'canceled' || normalized === 'cancelado';
+    };
+
+    const revenueOrders = orders.filter((order) => !isCancelled(order.status));
+
+    // Calcular overview
+    const totalRevenue = revenueOrders.reduce((sum, order) => sum + Number(order.total), 0);
+    const totalOrders = orders.length;
+    const averageOrderValue = revenueOrders.length > 0 ? totalRevenue / revenueOrders.length : 0;
+    const uniqueStores = new Set(orders.map(o => o.store?.id).filter(Boolean));
+    const totalStores = uniqueStores.size;
+
+    // Vendas por período (por dia)
+    const salesByPeriod = this.calculateSalesByPeriod(revenueOrders, days);
+
+    // Pedidos por status
+    const ordersByStatus = this.calculateOrdersByStatus(orders);
+
+    // Vendas por loja
+    const salesByStore = await this.calculateSalesByStore(revenueOrders);
+
+    // Pedidos recentes (últimos 10)
+    const recentOrders = orders
+      .sort((a, b) => {
+        const bDate = b.orderCreatedAt ?? b.createdAt;
+        const aDate = a.orderCreatedAt ?? a.createdAt;
+        return new Date(bDate).getTime() - new Date(aDate).getTime();
+      })
+      .slice(0, 10)
+      .map(order => ({
+        id: order.id,
+        externalId: order.externalId,
+        customerName: order.customerName || 'Cliente não informado',
+        marketplace: order.marketplace,
+        status: order.status,
+        total: Number(order.total),
+        createdAt: order.createdAt,
+        orderDate: order.orderCreatedAt ?? order.createdAt,
       }));
 
     return {

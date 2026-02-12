@@ -16,6 +16,9 @@ import { StoresModule } from './domains/stores/stores.module';
 import { SupportModule } from './domains/support/support.module';
 import { InvoicesModule } from './domains/invoices/invoices.module';
 import { Invoice } from './domains/invoices/entities/invoice.entity';
+import { CompaniesModule } from './domains/companies/companies.module';
+import { Company } from './domains/companies/entities/company.entity';
+import { CompanyMember } from './domains/companies/entities/company-member.entity';
 
 @Module({
   imports: [
@@ -27,10 +30,11 @@ import { Invoice } from './domains/invoices/entities/invoice.entity';
       username: process.env.DB_USERNAME || 'postgres',
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME || 'jaspi_hub',
-      entities: [User, Product, Store, Order, Support, Invoice],
-      synchronize: true, // Sincroniza automaticamente as mudanças na estrutura
+      entities: [User, Product, Store, Order, Support, Invoice, Company, CompanyMember],
+      synchronize: false, // Usar migrations em vez de sincronizar automaticamente
     }),
     AuthModule,
+    CompaniesModule,
     ProductsModule,
     StoresModule,
     SupportModule,

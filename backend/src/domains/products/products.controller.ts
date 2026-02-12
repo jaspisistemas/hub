@@ -52,11 +52,16 @@ export class ProductsController {
       }
     }
     
-    return this.productsService.create(dto, req.user.id);
+    return this.productsService.create(dto, req.user.id, req.user.companyId);
   }
 
   @Get()
   findAll(@Request() req: any) {
+    // Se usuário tem company, retorna produtos da empresa
+    if (req.user.companyId) {
+      return this.productsService.findAllByCompany(req.user.companyId);
+    }
+    // Senão retorna produtos do usuário
     return this.productsService.findAllByUser(req.user.id);
   }
 

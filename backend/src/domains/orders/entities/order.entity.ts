@@ -51,6 +51,10 @@ export class Order {
   @Column({ nullable: true, length: 20 })
   customerZipCode?: string;
 
+  // Data de criação do pedido no marketplace (quando o pedido foi realmente feito)
+  @Column({ nullable: true, type: 'timestamp' })
+  orderCreatedAt?: Date;
+
   // Relacionamento com loja
   @Column({ nullable: true })
   storeId?: string;

@@ -24,6 +24,15 @@ export class StoresService {
   async findAllByUser(userId: string) {
     return this.storesRepository.find({
       where: { userId },
+      relations: ['company'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async findAllByCompany(companyId: string) {
+    return this.storesRepository.find({
+      where: { companyId },
+      relations: ['company', 'user'],
       order: { createdAt: 'DESC' },
     });
   }

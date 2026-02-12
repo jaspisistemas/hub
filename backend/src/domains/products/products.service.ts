@@ -14,13 +14,22 @@ export class ProductsService {
     private readonly websocketGateway: WebsocketGateway,
   ) {}
 
-  async create(dto: CreateProductDto, userId: string) {
-    // Buscar a primeira loja do usuário
-    const store = await this.productsRepository.manager.findOne('stores', {
-      where: { userId },
-    } as any);
+  async create(dto: CreateProductDto, userId: string, companyId?: string) {
+    // Se temos companyId, buscar primeira loja da empresa
+    // Senão, buscar primeira loja do usuário
+    let store: any;
     
-    const storeId: string = (store as any)?.id;
+    if (companyId) {
+      store = await this.productsRepository.manager.findOne('stores', {
+        where: { companyId },
+      } as any);
+    } else {
+      store = await this.productsRepository.manager.findOne('stores', {
+        where: { userId },
+      } as any);
+    }
+    
+    const storeId: string = store?.id;
     
     const product = this.productsRepository.create({
       ...dto,
@@ -43,6 +52,15 @@ export class ProductsService {
       .createQueryBuilder('product')
       .leftJoin('product.store', 'store')
       .where('store.userId = :userId', { userId })
+      .orderBy('product.createdAt', 'DESC')
+      .getMany();
+  }
+
+  async findAllByCompany(companyId: string) {
+    return this.productsRepository
+      .createQueryBuilder('product')
+      .leftJoin('product.store', 'store')
+      .where('store.companyId = :companyId', { companyId })
       .orderBy('product.createdAt', 'DESC')
       .getMany();
   }

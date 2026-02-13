@@ -10,13 +10,13 @@ export class CompaniesController {
 
   // Criar empresa
   @Post()
-  async create(@Body() data: Partial<Company>, @Request() req) {
+  async create(@Body() data: Partial<Company>, @Request() req: any) {
     return this.companiesService.create(data, req.user.sub);
   }
 
   // Obter empresa do usuário
   @Get('my-company')
-  async getMyCompany(@Request() req) {
+  async getMyCompany(@Request() req: any) {
     const companies = await this.companiesService.findByUser(req.user.sub);
     return companies[0] || null;
   }

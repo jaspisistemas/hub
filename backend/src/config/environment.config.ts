@@ -9,23 +9,37 @@ export const environmentConfig = {
   backendUrl: process.env.BACKEND_URL || 'http://localhost:3000',
   
   // CORS - todas as origens permitidas
-  corsOrigins: [
-    // Desenvolvimento local
-    'http://localhost:3000',
-    'https://localhost:3000',
-    'http://localhost:5173',
-    'https://localhost:5173',
-    'http://localhost:5174',
-    'https://localhost:5174',
+  corsOrigins: (() => {
+    const origins = [
+      // Desenvolvimento local
+      'http://localhost:3000',
+      'https://localhost:3000',
+      'http://localhost:5173',
+      'https://localhost:5173',
+      'http://localhost:5174',
+      'https://localhost:5174',
+      'http://127.0.0.1:5173',
+      'https://127.0.0.1:5173',
+      
+      // Cloudflare Tunnels
+      'https://portsmouth-tin-import-favour.trycloudflare.com',
+      'https://panel-joshua-norfolk-molecular.trycloudflare.com',
+      
+      // ngrok
+      'https://uneducated-georgiann-personifiant.ngrok-free.dev',
+    ];
     
-    // Cloudflare Tunnels
-    'https://portsmouth-tin-import-favour.trycloudflare.com',
-    'https://panel-joshua-norfolk-molecular.trycloudflare.com',
+    // Adiciona URLs de ambiente se definidas
+    if (process.env.FRONTEND_URL && !origins.includes(process.env.FRONTEND_URL)) {
+      origins.push(process.env.FRONTEND_URL);
+    }
+    if (process.env.BACKEND_URL && !origins.includes(process.env.BACKEND_URL)) {
+      origins.push(process.env.BACKEND_URL);
+    }
     
-    // Ambientes gerenciados
-    process.env.FRONTEND_URL,
-    process.env.BACKEND_URL,
-  ].filter((url): url is string => !!url && typeof url === 'string'),
+    console.log('[CORS] Origens permitidas:', origins);
+    return origins;
+  })(),
 
   // JWT
   jwtSecret: process.env.JWT_SECRET || 'dev-secret-key-12345',

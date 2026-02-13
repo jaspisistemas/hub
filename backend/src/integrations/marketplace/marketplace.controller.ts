@@ -419,7 +419,7 @@ export class MarketplaceController {
               await this.productsService.update(existing.id, productData);
             } else {
               // Passar o userId da loja para criar o produto
-              await this.productsService.create(productData, store.userId);
+              await this.productsService.create(productData, store.userId || '');
             }
             totalProducts++;
           } catch (error) {

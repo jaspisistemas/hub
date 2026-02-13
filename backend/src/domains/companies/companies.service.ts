@@ -115,7 +115,7 @@ export class CompaniesService {
 
     member.isActive = true;
     member.acceptedAt = new Date();
-    member.inviteToken = null;
+    member.inviteToken = undefined;
 
     await this.membersRepository.save(member);
 

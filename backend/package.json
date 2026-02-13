@@ -7,7 +7,7 @@
     "start": "node dist/main.js",
     "start:dev": "ts-node-dev --respawn --transpile-only src/main.ts",
     "build": "tsc",
-    "migration:run": "typeorm migration:run -d src/data-source.ts",
+    "migration:run": "node ../node_modules/typeorm/cli-ts-node-commonjs.js migration:run -d src/data-source.ts",
     "migration:generate": "typeorm migration:generate src/migrations",
     "migration:create": "typeorm migration:create src/migrations"
   },

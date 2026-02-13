@@ -8,7 +8,16 @@ import { environmentConfig } from './config/environment.config';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     cors: {
-      origin: environmentConfig.corsOrigins,
+      origin: [
+        'http://localhost:3000',
+        'https://localhost:3000',
+        'http://localhost:5173',
+        'https://localhost:5173',
+        'http://127.0.0.1:5173',
+        'https://127.0.0.1:5173',
+        'https://portsmouth-tin-import-favour.trycloudflare.com',
+        'https://uneducated-georgiann-personifiant.ngrok-free.dev',
+      ],
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning', 'Accept', 'X-Requested-With'],

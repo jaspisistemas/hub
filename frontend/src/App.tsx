@@ -8,6 +8,7 @@ import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './features/auth/LoginPage';
+import CompanyOnboardingPage from './features/onboarding/CompanyOnboardingPage';
 import DashboardPage from './features/dashboard/DashboardPage';
 import OrdersPage from './features/orders/OrdersPage';
 import ProductsPage from './features/products/ProductsPage';
@@ -49,6 +50,7 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/onboarding/empresa" element={<CompanyOnboardingPage />} />
 
         <Route
           path="/"

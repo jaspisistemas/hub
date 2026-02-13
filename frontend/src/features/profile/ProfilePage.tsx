@@ -49,6 +49,7 @@ import {
   Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { profileService } from '../../services/profileService';
+import { companyService } from '../../services/companyService';
 import { apiFetch } from '../../services/api';
 import collaboratorsService from '../../services/collaboratorsService';
 import PageHeader from '../../components/PageHeader';
@@ -315,8 +316,25 @@ export default function ProfilePage() {
 
     try {
       setCompanySaving(true);
-      // Aqui você chama o serviço para salvar a empresa
-      // await apiFetch('/companies', { method: 'PUT', body: JSON.stringify(companyFormData) });
+      
+      if (company?.id) {
+        // Atualizar empresa existente
+        await companyService.updateCompany(company.id, {
+          name: companyFormData.companyName,
+          cnpj: companyFormData.cnpj,
+          address: companyFormData.address,
+          logoUrl: companyFormData.logoUrl,
+        });
+      } else {
+        // Criar nova empresa
+        await companyService.createCompany({
+          name: companyFormData.companyName,
+          cnpj: companyFormData.cnpj,
+          address: companyFormData.address,
+          logoUrl: companyFormData.logoUrl,
+        });
+      }
+      
       setSuccess('Dados da empresa atualizados com sucesso!');
       setCompanyModalOpen(false);
       await loadProfile();

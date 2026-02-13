@@ -46,6 +46,7 @@ import { dashboardService, DashboardMetrics, StoreMetrics } from '../../services
 import PageHeader from '../../components/PageHeader';
 import StatusBadge from '../../components/StatusBadge';
 import DataTable, { Column } from '../../components/DataTable';
+import { useCompanyCheck } from '../../hooks/useCompanyCheck';
 
 const getMarketplaceBadge = (marketplace?: string) => {
   const key = (marketplace || '').toLowerCase();
@@ -68,6 +69,7 @@ const getMarketplaceBadge = (marketplace?: string) => {
 
 export default function DashboardPage() {
   const theme = useTheme();
+  useCompanyCheck();
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [selectedStore, setSelectedStore] = useState<string>('all');

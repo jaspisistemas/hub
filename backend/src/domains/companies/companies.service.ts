@@ -19,6 +19,10 @@ export class CompaniesService {
 
   // CRUD de Empresa
   async create(data: Partial<Company>, userId: string) {
+    if (!userId) {
+      throw new HttpException('User ID is required', HttpStatus.BAD_REQUEST);
+    }
+
     const company = this.companiesRepository.create({
       ...data,
     });
@@ -34,7 +38,7 @@ export class CompaniesService {
     });
 
     // Atualizar user com a empresa
-    await this.usersRepository.update(userId, { companyId: savedCompany.id });
+    await this.usersRepository.update({ id: userId }, { companyId: savedCompany.id });
 
     return savedCompany;
   }

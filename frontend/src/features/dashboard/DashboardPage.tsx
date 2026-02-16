@@ -26,6 +26,7 @@ import {
   ShowChart as ChartIcon,
   BarChart as EmptyChartIcon,
   Info as InfoIcon,
+  ContentCopy as ContentCopyIcon,
 } from '@mui/icons-material';
 import {
   LineChart,
@@ -65,6 +66,27 @@ const getMarketplaceBadge = (marketplace?: string) => {
 
   const fallback = marketplace || 'Outro';
   return { label: fallback, text: fallback.slice(0, 2).toUpperCase(), bg: '#e2e8f0', color: '#334155', border: '#cbd5e1' };
+};
+
+const formatOrderId = (id: string) => {
+  if (!id) return '-';
+  return id.length > 12 ? `${id.slice(0, 6)}...${id.slice(-4)}` : id;
+};
+
+const copyToClipboard = async (text: string) => {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+  }
 };
 
 export default function DashboardPage() {
@@ -500,21 +522,50 @@ export default function DashboardPage() {
                     {
                       id: 'externalId',
                       label: 'ID',
+                      width: 90,
                       format: (value) => (
-                        <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', fontFamily: 'monospace', color: '#6366f1' }}>
-                          {value}
-                        </Typography>
+                        <Tooltip title={String(value)} arrow>
+                          <Box
+                            onClick={() => copyToClipboard(String(value))}
+                            sx={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 0.5,
+                              cursor: 'pointer',
+                              '&:hover': {
+                                opacity: 0.8,
+                              },
+                            }}
+                          >
+                            <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', fontFamily: 'monospace', color: '#6366f1' }}>
+                              {formatOrderId(String(value))}
+                            </Typography>
+                            <ContentCopyIcon sx={{ fontSize: 14, color: '#6366f1', opacity: 0.6 }} />
+                          </Box>
+                        </Tooltip>
                       ),
                     },
                     {
                       id: 'customerName',
                       label: 'Cliente',
+                      width: 240,
                       format: (value) => (
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <Avatar sx={{ width: 32, height: 32, fontSize: '0.875rem', bgcolor: '#3b82f6' }}>
                             {value ? String(value).charAt(0).toUpperCase() : '?'}
                           </Avatar>
-                          <Typography sx={{ fontWeight: 500, fontSize: '0.875rem', whiteSpace: 'nowrap' }}>
+                          <Typography
+                            sx={{
+                              fontWeight: 500,
+                              fontSize: '0.875rem',
+                              whiteSpace: 'normal',
+                              wordBreak: 'break-word',
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                            }}
+                          >
                             {value || 'Sem nome'}
                           </Typography>
                         </Box>
@@ -524,6 +575,7 @@ export default function DashboardPage() {
                       id: 'marketplace',
                       label: 'Loja',
                       align: 'center',
+                      width: 70,
                       format: (value) => {
                         const badge = getMarketplaceBadge(value);
                         return (
@@ -553,6 +605,7 @@ export default function DashboardPage() {
                       id: 'status',
                       label: 'Status',
                       align: 'center',
+                      width: 110,
                       format: (value) => (
                         <Chip
                           label={value === 'paid' ? 'Pago' : value === 'pending' ? 'Pendente' : value === 'shipped' ? 'Enviado' : value === 'delivered' ? 'Entregue' : 'Cancelado'}
@@ -573,6 +626,7 @@ export default function DashboardPage() {
                       label: 'Valor',
                       align: 'right',
                       numeric: true,
+                      width: 110,
                       format: (value) => (
                         <Typography sx={{ fontWeight: 600, fontSize: '0.9375rem' }}>
                           {new Intl.NumberFormat('pt-BR', {
@@ -586,6 +640,7 @@ export default function DashboardPage() {
                       id: 'createdAt',
                       label: 'Data',
                       align: 'center',
+                      width: 120,
                       format: (_value, row) => {
                         const dateValue = (row as any).orderDate || (row as any).createdAt;
                         return (

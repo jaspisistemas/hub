@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, List, ListItem, ListItemIcon, ListItemText, Tooltip, Typography, Divider } from '@mui/material';
+import { Box, List, ListItem, ListItemIcon, ListItemText, Tooltip, Typography, Divider, useTheme } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSidebar } from '../contexts/SidebarContext';
 import {
@@ -14,6 +14,7 @@ import {
 } from '@mui/icons-material';
 
 export default function Sidebar() {
+  const theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const { isCollapsed, setIsCollapsed } = useSidebar();
@@ -36,7 +37,9 @@ export default function Sidebar() {
     <Box
       sx={{
         width: isCollapsed ? 80 : 256,
-        background: 'linear-gradient(180deg, #4F9CF9 0%, #357FD7 100%)',
+        background: theme.palette.mode === 'dark'
+          ? 'linear-gradient(180deg, #111827 0%, #0b1220 100%)'
+          : 'linear-gradient(180deg, #4F9CF9 0%, #357FD7 100%)',
         minHeight: '100%',
         color: '#ffffff',
         display: 'flex',
@@ -47,7 +50,9 @@ export default function Sidebar() {
         bottom: 0,
         transition: 'all 0.2s ease',
         overflow: 'auto',
-        borderRight: '1px solid rgba(255,255,255,0.15)',
+        borderRight: theme.palette.mode === 'dark'
+          ? '1px solid rgba(255,255,255,0.08)'
+          : '1px solid rgba(255,255,255,0.15)',
       }}
     >
       <Box
@@ -66,7 +71,9 @@ export default function Sidebar() {
             sx={{
               width: isCollapsed ? 32 : 36,
               height: isCollapsed ? 32 : 36,
-              bgcolor: 'rgba(255,255,255,0.25)',
+              bgcolor: theme.palette.mode === 'dark'
+                ? 'rgba(255,255,255,0.12)'
+                : 'rgba(255,255,255,0.25)',
               borderRadius: 2,
               display: 'flex',
               alignItems: 'center',
@@ -75,7 +82,9 @@ export default function Sidebar() {
               cursor: 'pointer',
               transition: 'all 0.2s ease',
               '&:hover': {
-                bgcolor: 'rgba(255,255,255,0.35)',
+                bgcolor: theme.palette.mode === 'dark'
+                  ? 'rgba(255,255,255,0.18)'
+                  : 'rgba(255,255,255,0.35)',
               },
             }}
           >
@@ -107,7 +116,11 @@ export default function Sidebar() {
                 borderRadius: 3,
                 mb: 0.5,
                 position: 'relative',
-                bgcolor: location.pathname === item.path ? 'rgba(255,255,255,0.2)' : 'transparent',
+                bgcolor: location.pathname === item.path
+                  ? theme.palette.mode === 'dark'
+                    ? 'rgba(79,156,249,0.18)'
+                    : 'rgba(255,255,255,0.2)'
+                  : 'transparent',
                 transition: 'all 0.2s ease',
                 justifyContent: isCollapsed ? 'center' : 'flex-start',
                 px: isCollapsed ? 1 : 2,
@@ -121,12 +134,20 @@ export default function Sidebar() {
                   width: 3,
                   height: 24,
                   borderRadius: 2,
-                  backgroundColor: location.pathname === item.path ? '#ffffff' : 'transparent',
+                  backgroundColor: location.pathname === item.path
+                    ? theme.palette.mode === 'dark'
+                      ? '#4F9CF9'
+                      : '#ffffff'
+                    : 'transparent',
                 },
                 '&:hover': {
                   bgcolor: location.pathname === item.path
-                    ? 'rgba(255,255,255,0.25)'
-                    : 'rgba(255,255,255,0.1)',
+                    ? theme.palette.mode === 'dark'
+                      ? 'rgba(79,156,249,0.22)'
+                      : 'rgba(255,255,255,0.25)'
+                    : theme.palette.mode === 'dark'
+                      ? 'rgba(255,255,255,0.06)'
+                      : 'rgba(255,255,255,0.1)',
                 },
               }}
             >
@@ -159,7 +180,7 @@ export default function Sidebar() {
         ))}
       </List>
 
-      <Divider sx={{ borderColor: 'rgba(255,255,255,0.2)', mx: 2, mb: 1.5 }} />
+      <Divider sx={{ borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.2)', mx: 2, mb: 1.5 }} />
 
       <List sx={{ px: 1.5, pb: 2 }}>
         {secondaryItems.map((item) => (

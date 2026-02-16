@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppBar, Toolbar, Typography, Box, Avatar, Menu, MenuItem, IconButton, Tooltip, Badge, Divider, List, ListItem, ListItemText, ListItemAvatar, Paper, ListItemIcon } from '@mui/material';
+import { AppBar, Toolbar, Typography, Box, Avatar, Menu, MenuItem, IconButton, Tooltip, Badge, Divider, List, ListItem, ListItemText, ListItemAvatar, Paper, ListItemIcon, Button, useTheme } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { 
   ExpandMore as ExpandMoreIcon,
@@ -10,6 +10,7 @@ import {
 } from '@mui/icons-material';
 
 export default function Topbar() {
+  const theme = useTheme();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [notificationsAnchor, setNotificationsAnchor] = React.useState<null | HTMLElement>(null);
@@ -45,17 +46,21 @@ export default function Topbar() {
       color="default" 
       elevation={0} 
       sx={{ 
-        bgcolor: '#FFFFFF', 
-        borderBottom: '1px solid rgba(0,0,0,0.06)',
+        bgcolor: theme.palette.background.paper,
+        borderBottom: theme.palette.mode === 'dark'
+          ? '1px solid rgba(255,255,255,0.08)'
+          : '1px solid rgba(0,0,0,0.06)',
         boxShadow: 'none',
         '& .MuiIconButton-root': {
           width: 40,
           height: 40,
           borderRadius: 2,
-          color: '#6E6E73',
+          color: theme.palette.text.secondary,
           transition: 'all 0.2s ease',
           '&:hover': {
-            bgcolor: '#F2F2F7',
+            bgcolor: theme.palette.mode === 'dark'
+              ? 'rgba(255,255,255,0.08)'
+              : '#F2F2F7',
           },
         },
         '& .MuiBadge-badge': {

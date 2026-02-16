@@ -15,6 +15,7 @@ import {
   IconButton,
   Checkbox,
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import { MoreVert as MoreVertIcon } from '@mui/icons-material';
 import EmptyState from './EmptyState';
 
@@ -131,6 +132,7 @@ export default function DataTable<T = any>({
   order,
   onSort,
 }: DataTableProps<T>) {
+  const theme = useTheme();
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
       const newSelected = data.map(row => getRowId(row));
@@ -194,9 +196,11 @@ export default function DataTable<T = any>({
         width: '100%', 
         overflow: 'hidden',
         borderRadius: TABLE_CONSTANTS.BORDER_RADIUS,
-        border: '1px solid rgba(0,0,0,0.04)',
-        backgroundColor: '#FFFFFF',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
+        border: theme.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.04)',
+        backgroundColor: theme.palette.background.paper,
+        boxShadow: theme.palette.mode === 'dark'
+          ? '0 6px 22px rgba(0,0,0,0.35)'
+          : '0 4px 20px rgba(0,0,0,0.04)',
       }}
     >
       <TableContainer sx={{ maxHeight: 'none', overflowX: 'hidden' }}>
@@ -209,7 +213,7 @@ export default function DataTable<T = any>({
             <TableRow 
               sx={{ 
                 height: TABLE_CONSTANTS.HEADER_HEIGHT,
-                bgcolor: '#FAFAFA',
+                bgcolor: theme.palette.mode === 'dark' ? '#10151f' : '#FAFAFA',
               }}
             >
               {selectable && (
@@ -217,7 +221,9 @@ export default function DataTable<T = any>({
                   padding="checkbox"
                   sx={{
                     bgcolor: 'inherit',
-                    borderBottom: '1px solid rgba(0,0,0,0.04)',
+                    borderBottom: theme.palette.mode === 'dark'
+                      ? '1px solid rgba(255,255,255,0.08)'
+                      : '1px solid rgba(0,0,0,0.04)',
                   }}
                 >
                   <Checkbox
@@ -238,13 +244,15 @@ export default function DataTable<T = any>({
                     minWidth: column.minWidth,
                     width: column.width,
                     padding: TABLE_CONSTANTS.CELL_PADDING,
-                    color: '#6E6E73',
+                    color: theme.palette.text.secondary,
                     bgcolor: 'inherit',
-                    borderBottom: '1px solid rgba(0,0,0,0.04)',
+                    borderBottom: theme.palette.mode === 'dark'
+                      ? '1px solid rgba(255,255,255,0.08)'
+                      : '1px solid rgba(0,0,0,0.04)',
                     cursor: column.sortable ? 'pointer' : 'default',
                     userSelect: 'none',
                     '&:hover': column.sortable ? {
-                      color: '#1D1D1F',
+                      color: theme.palette.text.primary,
                     } : {},
                   }}
                   onClick={() => column.sortable && onSort?.(column.id)}
@@ -265,9 +273,11 @@ export default function DataTable<T = any>({
                     ...TABLE_CONSTANTS.HEADER,
                     width: 90,
                     padding: TABLE_CONSTANTS.CELL_PADDING,
-                    color: '#6E6E73',
+                    color: theme.palette.text.secondary,
                     bgcolor: 'inherit',
-                    borderBottom: '1px solid rgba(0,0,0,0.04)',
+                    borderBottom: theme.palette.mode === 'dark'
+                      ? '1px solid rgba(255,255,255,0.08)'
+                      : '1px solid rgba(0,0,0,0.04)',
                   }}
                 >
                   Ações
@@ -291,12 +301,16 @@ export default function DataTable<T = any>({
                     height: dense ? 52 : TABLE_CONSTANTS.ROW_HEIGHT,
                     cursor: onRowClick && !selectable ? 'pointer' : 'default',
                     '&:hover': hover ? {
-                      bgcolor: '#F9F9FB',
+                      bgcolor: theme.palette.mode === 'dark'
+                        ? 'rgba(255,255,255,0.04)'
+                        : '#F9F9FB',
                     } : {},
                     '&.Mui-selected': {
                       bgcolor: 'rgba(79,156,249,0.08)',
                       '&:hover': {
-                        bgcolor: 'rgba(79,156,249,0.12)',
+                        bgcolor: theme.palette.mode === 'dark'
+                          ? 'rgba(79,156,249,0.18)'
+                          : 'rgba(79,156,249,0.12)',
                       },
                     },
                   }}
@@ -322,8 +336,10 @@ export default function DataTable<T = any>({
                         sx={{
                           ...TABLE_CONSTANTS.BODY,
                           padding: TABLE_CONSTANTS.CELL_PADDING,
-                          color: '#1D1D1F',
-                          borderBottom: '1px solid rgba(0,0,0,0.04)',
+                          color: theme.palette.text.primary,
+                          borderBottom: theme.palette.mode === 'dark'
+                            ? '1px solid rgba(255,255,255,0.08)'
+                            : '1px solid rgba(0,0,0,0.04)',
                         }}
                       >
                         {formattedValue}
@@ -336,7 +352,9 @@ export default function DataTable<T = any>({
                       align="center"
                       sx={{
                         padding: TABLE_CONSTANTS.CELL_PADDING,
-                        borderBottom: '1px solid rgba(0,0,0,0.04)',
+                        borderBottom: theme.palette.mode === 'dark'
+                          ? '1px solid rgba(255,255,255,0.08)'
+                          : '1px solid rgba(0,0,0,0.04)',
                       }}
                     >
                       <IconButton

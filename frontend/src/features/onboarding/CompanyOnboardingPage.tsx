@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -10,11 +10,15 @@ import {
   Alert,
   CircularProgress,
   useTheme,
+  Avatar,
+  Chip,
 } from '@mui/material';
 import {
   Business as BusinessIcon,
+  Shield as ShieldIcon,
 } from '@mui/icons-material';
 import { companyService } from '../../services/companyService';
+import { profileService } from '../../services/profileService';
 import { useNavigate } from 'react-router-dom';
 
 interface CompanyForm {
@@ -24,17 +28,67 @@ interface CompanyForm {
   logoUrl: string;
 }
 
+interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+}
+
 export default function CompanyOnboardingPage() {
   const theme = useTheme();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [loadingUser, setLoadingUser] = useState(true);
   const [error, setError] = useState('');
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [formData, setFormData] = useState<CompanyForm>({
     name: '',
     cnpj: '',
     address: '',
     logoUrl: '',
   });
+
+  useEffect(() => {
+    loadUserProfile();
+  }, []);
+
+  const loadUserProfile = async () => {
+    try {
+      const data = await profileService.getProfile();
+      setUser({
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        avatarUrl: data.avatarUrl,
+      });
+    } catch (err) {
+      console.error('Erro ao carregar perfil:', err);
+      try {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const parsed = JSON.parse(storedUser) as {
+            id?: string;
+            name?: string;
+            email?: string;
+            avatarUrl?: string;
+          };
+          if (parsed?.name && parsed?.email) {
+            setUser({
+              id: parsed.id || '',
+              name: parsed.name,
+              email: parsed.email,
+              avatarUrl: parsed.avatarUrl,
+            });
+          }
+        }
+      } catch (storageError) {
+        console.error('Erro ao ler usuário do storage:', storageError);
+      }
+    } finally {
+      setLoadingUser(false);
+    }
+  };
 
   const isValidUrl = (url: string) => {
     if (!url) return true;
@@ -166,6 +220,88 @@ export default function CompanyOnboardingPage() {
               JASPI HUB
             </Typography>
           </Box>
+
+          {/* Administrator Info */}
+          {!loadingUser && user && (
+            <Box
+              sx={{
+                p: 2.5,
+                mb: 3,
+                bgcolor: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'rgba(79, 156, 249, 0.1)'
+                    : 'rgba(79, 156, 249, 0.05)',
+                border: (theme) =>
+                  `1px solid ${
+                    theme.palette.mode === 'dark'
+                      ? 'rgba(79, 156, 249, 0.3)'
+                      : 'rgba(79, 156, 249, 0.2)'
+                  }`,
+                borderRadius: 2,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+              }}
+            >
+              <Avatar
+                src={user.avatarUrl}
+                alt={user.name}
+                sx={{
+                  width: 50,
+                  height: 50,
+                  bgcolor: '#4F9CF9',
+                  fontSize: '1.2rem',
+                  fontWeight: 600,
+                }}
+              >
+                {user.name.charAt(0).toUpperCase()}
+              </Avatar>
+              <Box sx={{ flex: 1 }}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    color: (theme) =>
+                      theme.palette.mode === 'dark' ? '#cbd5e1' : '#334155',
+                    mb: 0.5,
+                  }}
+                >
+                  Administrador da Empresa
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: (theme) =>
+                      theme.palette.mode === 'dark' ? '#e2e8f0' : '#1e293b',
+                    fontWeight: 600,
+                    mb: 0.25,
+                  }}
+                >
+                  {user.name}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: (theme) =>
+                      theme.palette.mode === 'dark' ? '#94a3b8' : '#64748b',
+                  }}
+                >
+                  {user.email}
+                </Typography>
+              </Box>
+              <Chip
+                icon={<ShieldIcon />}
+                label="Admin"
+                sx={{
+                  bgcolor: '#4F9CF9',
+                  color: '#ffffff',
+                  fontWeight: 600,
+                  '& .MuiChip-icon': {
+                    color: '#ffffff !important',
+                  },
+                }}
+              />
+            </Box>
+          )}
 
           {/* Error Alert */}
           {error && (

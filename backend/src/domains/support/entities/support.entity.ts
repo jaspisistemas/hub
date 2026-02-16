@@ -86,7 +86,7 @@ export class Support {
   @Column('jsonb', { nullable: true })
   metadata: any; // Dados extras do marketplace
 
-  @ManyToOne(() => Store, { nullable: true })
+  @ManyToOne(() => Store, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'storeId' })
   store!: Store;
 

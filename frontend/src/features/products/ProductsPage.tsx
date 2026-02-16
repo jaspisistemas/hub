@@ -530,7 +530,12 @@ export default function ProductsPage() {
             >
               Publicar
             </Button>
-            <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleOpenDialog}>
+            <Button 
+              variant="outlined" 
+              color="primary" 
+              startIcon={<AddIcon />} 
+              onClick={handleOpenDialog}
+            >
               Novo Produto
             </Button>
           </Box>
@@ -595,6 +600,7 @@ export default function ProductsPage() {
           {
             id: 'image',
             label: 'Imagem',
+            width: 72,
             format: (_, row) => (
               <TableImage
                 src={getImageUrl(row.imageUrls?.[0] || row.imageUrl)}
@@ -605,15 +611,28 @@ export default function ProductsPage() {
           {
             id: 'name',
             label: 'Produto',
+            minWidth: 280,
             format: (value) => (
-              <Typography sx={{ fontWeight: 500, fontSize: '0.875rem', whiteSpace: 'nowrap' }}>
-                <TruncatedText maxLength={50}>{value}</TruncatedText>
+              <Typography
+                sx={{
+                  fontWeight: 500,
+                  fontSize: '0.875rem',
+                  whiteSpace: 'normal',
+                  wordBreak: 'break-word',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                }}
+              >
+                {value}
               </Typography>
             ),
           },
           {
             id: 'sku',
             label: 'SKU',
+            width: 140,
             format: (value) => (
               <Chip 
                 label={value} 
@@ -628,6 +647,7 @@ export default function ProductsPage() {
             label: 'Preço',
             align: 'right',
             numeric: true,
+            width: 120,
             format: (value) => (
               <Typography sx={{ fontWeight: 600, fontSize: '0.9375rem' }}>
                 {new Intl.NumberFormat('pt-BR', { 
@@ -642,6 +662,7 @@ export default function ProductsPage() {
             label: 'Estoque',
             align: 'center',
             numeric: true,
+            width: 90,
             format: (value) => (
               <Typography
                 sx={{
@@ -659,21 +680,10 @@ export default function ProductsPage() {
             ),
           },
           {
-            id: 'category',
-            label: 'Categoria',
-            format: (value) => (
-              <Chip 
-                label={value} 
-                variant="outlined" 
-                size="small"
-                sx={{ height: 24, fontSize: '0.75rem' }}
-              />
-            ),
-          },
-          {
             id: 'status',
             label: 'Status',
             align: 'center',
+            width: 120,
             format: (_, row) => (
               <Chip
                 label={row.quantity > 0 ? 'Ativo' : 'Sem Estoque'}

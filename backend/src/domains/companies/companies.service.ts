@@ -28,11 +28,11 @@ export class CompaniesService {
     });
     const savedCompany = await this.companiesRepository.save(company);
 
-    // Adicionar o criador como owner
+    // Adicionar o criador como admin
     await this.membersRepository.save({
       companyId: savedCompany.id,
       userId,
-      role: 'owner',
+      role: 'admin',
       isActive: true,
       acceptedAt: new Date(),
     });
@@ -71,6 +71,9 @@ export class CompaniesService {
 
   // Gerenciar Colaboradores
   async addMember(companyId: string, email: string, role: string = 'member') {
+    if (!['admin', 'member'].includes(role)) {
+      throw new HttpException('Role inválida. Use admin ou member', HttpStatus.BAD_REQUEST);
+    }
     // Verificar se usuário existe
     let user = await this.usersRepository.findOne({ where: { email } });
 
@@ -137,6 +140,9 @@ export class CompaniesService {
   }
 
   async updateMemberRole(memberId: string, role: string) {
+    if (!['admin', 'member'].includes(role)) {
+      throw new HttpException('Role inválida. Use admin ou member', HttpStatus.BAD_REQUEST);
+    }
     await this.membersRepository.update(memberId, { role });
     return this.membersRepository.findOne({
       where: { id: memberId },

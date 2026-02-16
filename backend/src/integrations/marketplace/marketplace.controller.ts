@@ -21,6 +21,123 @@ export class MarketplaceController {
     private readonly queueService: QueueService,
   ) {}
 
+  private async syncMercadoLivreProductsForStore(store: any): Promise<number> {
+    console.log(`🔄 Sincronizando produtos da loja: ${store.name}`);
+
+    if (!store.mlUserId || !store.mlAccessToken) {
+      console.warn(`⚠️ Loja ${store.name} sem credenciais válidas`);
+      return 0;
+    }
+
+    // Renovar token se estiver expirado
+    let accessToken = store.mlAccessToken;
+    if (store.mlTokenExpiresAt && store.mlRefreshToken) {
+      const now = Date.now();
+      // Se expira em menos de 5 minutos, renovar agora
+      if (now > store.mlTokenExpiresAt - 5 * 60 * 1000) {
+        console.log(`🔄 Renovando token ML da loja: ${store.name}`);
+        try {
+          const tokenData = await this.marketplaceService.refreshMercadoLivreToken(store.mlRefreshToken);
+          accessToken = tokenData.accessToken;
+
+          // Atualizar token no banco de dados
+          await this.storesService.update(store.id, {
+            mlAccessToken: tokenData.accessToken,
+            mlRefreshToken: tokenData.refreshToken,
+            mlTokenExpiresAt: Date.now() + tokenData.expiresIn * 1000,
+          });
+          console.log(`✅ Token renovado com sucesso`);
+        } catch (error: any) {
+          console.error(`❌ Erro ao renovar token ML: ${error?.message || String(error)}`);
+          return 0;
+        }
+      }
+    }
+
+    const products = await this.marketplaceService.syncMercadoLivreProducts(
+      store.mlUserId,
+      accessToken,
+    );
+
+    let totalProducts = 0;
+
+    // Salvar ou atualizar cada produto
+    for (const productData of products) {
+      try {
+        // Adicionar storeId ao produto
+        (productData as any).storeId = store.id;
+
+        // Verificar se produto já existe pelo SKU
+        const existing = await this.productsService.findBySku(productData.sku);
+
+        if (existing) {
+          await this.productsService.update(existing.id, productData);
+        } else {
+          // Passar o userId da loja para criar o produto
+          await this.productsService.create(productData, store.userId || '');
+        }
+        totalProducts++;
+      } catch (error) {
+        console.error(`Erro ao salvar produto ${productData.sku}:`, error);
+      }
+    }
+
+    return totalProducts;
+  }
+
+  private async syncMercadoLivreOrdersForStore(store: any): Promise<{ imported: number; updated: number }> {
+    console.log(`🔄 Sincronizando pedidos da loja: ${store.name}`);
+
+    if (!store.mlUserId || !store.mlAccessToken) {
+      console.warn(`⚠️ Loja ${store.name} sem credenciais válidas`);
+      return { imported: 0, updated: 0 };
+    }
+
+    // Renovar token se estiver expirado
+    let accessToken = store.mlAccessToken;
+    if (store.mlTokenExpiresAt && store.mlRefreshToken) {
+      const now = Date.now();
+      if (now > store.mlTokenExpiresAt - 5 * 60 * 1000) {
+        console.log(`🔄 Renovando token ML da loja: ${store.name}`);
+        try {
+          const tokenData = await this.marketplaceService.refreshMercadoLivreToken(store.mlRefreshToken);
+          accessToken = tokenData.accessToken;
+
+          await this.storesService.update(store.id, {
+            mlAccessToken: tokenData.accessToken,
+            mlRefreshToken: tokenData.refreshToken,
+            mlTokenExpiresAt: Date.now() + tokenData.expiresIn * 1000,
+          });
+          console.log('✅ Token renovado com sucesso');
+        } catch (error: any) {
+          console.error(`❌ Erro ao renovar token ML: ${error?.message || String(error)}`);
+          return { imported: 0, updated: 0 };
+        }
+      }
+    }
+
+    const orders = await this.marketplaceService.syncMercadoLivreOrders(
+      store.mlUserId,
+      accessToken,
+    );
+
+    let imported = 0;
+    let updated = 0;
+
+    for (const orderData of orders) {
+      try {
+        orderData.storeId = store.id;
+        const result = await this.ordersService.upsertFromMarketplace(orderData);
+        if (result.updated) updated++;
+        else imported++;
+      } catch (error) {
+        console.error(`Erro ao salvar pedido ${orderData.externalId}:`, error);
+      }
+    }
+
+    return { imported, updated };
+  }
+
   /**
    * Webhook do Mercado Livre
    * Recebe notificações de novos pedidos, atualizações, etc.
@@ -253,8 +370,20 @@ export class MarketplaceController {
       
       // 🚀 Sincronizar produtos automaticamente após conectar
       console.log('🔄 Iniciando sincronização automática de produtos...');
-      this.queueService.enqueueSyncProducts(store.id).catch(err => {
-        console.error('❌ Erro ao enfileirar sincronização:', err);
+      this.syncMercadoLivreProductsForStore(store).catch(err => {
+        console.error('❌ Erro ao sincronizar produtos automaticamente:', err);
+      });
+
+      // 🚀 Sincronizar pedidos automaticamente após conectar
+      console.log('🔄 Iniciando sincronização automática de pedidos...');
+      this.syncMercadoLivreOrdersForStore(store).catch(err => {
+        console.error('❌ Erro ao sincronizar pedidos automaticamente:', err);
+      });
+
+      // 🚀 Sincronizar suporte automaticamente após conectar
+      console.log('🔄 Iniciando sincronização automática de suporte...');
+      this.supportService.syncFromMarketplace(store.id).catch(err => {
+        console.error('❌ Erro ao sincronizar suporte automaticamente:', err);
       });
       
       // Redirecionar para o frontend com sucesso
@@ -369,63 +498,8 @@ export class MarketplaceController {
 
       // Sincronizar produtos de cada loja
       for (const store of mlStores) {
-        console.log(`🔄 Sincronizando produtos da loja: ${store.name}`);
-        
-        if (!store.mlUserId || !store.mlAccessToken) {
-          console.warn(`⚠️ Loja ${store.name} sem credenciais válidas`);
-          continue;
-        }
-
-        // Renovar token se estiver expirado
-        let accessToken = store.mlAccessToken;
-        if (store.mlTokenExpiresAt && store.mlRefreshToken) {
-          const now = Date.now();
-          // Se expira em menos de 5 minutos, renovar agora
-          if (now > store.mlTokenExpiresAt - 5 * 60 * 1000) {
-            console.log(`🔄 Renovando token ML da loja: ${store.name}`);
-            try {
-              const tokenData = await this.marketplaceService.refreshMercadoLivreToken(store.mlRefreshToken);
-              accessToken = tokenData.accessToken;
-              
-              // Atualizar token no banco de dados
-              await this.storesService.update(store.id, {
-                mlAccessToken: tokenData.accessToken,
-                mlRefreshToken: tokenData.refreshToken,
-                mlTokenExpiresAt: Date.now() + tokenData.expiresIn * 1000,
-              });
-              console.log(`✅ Token renovado com sucesso`);
-            } catch (error: any) {
-              console.error(`❌ Erro ao renovar token ML: ${error?.message || String(error)}`);
-              continue;
-            }
-          }
-        }
-        
-        const products = await this.marketplaceService.syncMercadoLivreProducts(
-          store.mlUserId,
-          accessToken,
-        );
-
-        // Salvar ou atualizar cada produto
-        for (const productData of products) {
-          try {
-            // Adicionar storeId ao produto
-            (productData as any).storeId = store.id;
-            
-            // Verificar se produto já existe pelo SKU
-            const existing = await this.productsService.findBySku(productData.sku);
-            
-            if (existing) {
-              await this.productsService.update(existing.id, productData);
-            } else {
-              // Passar o userId da loja para criar o produto
-              await this.productsService.create(productData, store.userId || '');
-            }
-            totalProducts++;
-          } catch (error) {
-            console.error(`Erro ao salvar produto ${productData.sku}:`, error);
-          }
-        }
+        const synced = await this.syncMercadoLivreProductsForStore(store);
+        totalProducts += synced;
       }
 
       return {
@@ -467,51 +541,9 @@ export class MarketplaceController {
 
       // Sincronizar pedidos de cada loja
       for (const store of mlStores) {
-        console.log(`🔄 Sincronizando pedidos da loja: ${store.name}`);
-
-        if (!store.mlUserId || !store.mlAccessToken) {
-          console.warn(`⚠️ Loja ${store.name} sem credenciais válidas`);
-          continue;
-        }
-
-        // Renovar token se estiver expirado
-        let accessToken = store.mlAccessToken;
-        if (store.mlTokenExpiresAt && store.mlRefreshToken) {
-          const now = Date.now();
-          if (now > store.mlTokenExpiresAt - 5 * 60 * 1000) {
-            console.log(`🔄 Renovando token ML da loja: ${store.name}`);
-            try {
-              const tokenData = await this.marketplaceService.refreshMercadoLivreToken(store.mlRefreshToken);
-              accessToken = tokenData.accessToken;
-
-              await this.storesService.update(store.id, {
-                mlAccessToken: tokenData.accessToken,
-                mlRefreshToken: tokenData.refreshToken,
-                mlTokenExpiresAt: Date.now() + tokenData.expiresIn * 1000,
-              });
-              console.log('✅ Token renovado com sucesso');
-            } catch (error: any) {
-              console.error(`❌ Erro ao renovar token ML: ${error?.message || String(error)}`);
-              continue;
-            }
-          }
-        }
-
-        const orders = await this.marketplaceService.syncMercadoLivreOrders(
-          store.mlUserId,
-          accessToken,
-        );
-
-        for (const orderData of orders) {
-          try {
-            orderData.storeId = store.id;
-            const result = await this.ordersService.upsertFromMarketplace(orderData);
-            if (result.updated) updated++;
-            else imported++;
-          } catch (error) {
-            console.error(`Erro ao salvar pedido ${orderData.externalId}:`, error);
-          }
-        }
+        const { imported: incImported, updated: incUpdated } = await this.syncMercadoLivreOrdersForStore(store);
+        imported += incImported;
+        updated += incUpdated;
       }
 
       return {

@@ -199,8 +199,12 @@ export default function DataTable<T = any>({
         boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
       }}
     >
-      <TableContainer sx={{ maxHeight: 'none' }}>
-        <Table stickyHeader={stickyHeader} size={dense ? 'small' : 'medium'} sx={{ width: '100%' }}>
+      <TableContainer sx={{ maxHeight: 'none', overflowX: 'hidden' }}>
+        <Table
+          stickyHeader={stickyHeader}
+          size={dense ? 'small' : 'medium'}
+          sx={{ width: '100%', tableLayout: 'fixed' }}
+        >
           <TableHead>
             <TableRow 
               sx={{ 
@@ -259,7 +263,7 @@ export default function DataTable<T = any>({
                   align="center"
                   sx={{
                     ...TABLE_CONSTANTS.HEADER,
-                    width: 60,
+                    width: 90,
                     padding: TABLE_CONSTANTS.CELL_PADDING,
                     color: '#6E6E73',
                     bgcolor: 'inherit',

@@ -11,13 +11,17 @@ export class CompaniesController {
   // Criar empresa
   @Post()
   async create(@Body() data: Partial<Company>, @Request() req: any) {
-    return this.companiesService.create(data, req.user.sub);
+    const userId = req.user?.sub || req.user?.id;
+    if (!userId) {
+      throw new Error('User not authenticated');
+    }
+    return this.companiesService.create(data, userId);
   }
 
   // Obter empresa do usuário
   @Get('my-company')
   async getMyCompany(@Request() req: any) {
-    const companies = await this.companiesService.findByUser(req.user.sub);
+    const companies = await this.companiesService.findByUser(req.user.id);
     return companies[0] || null;
   }
 

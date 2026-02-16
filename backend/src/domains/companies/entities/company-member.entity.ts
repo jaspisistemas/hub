@@ -14,7 +14,7 @@ export class CompanyMember {
   userId!: string;
 
   @Column({ default: 'member' })
-  role!: string; // owner, admin, manager, member
+  role!: string; // admin, member
 
   @Column({ type: 'text', nullable: true })
   permissions?: string; // JSON string com permissões customizadas

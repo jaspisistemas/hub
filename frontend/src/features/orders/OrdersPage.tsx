@@ -41,7 +41,7 @@ import {
   LocalShipping as LocalShippingIcon,
   ShoppingBag as ShoppingBagIcon,
   FilterList as FilterListIcon,
-  Refresh as RefreshIcon,
+  Sync as SyncIcon,
   Receipt as ReceiptIcon,
   ContentCopy as ContentCopyIcon,
 } from '@mui/icons-material';
@@ -441,8 +441,9 @@ export default function OrdersPage() {
         subtitle="Acompanhe e gerencie todos os pedidos sincronizados dos marketplaces"
         action={
           <Button
-            variant="contained"
-            startIcon={<RefreshIcon />}
+            variant="outlined"
+            color="success"
+            startIcon={<SyncIcon />}
             onClick={handleSyncOrders}
             disabled={syncing}
           >
@@ -803,6 +804,7 @@ export default function OrdersPage() {
           {
             id: 'id',
             label: 'ID',
+            width: 90,
             format: (value) => (
               <Tooltip title="Clique para copiar o ID completo" arrow>
                 <Box
@@ -828,12 +830,24 @@ export default function OrdersPage() {
           {
             id: 'customerName',
             label: 'Cliente',
+            width: 240,
             format: (value) => (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Avatar sx={{ width: 32, height: 32, fontSize: '0.875rem', bgcolor: '#3b82f6' }}>
                   {value ? String(value).charAt(0).toUpperCase() : '?'}
                 </Avatar>
-                <Typography sx={{ fontWeight: 500, fontSize: '0.875rem', whiteSpace: 'nowrap' }}>
+                <Typography
+                  sx={{
+                    fontWeight: 500,
+                    fontSize: '0.875rem',
+                    whiteSpace: 'normal',
+                    wordBreak: 'break-word',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                  }}
+                >
                   {value || 'Sem nome'}
                 </Typography>
               </Box>
@@ -843,6 +857,7 @@ export default function OrdersPage() {
             id: 'marketplace',
             label: 'Loja',
             align: 'center',
+            width: 70,
             format: (value) => {
               const badge = getMarketplaceBadge(String(value || ''));
               return (
@@ -872,6 +887,7 @@ export default function OrdersPage() {
             id: 'status',
             label: 'Status',
             align: 'center',
+            width: 110,
             format: (value) => (
               <Chip
                 label={value === 'paid' ? 'Pago' : value === 'pending' ? 'Pendente' : value === 'shipped' ? 'Enviado' : value === 'delivered' ? 'Entregue' : 'Cancelado'}
@@ -892,6 +908,7 @@ export default function OrdersPage() {
             label: 'Valor',
             align: 'right',
             numeric: true,
+            width: 110,
             format: (value) => (
               <Typography sx={{ fontWeight: 600, fontSize: '0.9375rem' }}>
                 {new Intl.NumberFormat('pt-BR', {
@@ -905,6 +922,7 @@ export default function OrdersPage() {
             id: 'orderCreatedAt',
             label: 'Data',
             align: 'center',
+            width: 120,
             format: (value, row) => {
               // Usa orderCreatedAt se disponível, senão cai para createdAt
               const dateToUse = value || (row as any)?.createdAt;

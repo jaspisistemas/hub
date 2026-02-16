@@ -50,5 +50,12 @@ export async function apiFetch<T = any>(
     throw new Error(error.message || `Erro ${response.status}`);
   }
 
-  return response.json();
+  const text = await response.text();
+  if (!text) return null;
+  
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
 }

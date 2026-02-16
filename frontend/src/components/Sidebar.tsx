@@ -8,6 +8,7 @@ import {
   Inventory2 as InventoryIcon,
   BarChart as BarChartIcon,
   Hub as HubIcon,
+  SupportAgent as SupportAgentIcon,
   Settings as SettingsIcon,
   HelpOutline as HelpOutlineIcon,
 } from '@mui/icons-material';
@@ -21,6 +22,7 @@ export default function Sidebar() {
     { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
     { label: 'Pedidos', path: '/pedidos', icon: ShoppingCartIcon },
     { label: 'Produtos', path: '/produtos', icon: InventoryIcon },
+    { label: 'Atendimentos', path: '/atendimento', icon: SupportAgentIcon },
     { label: 'Integrações', path: '/integracoes', icon: HubIcon },
   ];
 

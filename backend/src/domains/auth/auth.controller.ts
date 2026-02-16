@@ -71,7 +71,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async getProfile(@Request() req: any) {
     try {
-      const profile = await this.authService.getProfile(req.user.sub);
+      const profile = await this.authService.getProfile(req.user.id);
       return profile;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Erro ao buscar perfil';
@@ -89,7 +89,7 @@ export class AuthController {
     @Body() updateProfileDto: UpdateProfileDto,
   ) {
     try {
-      const profile = await this.authService.updateProfile(req.user.sub, updateProfileDto);
+      const profile = await this.authService.updateProfile(req.user.id, updateProfileDto);
       return profile;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Erro ao atualizar perfil';
@@ -107,7 +107,7 @@ export class AuthController {
     @Body() changePasswordDto: ChangePasswordDto,
   ) {
     try {
-      const result = await this.authService.changePassword(req.user.sub, changePasswordDto);
+      const result = await this.authService.changePassword(req.user.id, changePasswordDto);
       return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Erro ao alterar senha';
@@ -125,7 +125,7 @@ export class AuthController {
     @Body() updatePreferencesDto: UpdatePreferencesDto,
   ) {
     try {
-      const profile = await this.authService.updatePreferences(req.user.sub, updatePreferencesDto);
+      const profile = await this.authService.updatePreferences(req.user.id, updatePreferencesDto);
       return profile;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Erro ao atualizar preferências';

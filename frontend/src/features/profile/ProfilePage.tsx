@@ -966,7 +966,6 @@ export default function ProfilePage() {
               }}
             >
               <MenuItem value="member">Membro</MenuItem>
-              <MenuItem value="manager">Gerenciador</MenuItem>
               <MenuItem value="admin">Administrador</MenuItem>
             </Select>
           </FormControl>

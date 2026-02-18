@@ -19,6 +19,7 @@ import {
   Divider,
   Snackbar,
   IconButton,
+  Collapse,
   MenuItem,
   Select,
   FormControl,
@@ -80,6 +81,12 @@ export default function OrdersPage() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedOrderForMenu, setSelectedOrderForMenu] = useState<Order | null>(null);
+  const [showTechnicalData, setShowTechnicalData] = useState(false);
+
+  const isPlaceholderEmail = (email?: string) => {
+    if (!email) return true;
+    return /@marketplace\.com$/i.test(email) || email === 'teste@example.com';
+  };
   const [syncing, setSyncing] = useState(false);
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loadingInvoice, setLoadingInvoice] = useState(false);
@@ -167,23 +174,40 @@ export default function OrdersPage() {
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'> = {
+      waiting_payment: 'warning',
       pending: 'warning',
+      created: 'warning',
+      paid: 'success',
+      approved: 'success',
+      preparing_shipment: 'info',
       processing: 'info',
       shipped: 'primary',
       delivered: 'success',
+      completed: 'success',
       cancelled: 'error',
+      canceled: 'error',
+      cancelado: 'error',
+      claim_open: 'warning',
     };
     return colors[status?.toLowerCase()] || 'default';
   };
 
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
-      created: 'Criado',
-      pending: 'Pendente',
-      processing: 'Processando',
+      waiting_payment: 'Aguardando pagamento',
+      pending: 'Aguardando pagamento',
+      created: 'Aguardando pagamento',
+      paid: 'Pago',
+      approved: 'Pago',
+      preparing_shipment: 'Preparar envio',
+      processing: 'Preparar envio',
       shipped: 'Enviado',
       delivered: 'Entregue',
+      completed: 'Finalizado',
       cancelled: 'Cancelado',
+      canceled: 'Cancelado',
+      cancelado: 'Cancelado',
+      claim_open: 'Em reclamação',
     };
     return labels[status] || status;
   };
@@ -192,6 +216,7 @@ export default function OrdersPage() {
     try {
       const fullOrder = await ordersService.getOne(order.id);
       setSelectedOrder(fullOrder);
+      setShowTechnicalData(false);
       setDetailsOpen(true);
       
       // Carregar nota fiscal se existir
@@ -272,6 +297,13 @@ export default function OrdersPage() {
   const formatMoney = (value?: number) =>
     value !== undefined ? `R$ ${value.toFixed(2)}` : 'N/A';
 
+  const formatDateTime = (value?: string) => {
+    if (!value) return 'N/A';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 'N/A';
+    return date.toLocaleString('pt-BR');
+  };
+
   const getOrderItems = (raw: any) => {
     if (!raw) return [] as any[];
     const items = raw.items || raw.order_items || raw.orderItems || raw?.order?.items;
@@ -314,9 +346,39 @@ export default function OrdersPage() {
     return hasRawAddress || hasComposed ? composed : null;
   };
 
+  const getAddressSummary = (address: any) => {
+    if (!address) return null;
+    const line = [address.address_line, address.neighborhood].filter(Boolean).join(', ');
+    const cityState = [address.city, address.state].filter(Boolean).join(' - ');
+    return {
+      recipient: address.receiver_name,
+      line,
+      cityState,
+      zipCode: address.zip_code,
+      country: address.country,
+    };
+  };
+
+  const getOrderTotal = (order: Order, raw: any) =>
+    toNumber(order.total) ??
+    toNumber(raw?.total_amount) ??
+    toNumber(raw?.total_paid_amount) ??
+    toNumber(raw?.total_amount_with_shipping) ??
+    toNumber(raw?.order?.total_amount);
+
+  const getPaymentDate = (raw: any) =>
+    raw?.date_approved ||
+    raw?.payment?.date_approved ||
+    raw?.payment?.date_created ||
+    raw?.payments?.[0]?.date_approved ||
+    raw?.payments?.[0]?.date_created ||
+    raw?.order?.payments?.[0]?.date_approved ||
+    raw?.order?.payments?.[0]?.date_created;
+
   const handleCloseDetails = () => {
     setDetailsOpen(false);
     setSelectedOrder(null);
+    setShowTechnicalData(false);
   };
 
   const handleUpdateStatus = async (orderId: string, newStatus: string) => {
@@ -352,17 +414,32 @@ export default function OrdersPage() {
   };
 
   const handleMenuProcessOrder = () => {
-    if (selectedOrderForMenu && selectedOrderForMenu.status === 'pending') {
-      handleUpdateStatus(selectedOrderForMenu.id, 'processing');
+    if (selectedOrderForMenu) {
+      const current = selectedOrderForMenu.status;
+      if (current === 'paid' || current === 'approved') {
+        handleUpdateStatus(selectedOrderForMenu.id, 'preparing_shipment');
+      }
     }
     handleMenuClose();
   };
 
   const handleMenuShipOrder = () => {
-    if (selectedOrderForMenu && selectedOrderForMenu.status === 'processing') {
-      handleUpdateStatus(selectedOrderForMenu.id, 'shipped');
+    if (selectedOrderForMenu) {
+      const current = selectedOrderForMenu.status;
+      if (current === 'preparing_shipment' || current === 'processing') {
+        handleUpdateStatus(selectedOrderForMenu.id, 'shipped');
+      }
     }
     handleMenuClose();
+  };
+
+  const normalizeOrderStatus = (status?: string) => {
+    const value = (status || '').toLowerCase();
+    if (value === 'pending' || value === 'created') return 'waiting_payment';
+    if (value === 'processing') return 'preparing_shipment';
+    if (value === 'approved') return 'paid';
+    if (value === 'canceled' || value === 'cancelado') return 'cancelled';
+    return value;
   };
 
   const selectedOrderRaw = selectedOrder?.rawData
@@ -372,6 +449,12 @@ export default function OrdersPage() {
   const selectedOrderAddressJson = selectedOrder
     ? getAddressJson(selectedOrder, selectedOrderRaw)
     : null;
+  const selectedOrderAddressSummary = getAddressSummary(selectedOrderAddressJson);
+  const selectedOrderTotal = selectedOrder ? getOrderTotal(selectedOrder, selectedOrderRaw) : undefined;
+  const selectedOrderPaymentDate = selectedOrder ? getPaymentDate(selectedOrderRaw) : undefined;
+  const selectedOrderPaymentStatus = selectedOrder
+    ? getStatusLabel(normalizeOrderStatus(selectedOrder.status))
+    : 'N/A';
 
   const filteredOrders = (orders || [])
     .filter((o) => {
@@ -379,7 +462,8 @@ export default function OrdersPage() {
       const matchesSearch = o.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         o.marketplace?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         o.customerName?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || o.status === statusFilter;
+      const normalizedStatus = normalizeOrderStatus(o.status);
+      const matchesStatus = statusFilter === 'all' || normalizedStatus === statusFilter;
       const matchesMarketplace = marketplaceFilter === 'all' || o.marketplace === marketplaceFilter;
       return matchesSearch && matchesStatus && matchesMarketplace;
     });
@@ -413,11 +497,14 @@ export default function OrdersPage() {
   // Estatísticas
   const stats = {
     total: (orders || []).length || 0,
-    pending: (orders || []).filter((o) => o?.status === 'pending').length || 0,
+    pending: (orders || []).filter((o) => {
+      const status = (o?.status || '').toLowerCase();
+      return ['waiting_payment', 'pending', 'created'].includes(status);
+    }).length || 0,
     revenue: (orders || [])
       .filter((o) => {
         const status = (o?.status || '').toLowerCase();
-        return status !== 'cancelled' && status !== 'canceled' && status !== 'cancelado';
+        return !['cancelled', 'canceled', 'cancelado', 'claim_open', 'waiting_payment', 'pending', 'created'].includes(status);
       })
       .reduce((sum, o) => sum + (Number(o?.total) || 0), 0) || 0,
   };
@@ -719,11 +806,14 @@ export default function OrdersPage() {
                 }}
               >
                 <MenuItem value="all">Todos</MenuItem>
-                <MenuItem value="pending">Pendente</MenuItem>
-                <MenuItem value="processing">Processando</MenuItem>
+                <MenuItem value="waiting_payment">Aguardando pagamento</MenuItem>
+                <MenuItem value="paid">Pago</MenuItem>
+                <MenuItem value="preparing_shipment">Preparar envio</MenuItem>
                 <MenuItem value="shipped">Enviado</MenuItem>
                 <MenuItem value="delivered">Entregue</MenuItem>
+                <MenuItem value="completed">Finalizado</MenuItem>
                 <MenuItem value="cancelled">Cancelado</MenuItem>
+                <MenuItem value="claim_open">Em reclamação</MenuItem>
               </Select>
             </FormControl>
           </Grid>
@@ -890,8 +980,8 @@ export default function OrdersPage() {
             width: 110,
             format: (value) => (
               <Chip
-                label={value === 'paid' ? 'Pago' : value === 'pending' ? 'Pendente' : value === 'shipped' ? 'Enviado' : value === 'delivered' ? 'Entregue' : 'Cancelado'}
-                color={value === 'paid' || value === 'delivered' ? 'success' : value === 'pending' ? 'warning' : value === 'shipped' ? 'info' : 'error'}
+                label={getStatusLabel(String(value || ''))}
+                color={getStatusColor(String(value || ''))}
                 size="small"
                 variant="filled"
                 sx={{ 
@@ -992,7 +1082,7 @@ export default function OrdersPage() {
           </ListItemIcon>
           <Typography variant="body2">Ver Detalhes</Typography>
         </MenuItem>
-        {selectedOrderForMenu?.status === 'pending' && (
+        {(selectedOrderForMenu?.status === 'paid' || selectedOrderForMenu?.status === 'approved') && (
           <MenuItem 
             onClick={handleMenuProcessOrder} 
             sx={{ 
@@ -1008,10 +1098,10 @@ export default function OrdersPage() {
             <ListItemIcon sx={{ minWidth: 'auto' }}>
               <CheckCircleIcon fontSize="small" sx={{ color: '#10b981' }} />
             </ListItemIcon>
-            <Typography variant="body2">Processar</Typography>
+            <Typography variant="body2">Preparar envio</Typography>
           </MenuItem>
         )}
-        {selectedOrderForMenu?.status === 'processing' && (
+        {(selectedOrderForMenu?.status === 'preparing_shipment' || selectedOrderForMenu?.status === 'processing') && (
           <MenuItem 
             onClick={handleMenuShipOrder} 
             sx={{ 
@@ -1128,12 +1218,14 @@ export default function OrdersPage() {
                         bgcolor: (theme) => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
                       }}
                     >
-                      <MenuItem value="created">Criado</MenuItem>
-                      <MenuItem value="pending">Pendente</MenuItem>
-                      <MenuItem value="processing">Processando</MenuItem>
+                      <MenuItem value="waiting_payment">Aguardando pagamento</MenuItem>
+                      <MenuItem value="paid">Pago</MenuItem>
+                      <MenuItem value="preparing_shipment">Preparar envio</MenuItem>
                       <MenuItem value="shipped">Enviado</MenuItem>
                       <MenuItem value="delivered">Entregue</MenuItem>
+                      <MenuItem value="completed">Finalizado</MenuItem>
                       <MenuItem value="cancelled">Cancelado</MenuItem>
+                      <MenuItem value="claim_open">Em reclamação</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
@@ -1178,7 +1270,7 @@ export default function OrdersPage() {
                         </Typography>
                       </Grid>
                     )}
-                    {selectedOrder.customerEmail && (
+                    {selectedOrder.customerEmail && !isPlaceholderEmail(selectedOrder.customerEmail) && (
                       <Grid item xs={12} sm={6}>
                         <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
                           Email
@@ -1198,36 +1290,110 @@ export default function OrdersPage() {
                         </Typography>
                       </Grid>
                     )}
-                    {(selectedOrder.customerCity || selectedOrder.customerState) && (
+                  </Grid>
+                </Box>
+              )}
+
+              {/* Endereço de Entrega */}
+              {selectedOrderAddressSummary && (
+                <Box sx={{ mt: 3 }}>
+                  <Divider sx={{ mb: 2 }} />
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                    <LocalShippingIcon sx={{ color: '#3b82f6' }} />
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      Endereço de Entrega
+                    </Typography>
+                  </Box>
+                  <Grid container spacing={2}>
+                    {selectedOrderAddressSummary.recipient && (
                       <Grid item xs={12} sm={6}>
                         <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
-                          Cidade/Estado
+                          Destinatário
                         </Typography>
                         <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                          {selectedOrder.customerCity}, {selectedOrder.customerState}
+                          {selectedOrderAddressSummary.recipient}
                         </Typography>
                       </Grid>
                     )}
-                    {selectedOrder.customerAddress && (
-                      <Grid item xs={12}>
+                    {selectedOrderAddressSummary.line && (
+                      <Grid item xs={12} sm={6}>
                         <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
                           Endereço
                         </Typography>
                         <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                          {selectedOrder.customerAddress}
+                          {selectedOrderAddressSummary.line}
                         </Typography>
                       </Grid>
                     )}
-                    {selectedOrder.customerZipCode && (
+                    {selectedOrderAddressSummary.cityState && (
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
+                          Cidade
+                        </Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          {selectedOrderAddressSummary.cityState}
+                        </Typography>
+                      </Grid>
+                    )}
+                    {selectedOrderAddressSummary.zipCode && (
                       <Grid item xs={12} sm={6}>
                         <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
                           CEP
                         </Typography>
                         <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                          {selectedOrder.customerZipCode}
+                          {selectedOrderAddressSummary.zipCode}
                         </Typography>
                       </Grid>
                     )}
+                    {selectedOrderAddressSummary.country && (
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
+                          País
+                        </Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          {selectedOrderAddressSummary.country}
+                        </Typography>
+                      </Grid>
+                    )}
+                  </Grid>
+                </Box>
+              )}
+
+              {/* Pagamento */}
+              {(selectedOrderTotal !== undefined || selectedOrderPaymentDate || selectedOrderPaymentStatus) && (
+                <Box sx={{ mt: 3 }}>
+                  <Divider sx={{ mb: 2 }} />
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                    <CheckCircleIcon sx={{ color: '#16a34a' }} />
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      Pagamento
+                    </Typography>
+                  </Box>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
+                        Valor total
+                      </Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                        {formatMoney(selectedOrderTotal)}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
+                        Data do pagamento
+                      </Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                        {formatDateTime(selectedOrderPaymentDate)}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
+                        Status
+                      </Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                        {selectedOrderPaymentStatus}
+                      </Typography>
+                    </Grid>
                   </Grid>
                 </Box>
               )}
@@ -1336,7 +1502,6 @@ export default function OrdersPage() {
                         <Typography variant="caption" color="textSecondary" display="block">
                           Série
                         </Typography>
-
                         <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
                           {invoice.series || 'N/A'}
                         </Typography>
@@ -1388,7 +1553,7 @@ export default function OrdersPage() {
                       {invoice.sentToMarketplace && (
                         <Grid item xs={12}>
                           <Alert severity="success" sx={{ mt: 1 }}>
-                            Nota fiscal enviada ao marketplace em {' '}
+                            Nota fiscal enviada ao marketplace em{' '}
                             {invoice.sentAt 
                               ? new Date(invoice.sentAt).toLocaleString('pt-BR')
                               : 'data desconhecida'}
@@ -1407,67 +1572,78 @@ export default function OrdersPage() {
                 )}
               </Box>
 
-              {/* Endereço (JSON) */}
-              {selectedOrderAddressJson && (
-                <Box sx={{ mt: 3 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
-                    {!invoice && (
-                      <Button
-                        variant="contained"
-                        size="small"
-                        startIcon={issuingInvoice ? <CircularProgress size={16} color="inherit" /> : <ReceiptIcon />}
-                        onClick={handleAttachInvoice}
-                        disabled={issuingInvoice || loadingInvoice}
-                      >
-                        {issuingInvoice ? 'Anexando...' : 'Anexar Nota Fiscal'}
-                      </Button>
-                    )}
-                  </Box>
-                  <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
-                    Endereço (JSON)
-                  </Typography>
-                  <Divider sx={{ mb: 2 }} />
-                  <Paper
-                    sx={{
-                      p: 2,
-                      bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1e1e1e' : '#f5f5f5',
-                      color: (theme) => theme.palette.mode === 'dark' ? '#d4d4d4' : '#333333',
-                      maxHeight: 200,
-                      overflow: 'auto',
-                      fontFamily: 'monospace',
-                      fontSize: '0.875rem',
-                    }}
+              <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                {!invoice && (
+                  <Button
+                    variant="contained"
+                    size="small"
+                    startIcon={issuingInvoice ? <CircularProgress size={16} color="inherit" /> : <ReceiptIcon />}
+                    onClick={handleAttachInvoice}
+                    disabled={issuingInvoice || loadingInvoice}
                   >
-                    <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: 'inherit' }}>
-                      {JSON.stringify(selectedOrderAddressJson, null, 2)}
-                    </pre>
-                  </Paper>
-                </Box>
-              )}
+                    {issuingInvoice ? 'Anexando...' : 'Anexar Nota Fiscal'}
+                  </Button>
+                )}
+                {(selectedOrderAddressJson || selectedOrder.rawData) && (
+                  <Button
+                    variant="text"
+                    size="small"
+                    startIcon={<VisibilityIcon />}
+                    onClick={() => setShowTechnicalData((prev) => !prev)}
+                  >
+                    {showTechnicalData ? 'Ocultar dados técnicos' : 'Ver dados técnicos'}
+                  </Button>
+                )}
+              </Box>
 
-              {selectedOrder.rawData && (
-                <>
-                  <Divider sx={{ my: 3 }} />
-                  <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
-                    Dados Brutos (JSON)
-                  </Typography>
-                  <Paper 
-                    sx={{ 
-                      p: 2, 
-                      bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1e1e1e' : '#f5f5f5',
-                      color: (theme) => theme.palette.mode === 'dark' ? '#d4d4d4' : '#333333',
-                      maxHeight: 300, 
-                      overflow: 'auto',
-                      fontFamily: 'monospace',
-                      fontSize: '0.875rem'
-                    }}
-                  >
-                    <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: 'inherit' }}>
-                      {JSON.stringify(selectedOrderRaw, null, 2)}
-                    </pre>
-                  </Paper>
-                </>
-              )}
+              <Collapse in={showTechnicalData} timeout="auto" unmountOnExit>
+                {selectedOrderAddressJson && (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+                      Endereço (JSON)
+                    </Typography>
+                    <Divider sx={{ mb: 2 }} />
+                    <Paper
+                      sx={{
+                        p: 2,
+                        bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1e1e1e' : '#f5f5f5',
+                        color: (theme) => theme.palette.mode === 'dark' ? '#d4d4d4' : '#333333',
+                        maxHeight: 200,
+                        overflow: 'auto',
+                        fontFamily: 'monospace',
+                        fontSize: '0.875rem',
+                      }}
+                    >
+                      <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: 'inherit' }}>
+                        {JSON.stringify(selectedOrderAddressJson, null, 2)}
+                      </pre>
+                    </Paper>
+                  </Box>
+                )}
+
+                {selectedOrder.rawData && (
+                  <Box sx={{ mt: 3 }}>
+                    <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+                      Dados Brutos (JSON)
+                    </Typography>
+                    <Paper 
+                      sx={{ 
+                        p: 2, 
+                        bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1e1e1e' : '#f5f5f5',
+                        color: (theme) => theme.palette.mode === 'dark' ? '#d4d4d4' : '#333333',
+                        maxHeight: 300, 
+                        overflow: 'auto',
+                        fontFamily: 'monospace',
+                        fontSize: '0.875rem'
+                      }}
+                    >
+                      <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: 'inherit' }}>
+                        {JSON.stringify(selectedOrderRaw, null, 2)}
+                      </pre>
+                    </Paper>
+                  </Box>
+                )}
+              </Collapse>
             </Box>
           )}
         </DialogContent>

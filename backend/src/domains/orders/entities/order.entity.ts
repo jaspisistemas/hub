@@ -33,8 +33,8 @@ export class Order {
   @Column({ length: 255 })
   customerName!: string;
 
-  @Column({ length: 255 })
-  customerEmail!: string;
+  @Column({ length: 255, nullable: true })
+  customerEmail?: string;
 
   @Column({ nullable: true, length: 20 })
   customerPhone?: string;

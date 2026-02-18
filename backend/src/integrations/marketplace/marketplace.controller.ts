@@ -348,16 +348,17 @@ export class MarketplaceController {
       // Salvar ou atualizar loja com os tokens
       console.log('🔄 Salvando loja no banco...');
       
-      // O state contém o userId que foi passado na URL de autenticação
-      const userId = state;
-      
-      if (!userId) {
-        throw new Error('userId não encontrado no state');
+      // O state contém userId e companyId
+      const { userId, companyId } = this.parseMercadoLivreState(state);
+
+      if (!userId || !companyId) {
+        throw new Error('userId ou companyId não encontrado no state');
       }
       
       const store = await this.storesService.findOrCreateMercadoLivreStore(
         tokenData.userId,
         userId,
+        companyId,
         {
           accessToken: tokenData.accessToken,
           refreshToken: tokenData.refreshToken,
@@ -440,15 +441,16 @@ export class MarketplaceController {
    */
   @Get('mercadolivre/auth')
   async mercadoLivreAuth(
-    @Query('userId') userId: string, 
+    @Query('userId') userId: string,
+    @Query('companyId') companyId: string,
     @Query('t') timestamp: string,
     @Res() res: Response
   ) {
-    console.log('🔄 Auth ML chamado, userId recebido:', userId, 'timestamp:', timestamp);
+    console.log('🔄 Auth ML chamado, userId recebido:', userId, 'companyId:', companyId, 'timestamp:', timestamp);
     
-    if (!userId) {
-      console.error('❌ userId não fornecido');
-      return res.status(400).json({ error: 'userId é obrigatório' });
+    if (!userId || !companyId) {
+      console.error('❌ userId ou companyId não fornecido');
+      return res.status(400).json({ error: 'userId e companyId são obrigatórios' });
     }
     
     // Credenciais do Mercado Livre (em produção, usar variáveis de ambiente)
@@ -457,14 +459,15 @@ export class MarketplaceController {
       process.env.ML_REDIRECT_URI || 'http://localhost:3000/marketplace/mercadolivre/callback'
     );
     
-    console.log('✅ Redirecionando para ML com state:', userId);
+    const statePayload = Buffer.from(JSON.stringify({ userId, companyId })).toString('base64url');
+    console.log('✅ Redirecionando para ML com state (base64):', statePayload);
     
     // URL de autorização do Mercado Livre com parâmetros para força nova autenticação
     // - display=popup: Força abertura em contexto de popup (novo contexto de sessão)
     // - nonce: Token único para cada request
     // - timestamp na URL: Evita cache do navegador
     const nonce = timestamp || Date.now();
-    const authUrl = `https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${APP_ID}&redirect_uri=${REDIRECT_URI}&state=${userId}&display=popup&nonce=${nonce}&t=${timestamp}`;
+    const authUrl = `https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${APP_ID}&redirect_uri=${REDIRECT_URI}&state=${encodeURIComponent(statePayload)}&display=popup&nonce=${nonce}&t=${timestamp}`;
     
     console.log('🔗 Enviando para:', authUrl);
     
@@ -474,6 +477,22 @@ export class MarketplaceController {
     res.setHeader('Expires', '0');
     
     return res.redirect(authUrl);
+  }
+
+  private parseMercadoLivreState(state?: string): { userId?: string; companyId?: string } {
+    if (!state) return {};
+
+    try {
+      const decoded = Buffer.from(state, 'base64url').toString('utf8');
+      const parsed = JSON.parse(decoded);
+      return {
+        userId: parsed?.userId,
+        companyId: parsed?.companyId,
+      };
+    } catch {
+      // Fallback para estados antigos (apenas userId)
+      return { userId: state };
+    }
   }
 
   /**

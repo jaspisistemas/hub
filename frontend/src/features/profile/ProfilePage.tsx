@@ -327,12 +327,21 @@ export default function ProfilePage() {
         });
       } else {
         // Criar nova empresa
-        await companyService.createCompany({
+        const newCompany = await companyService.createCompany({
           name: companyFormData.companyName,
           cnpj: companyFormData.cnpj,
           address: companyFormData.address,
           logoUrl: companyFormData.logoUrl,
         });
+        
+        if (newCompany?.id) {
+          const userStr = localStorage.getItem('user');
+          if (userStr) {
+            const user = JSON.parse(userStr);
+            user.companyId = newCompany.id;
+            localStorage.setItem('user', JSON.stringify(user));
+          }
+        }
       }
       
       setSuccess('Dados da empresa atualizados com sucesso!');
@@ -1130,118 +1139,93 @@ export default function ProfilePage() {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle sx={{
-          bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1e293b' : '#ffffff',
-          color: (theme) => theme.palette.mode === 'dark' ? '#e2e8f0' : '#1e293b',
-          fontWeight: 600,
-          borderBottom: (theme) => `1px solid ${theme.palette.mode === 'dark' ? '#334155' : '#e2e8f0'}`,
-        }}>
-          Dados da Empresa
+        <DialogTitle>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Dados da Empresa
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+              Atualize as informacoes principais para manter seu cadastro correto.
+            </Typography>
+          </Box>
         </DialogTitle>
-        <DialogContent sx={{
-          bgcolor: (theme) => theme.palette.mode === 'dark' ? '#0f172a' : '#f8fafc',
-          mt: 2,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 2,
-        }}>
-          <TextField
-            fullWidth
-            label="Nome da Empresa"
-            value={companyFormData.companyName}
-            onChange={handleCompanyInputChange('companyName')}
-            required
-            variant="outlined"
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                color: (theme) => theme.palette.mode === 'dark' ? '#e2e8f0' : '#1e293b',
-                backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#1e293b' : '#ffffff',
-                '& fieldset': {
-                  borderColor: (theme) => theme.palette.mode === 'dark' ? '#334155' : '#cbd5e1',
-                },
-              },
-            }}
-          />
-          <TextField
-            fullWidth
-            label="CNPJ"
-            value={companyFormData.cnpj}
-            onChange={handleCompanyInputChange('cnpj')}
-            placeholder="00.000.000/0000-00"
-            variant="outlined"
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                color: (theme) => theme.palette.mode === 'dark' ? '#e2e8f0' : '#1e293b',
-                backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#1e293b' : '#ffffff',
-                '& fieldset': {
-                  borderColor: (theme) => theme.palette.mode === 'dark' ? '#334155' : '#cbd5e1',
-                },
-              },
-            }}
-          />
-          <TextField
-            fullWidth
-            label="Endereço Comercial"
-            value={companyFormData.address}
-            onChange={handleCompanyInputChange('address')}
-            multiline
-            rows={3}
-            variant="outlined"
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                color: (theme) => theme.palette.mode === 'dark' ? '#e2e8f0' : '#1e293b',
-                backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#1e293b' : '#ffffff',
-                '& fieldset': {
-                  borderColor: (theme) => theme.palette.mode === 'dark' ? '#334155' : '#cbd5e1',
-                },
-              },
-            }}
-          />
-          <TextField
-            fullWidth
-            label="URL da Logo"
-            value={companyFormData.logoUrl}
-            onChange={handleCompanyInputChange('logoUrl')}
-            error={!!companyFormData.logoUrl && !isValidUrl(companyFormData.logoUrl)}
-            helperText={companyFormData.logoUrl && !isValidUrl(companyFormData.logoUrl) ? 'URL inválida. Use: https://exemplo.com/logo.png' : ''}
-            placeholder="https://exemplo.com/logo.png"
-            variant="outlined"
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                color: (theme) => theme.palette.mode === 'dark' ? '#e2e8f0' : '#1e293b',
-                backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#1e293b' : '#ffffff',
-                '& fieldset': {
-                  borderColor: (theme) => theme.palette.mode === 'dark' ? '#334155' : '#cbd5e1',
-                },
-              },
-            }}
-          />
-          {companyFormData.logoUrl && isValidUrl(companyFormData.logoUrl) && (
-            <Box
-              component="img"
-              src={companyFormData.logoUrl}
-              alt="Preview Logo"
-              sx={{
-                maxWidth: '100%',
-                maxHeight: 150,
-                borderRadius: 1,
-                border: (theme) => theme.palette.mode === 'dark' ? '1px solid #334155' : '1px solid #cbd5e1',
-              }}
-            />
-          )}
+        <DialogContent
+          sx={{
+            pt: 3,
+            '& .MuiInputLabel-root': {
+              lineHeight: 1.1,
+            },
+            '& .MuiInputLabel-shrink': {
+              transform: 'translate(14px, -6px) scale(0.75)',
+            },
+          }}
+        >
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={8}>
+              <TextField
+                fullWidth
+                label="Nome da Empresa"
+                value={companyFormData.companyName}
+                onChange={handleCompanyInputChange('companyName')}
+                required
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField
+                fullWidth
+                label="CNPJ"
+                value={companyFormData.cnpj}
+                onChange={handleCompanyInputChange('cnpj')}
+                placeholder="00.000.000/0000-00"
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Endereco Comercial"
+                value={companyFormData.address}
+                onChange={handleCompanyInputChange('address')}
+                multiline
+                rows={3}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="URL da Logo"
+                value={companyFormData.logoUrl}
+                onChange={handleCompanyInputChange('logoUrl')}
+                error={!!companyFormData.logoUrl && !isValidUrl(companyFormData.logoUrl)}
+                helperText={companyFormData.logoUrl && !isValidUrl(companyFormData.logoUrl) ? 'URL invalida. Use: https://exemplo.com/logo.png' : ''}
+                placeholder="https://exemplo.com/logo.png"
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            {companyFormData.logoUrl && isValidUrl(companyFormData.logoUrl) && (
+              <Grid item xs={12}>
+                <Box
+                  component="img"
+                  src={companyFormData.logoUrl}
+                  alt="Preview Logo"
+                  sx={{
+                    maxWidth: '100%',
+                    maxHeight: 160,
+                    borderRadius: 1,
+                    border: (theme) => `1px solid ${theme.palette.divider}`,
+                  }}
+                />
+              </Grid>
+            )}
+          </Grid>
         </DialogContent>
-        <DialogActions sx={{ p: 2, gap: 1, bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1e293b' : '#f8fafc' }}>
+        <DialogActions sx={{ p: 2 }}>
           <Button
             onClick={() => setCompanyModalOpen(false)}
             disabled={companySaving}
-            variant="outlined"
-            sx={{
-              color: (theme) => theme.palette.mode === 'dark' ? '#94a3b8' : '#64748b',
-              borderColor: (theme) => theme.palette.mode === 'dark' ? '#334155' : '#cbd5e1',
-              '&:hover': {
-                bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.08)' : 'rgba(100,116,139,0.05)',
-              },
-            }}
+            variant="text"
           >
             Cancelar
           </Button>
@@ -1249,10 +1233,6 @@ export default function ProfilePage() {
             onClick={handleSaveCompany}
             variant="contained"
             disabled={companySaving || !companyFormData.companyName || (companyFormData.logoUrl ? !isValidUrl(companyFormData.logoUrl) : false)}
-            sx={{
-              bgcolor: '#10b981',
-              '&:hover': { bgcolor: '#059669' },
-            }}
           >
             {companySaving ? 'Salvando...' : 'Salvar'}
           </Button>

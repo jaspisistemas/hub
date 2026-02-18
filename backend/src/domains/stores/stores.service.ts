@@ -97,7 +97,8 @@ export class StoresService {
    */
   async findOrCreateMercadoLivreStore(
     mlUserId: string, 
-    userId: string, 
+    userId: string,
+    companyId: string,
     tokenData: {
       accessToken: string;
       refreshToken: string;
@@ -107,19 +108,14 @@ export class StoresService {
   ) {
     // Verificar se esta conta ML já está conectada
     const existingStore = await this.storesRepository.findOne({
-      where: { mlUserId },
+      where: { mlUserId, companyId },
     });
-
-    // Se outra conta hub tem esta loja → rejeita
-    if (existingStore && existingStore.userId !== userId) {
-      throw new Error(`Esta conta do Mercado Livre (${storeName || mlUserId}) já está conectada em outra conta do sistema. Desconecte em outra conta primeiro.`);
-    }
 
     const expiresAt = Date.now() + tokenData.expiresIn * 1000;
     const name = storeName ? `${storeName} - ${mlUserId}` : `Loja Mercado Livre - ${mlUserId}`;
 
     // ✅ SE MESMA CONTA ML: ATUALIZA (não cria novo)
-    if (existingStore && existingStore.userId === userId) {
+    if (existingStore) {
       console.log('✅ Atualizando tokens da loja já conectada:', existingStore.name);
       
       await this.storesRepository.update(
@@ -131,6 +127,8 @@ export class StoresService {
           mlNickname: storeName || existingStore.mlNickname,
           status: 'active',
           name,
+          userId,
+          companyId,
         },
       );
       return this.findOne(existingStore.id);
@@ -143,6 +141,7 @@ export class StoresService {
       marketplace: 'MercadoLivre',
       status: 'active',
       userId,
+      companyId,
       mlUserId,
       mlNickname: storeName,
       mlAccessToken: tokenData.accessToken,
@@ -165,11 +164,15 @@ export class StoresService {
   /**
    * Desconecta uma loja do Mercado Livre (marca como revogada)
    */
-  async disconnectMercadoLiveStore(storeId: string, userId: string) {
+  async disconnectMercadoLiveStore(
+    storeId: string,
+    access: { userId?: string; companyId?: string },
+  ) {
     const store = await this.findOne(storeId);
     
-    // Validar que o usuário é dono da loja
-    if (store.userId !== userId) {
+    const hasCompanyAccess = access.companyId && store.companyId === access.companyId;
+    const hasUserAccess = access.userId && store.userId === access.userId;
+    if (!hasCompanyAccess && !hasUserAccess) {
       throw new Error('Você não tem permissão para desconectar esta loja');
     }
 
@@ -194,10 +197,10 @@ export class StoresService {
   /**
    * Busca todas as lojas ML conectadas de um usuário
    */
-  async findAllMercadoLivreStores(userId: string) {
+  async findAllMercadoLivreStores(companyId: string) {
     return this.storesRepository.find({
       where: { 
-        userId,
+        companyId,
         marketplace: 'MercadoLivre',
       },
       order: { createdAt: 'DESC' },

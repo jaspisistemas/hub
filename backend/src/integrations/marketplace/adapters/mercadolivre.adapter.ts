@@ -33,19 +33,24 @@ export class MercadoLivreAdapter {
       dateCreated,
     });
     
+    const orderStatus = payload.order_status || payload.status;
     const result = {
       externalId: orderId.toString(),
       marketplace: 'mercadolivre',
       total: Number(totalAmount),
       orderCreatedAt: dateCreated ? new Date(dateCreated) : undefined,
       customerName: payload.buyer?.nickname || payload.buyer?.first_name || 'Cliente ML',
-      customerEmail: payload.buyer?.email || `ml-${orderId}@marketplace.com`,
+      customerEmail: payload.buyer?.email,
       customerPhone: payload.buyer?.phone?.number,
       customerCity: payload.shipping?.receiver_address?.city?.name,
       customerState: extractStateCode(payload.shipping?.receiver_address?.state?.id),
       customerAddress: payload.shipping?.receiver_address?.address_line,
       customerZipCode: payload.shipping?.receiver_address?.zip_code,
-      raw: payload,
+      raw: {
+        ...payload,
+        status: orderStatus,
+        order_status: orderStatus,
+      },
     };
     
     console.log('📦 DTO criado:', result);
@@ -59,6 +64,7 @@ export class MercadoLivreAdapter {
    */
   mapOrderFromApi(orderData: any): CreateOrderDto {
     const dateCreated = orderData.date_created || orderData.date_closed;
+    const orderStatus = orderData.order_status || orderData.status;
     
     return {
       externalId: orderData.id?.toString() || 'ml-unknown',
@@ -66,14 +72,15 @@ export class MercadoLivreAdapter {
       total: Number(orderData.total_amount) || 0,
       orderCreatedAt: dateCreated ? new Date(dateCreated) : undefined,
       customerName: orderData.buyer?.nickname || orderData.buyer?.first_name || 'Cliente ML',
-      customerEmail: orderData.buyer?.email || `ml-${orderData.id}@marketplace.com`,
+      customerEmail: orderData.buyer?.email,
       customerPhone: orderData.buyer?.phone?.number,
       customerCity: orderData.shipping?.receiver_address?.city?.name,
       customerState: extractStateCode(orderData.shipping?.receiver_address?.state?.id),
       customerAddress: orderData.shipping?.receiver_address?.address_line,
       customerZipCode: orderData.shipping?.receiver_address?.zip_code,
       raw: {
-        status: orderData.status,
+        status: orderStatus,
+        order_status: orderStatus,
         date_created: orderData.date_created,
         buyer: orderData.buyer,
         items: orderData.order_items,

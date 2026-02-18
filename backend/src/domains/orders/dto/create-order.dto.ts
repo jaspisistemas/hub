@@ -23,9 +23,10 @@ export class CreateOrderDto {
   @MaxLength(255)
   customerName!: string;
 
+  @IsOptional()
   @IsEmail({}, { message: 'Email do cliente inválido' })
   @MaxLength(255)
-  customerEmail!: string;
+  customerEmail?: string;
 
   @IsOptional()
   @IsString()

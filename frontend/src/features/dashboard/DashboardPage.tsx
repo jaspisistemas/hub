@@ -13,6 +13,12 @@ import {
   Chip,
   Avatar,
   Tooltip,
+  TableContainer,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
   Select,
   MenuItem,
   FormControl,
@@ -71,6 +77,46 @@ const getMarketplaceBadge = (marketplace?: string) => {
 const formatOrderId = (id: string) => {
   if (!id) return '-';
   return id.length > 12 ? `${id.slice(0, 6)}...${id.slice(-4)}` : id;
+};
+
+const getOrderStatusLabel = (status: string) => {
+  const labels: Record<string, string> = {
+    waiting_payment: 'Aguardando pagamento',
+    pending: 'Aguardando pagamento',
+    created: 'Aguardando pagamento',
+    paid: 'Pago',
+    approved: 'Pago',
+    preparing_shipment: 'Preparar envio',
+    processing: 'Preparar envio',
+    shipped: 'Enviado',
+    delivered: 'Entregue',
+    completed: 'Finalizado',
+    cancelled: 'Cancelado',
+    canceled: 'Cancelado',
+    cancelado: 'Cancelado',
+    claim_open: 'Em reclamação',
+  };
+  return labels[status] || status;
+};
+
+const getOrderStatusColor = (status: string): 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
+  const colors: Record<string, 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'> = {
+    waiting_payment: 'warning',
+    pending: 'warning',
+    created: 'warning',
+    paid: 'success',
+    approved: 'success',
+    preparing_shipment: 'info',
+    processing: 'info',
+    shipped: 'primary',
+    delivered: 'success',
+    completed: 'success',
+    cancelled: 'error',
+    canceled: 'error',
+    cancelado: 'error',
+    claim_open: 'warning',
+  };
+  return colors[status] || 'default';
 };
 
 const copyToClipboard = async (text: string) => {
@@ -402,9 +448,15 @@ export default function DashboardPage() {
                         border: `1px solid ${theme.palette.divider}`,
                         borderRadius: 4,
                       }}
-                      formatter={(value: any, name: string) => {
-                        if (name === 'Receita') return [`R$ ${value.toFixed(2)}`, 'Receita'];
-                        return [value, 'Pedidos'];
+                      formatter={(value: number | string | undefined, name?: string) => {
+                        const label = name === 'Receita' ? 'Receita' : 'Pedidos';
+                        if (name === 'Receita') {
+                          const numericValue = typeof value === 'number' ? value : Number(value);
+                          if (!Number.isNaN(numericValue)) {
+                            return [`R$ ${numericValue.toFixed(2)}`, label];
+                          }
+                        }
+                        return [value ?? 0, label];
                       }}
                       labelFormatter={(date) => new Date(date).toLocaleDateString('pt-BR')}
                     />
@@ -466,7 +518,7 @@ export default function DashboardPage() {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={(entry) => `${entry.count}`}
+                      label={(entry) => String(entry?.value ?? '')}
                       outerRadius={90}
                       fill="#8884d8"
                       dataKey="count"
@@ -486,8 +538,9 @@ export default function DashboardPage() {
                     <Legend 
                       wrapperStyle={{ fontSize: '0.75rem' }}
                       formatter={(value, entry) => {
-                        const status = entry?.payload?.status;
-                        return status ? status.charAt(0).toUpperCase() + status.slice(1) : value;
+                        const payload = entry?.payload as { status?: string } | undefined;
+                        const status = payload?.status;
+                        return status ? status.charAt(0).toUpperCase() + status.slice(1) : String(value);
                       }}
                     />
                   </PieChart>
@@ -608,8 +661,8 @@ export default function DashboardPage() {
                       width: 110,
                       format: (value) => (
                         <Chip
-                          label={value === 'paid' ? 'Pago' : value === 'pending' ? 'Pendente' : value === 'shipped' ? 'Enviado' : value === 'delivered' ? 'Entregue' : 'Cancelado'}
-                          color={value === 'paid' || value === 'delivered' ? 'success' : value === 'pending' ? 'warning' : value === 'shipped' ? 'info' : 'error'}
+                          label={getOrderStatusLabel(String(value || ''))}
+                          color={getOrderStatusColor(String(value || ''))}
                           size="small"
                           variant="filled"
                           sx={{ 
@@ -911,7 +964,7 @@ export default function DashboardPage() {
                         stroke={theme.palette.text.secondary}
                         width={120}
                       />
-                      <Tooltip 
+                      <RechartsTooltip 
                         contentStyle={{
                           backgroundColor: theme.palette.background.paper,
                           border: `1px solid ${theme.palette.divider}`,
@@ -942,7 +995,7 @@ export default function DashboardPage() {
                         stroke={theme.palette.text.secondary}
                         width={120}
                       />
-                      <Tooltip 
+                      <RechartsTooltip 
                         contentStyle={{
                           backgroundColor: theme.palette.background.paper,
                           border: `1px solid ${theme.palette.divider}`,

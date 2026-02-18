@@ -125,12 +125,22 @@ export default function CompanyOnboardingPage() {
 
     try {
       setLoading(true);
-      await companyService.createCompany({
+      const newCompany = await companyService.createCompany({
         name: formData.name,
         cnpj: formData.cnpj,
         address: formData.address,
         logoUrl: formData.logoUrl,
       });
+
+      // Atualizar localStorage com o novo companyId
+      if (newCompany?.id) {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          user.companyId = newCompany.id;
+          localStorage.setItem('user', JSON.stringify(user));
+        }
+      }
 
       // Redirecionar para dashboard após criar empresa
       navigate('/dashboard');

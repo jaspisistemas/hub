@@ -158,7 +158,7 @@ export function ThemeContextProvider({ children }: { children: React.ReactNode }
               root: {
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 12,
-                  backgroundColor: isDarkMode ? '#0f1520' : '#F5F5F7',
+                  backgroundColor: isDarkMode ? '#162033' : '#F5F5F7',
                   '& fieldset': {
                     borderColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'transparent',
                   },

@@ -7,6 +7,7 @@ import {
   NotificationsNone as NotificationsNoneIcon,
   Logout as LogoutIcon,
   Person as PersonIcon,
+  BugReportOutlined as BugReportOutlinedIcon,
 } from '@mui/icons-material';
 
 export default function Topbar() {
@@ -32,6 +33,13 @@ export default function Topbar() {
     navigate('/login');
   };
 
+  const handleSimulateSessionExpired = () => {
+    handleClose();
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    navigate('/login?reason=expired');
+  };
+
   const handleNotificationsOpen = (event: React.MouseEvent<HTMLElement>) => {
     setNotificationsAnchor(event.currentTarget);
   };
@@ -51,6 +59,7 @@ export default function Topbar() {
           ? '1px solid rgba(255,255,255,0.08)'
           : '1px solid rgba(0,0,0,0.06)',
         boxShadow: 'none',
+        borderRadius: 0,
         '& .MuiIconButton-root': {
           width: 40,
           height: 40,
@@ -276,6 +285,29 @@ export default function Topbar() {
             </MenuItem>
             
             <Divider sx={{ my: 0.5 }} />
+
+            {import.meta.env.MODE === 'development' && (
+              <MenuItem
+                onClick={handleSimulateSessionExpired}
+                sx={{
+                  py: 1.5,
+                  px: 2,
+                  gap: 1.5,
+                  '&:hover': {
+                    bgcolor: (theme) => theme.palette.mode === 'dark'
+                      ? 'rgba(255, 255, 255, 0.08)'
+                      : 'rgba(0, 0, 0, 0.04)',
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 'auto' }}>
+                  <BugReportOutlinedIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
+                </ListItemIcon>
+                <Typography variant="body2">Simular sessao expirada</Typography>
+              </MenuItem>
+            )}
+
+            {import.meta.env.MODE === 'development' && <Divider sx={{ my: 0.5 }} />}
             
             <MenuItem 
               onClick={handleLogout}

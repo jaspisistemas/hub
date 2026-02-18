@@ -50,21 +50,31 @@ export const storesService = {
     });
   },
 
-  connectMercadoLivre: () => {
+  connectMercadoLivre: async () => {
     // Pegar o userId do usuário logado
     const userStr = localStorage.getItem('user');
-    console.log('User no localStorage:', userStr);
     
     if (!userStr) {
       throw new Error('Usuário não autenticado');
     }
     
-    const user = JSON.parse(userStr);
-    console.log('User parseado:', user);
-    console.log('User ID:', user.id);
+    let user = JSON.parse(userStr);
     
-    if (!user.id) {
-      throw new Error('ID do usuário não encontrado');
+    // Se companyId está null, buscar dados atualizados do servidor
+    if (!user.companyId) {
+      try {
+        const profileData = await apiFetch('/auth/profile', { method: 'GET' });
+        if (profileData && profileData.companyId) {
+          user.companyId = profileData.companyId;
+          localStorage.setItem('user', JSON.stringify(user));
+        }
+      } catch (err) {
+        console.error('Erro ao buscar dados atualizados do usuário:', err);
+      }
+    }
+    
+    if (!user.id || !user.companyId) {
+      throw new Error('Dados do usuário incompletos. Faça login novamente ou crie uma empresa.');
     }
     
     // Instruções para conectar conta diferente
@@ -93,9 +103,7 @@ export const storesService = {
     // Abrir autenticação em uma POPUP separada
     const timestamp = Date.now();
     const baseUrl = getApiBaseUrl();
-    const authUrl = `${baseUrl}/marketplace/mercadolivre/auth?userId=${user.id}&t=${timestamp}`;
-    
-    console.log('Abrindo popup de autenticação:', authUrl);
+    const authUrl = `${baseUrl}/marketplace/mercadolivre/auth?userId=${user.id}&companyId=${user.companyId}&t=${timestamp}`;
     
     // Abrir em popup (força novo contexto isolado)
     const popup = window.open(

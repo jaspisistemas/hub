@@ -40,7 +40,7 @@ export async function apiFetch<T = any>(
   if (response.status === 401) {
     authService.removeToken();
     if (!suppressAuthRedirect) {
-      window.location.href = '/auth/login';
+      window.location.href = '/login?reason=expired';
     }
     throw new Error('Sessão expirada. Faça login novamente.');
   }
@@ -51,11 +51,13 @@ export async function apiFetch<T = any>(
   }
 
   const text = await response.text();
-  if (!text) return null;
+  if (!text) {
+    throw new Error('Resposta vazia do servidor.');
+  }
   
   try {
-    return JSON.parse(text);
+    return JSON.parse(text) as T;
   } catch {
-    return text;
+    return text as unknown as T;
   }
 }

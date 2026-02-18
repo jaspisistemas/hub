@@ -68,10 +68,15 @@ export class StoresController {
   @Post(':id/disconnect')
   async disconnectMercadoLivre(@Request() req: any, @Param('id') id: string) {
     const store = await this.storesService.findOne(id);
-    if (store.userId !== req.user.id) {
+    const hasCompanyAccess = store.companyId && req.user.companyId && store.companyId === req.user.companyId;
+    const hasUserAccess = store.userId === req.user.id;
+    if (!hasCompanyAccess && !hasUserAccess) {
       throw new Error('Acesso negado');
     }
-    return this.storesService.disconnectMercadoLiveStore(id, req.user.id);
+    return this.storesService.disconnectMercadoLiveStore(id, {
+      userId: req.user.id,
+      companyId: req.user.companyId,
+    });
   }
 
   /**
@@ -79,6 +84,9 @@ export class StoresController {
    */
   @Get('marketplace/mercadolivre')
   findAllMercadoLivre(@Request() req: any) {
+    if (req.user.companyId) {
+      return this.storesService.findAllMercadoLivreStores(req.user.companyId);
+    }
     return this.storesService.findAllMercadoLivreStores(req.user.id);
   }
 }

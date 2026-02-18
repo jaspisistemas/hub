@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Container, Box } from '@mui/material';
 import { ThemeContextProvider } from './contexts/ThemeContext';
 import { SidebarContextProvider } from './contexts/SidebarContext';
@@ -50,6 +50,7 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/auth/login" element={<Navigate to="/login" replace />} />
             <Route path="/onboarding/empresa" element={<CompanyOnboardingPage />} />
 
         <Route

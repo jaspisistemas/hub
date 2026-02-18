@@ -14,7 +14,7 @@ export class ShopeeAdapter {
       total: Number(payload.total_amount) || 0,
       orderCreatedAt: dateCreated,
       customerName: payload.recipient_address?.name || 'Cliente Shopee',
-      customerEmail: `shopee-${payload.order_sn}@marketplace.com`,
+      customerEmail: payload.recipient_address?.email || payload.buyer?.email,
       customerPhone: payload.recipient_address?.phone,
       customerCity: payload.recipient_address?.city,
       customerState: payload.recipient_address?.state,

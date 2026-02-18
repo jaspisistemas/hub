@@ -32,6 +32,11 @@ export class OrdersService {
       .replace(/[^a-z0-9]/g, '');
   }
 
+  private extractMarketplaceStatus(dto: CreateOrderDto): string | undefined {
+    const raw: any = dto.raw || {};
+    return raw.order_status || raw.status || raw.payments?.[0]?.status;
+  }
+
   async createOrder(dto: CreateOrderDto) {
     // exemplo de regra de negócio: garantir total >= 0
     if (dto.total < 0) {
@@ -47,7 +52,7 @@ export class OrdersService {
     const order = this.ordersRepository.create({
       externalId: dto.externalId,
       marketplace: dto.marketplace,
-      status: dto.raw?.status || 'created',
+      status: this.extractMarketplaceStatus(dto) || 'created',
       total: dto.total,
       orderCreatedAt: dto.orderCreatedAt ? new Date(dto.orderCreatedAt) : undefined,
       rawData: dto.raw ? JSON.stringify(dto.raw) : undefined,
@@ -135,7 +140,7 @@ export class OrdersService {
     const storeIds = stores.map((s) => s.id);
 
     const normalizeStatus = (value?: string) => (value || '').toLowerCase().trim();
-    const paidStatuses = ['paid', 'approved', 'completed'];
+    const paidStatuses = ['paid', 'approved', 'delivered', 'completed'];
     const filteredStatuses = paidOnly
       ? paidStatuses
       : (statusList || []).map(normalizeStatus).filter(Boolean);
@@ -216,7 +221,7 @@ export class OrdersService {
     const storeIds = stores.map((s) => s.id);
 
     const normalizeStatus = (value?: string) => (value || '').toLowerCase().trim();
-    const paidStatuses = ['paid', 'approved', 'completed'];
+    const paidStatuses = ['paid', 'approved', 'delivered', 'completed'];
     const filteredStatuses = paidOnly
       ? paidStatuses
       : (statusList || []).map(normalizeStatus).filter(Boolean);
@@ -278,7 +283,7 @@ export class OrdersService {
     if (existing) {
       const updated = Object.assign(existing, {
         marketplace: dto.marketplace || existing.marketplace,
-        status: dto.raw?.status || existing.status,
+        status: this.extractMarketplaceStatus(dto) || existing.status,
         total: dto.total !== undefined ? dto.total : existing.total,
         orderCreatedAt: dto.orderCreatedAt ? new Date(dto.orderCreatedAt) : existing.orderCreatedAt,
         rawData: dto.raw ? JSON.stringify(dto.raw) : existing.rawData,

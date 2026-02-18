@@ -197,7 +197,7 @@ export default function DataTable<T = any>({
         overflow: 'hidden',
         borderRadius: TABLE_CONSTANTS.BORDER_RADIUS,
         border: theme.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.04)',
-        backgroundColor: theme.palette.background.paper,
+        backgroundColor: theme.palette.mode === 'dark' ? '#141c2b' : theme.palette.background.paper,
         boxShadow: theme.palette.mode === 'dark'
           ? '0 6px 22px rgba(0,0,0,0.35)'
           : '0 4px 20px rgba(0,0,0,0.04)',
@@ -213,7 +213,7 @@ export default function DataTable<T = any>({
             <TableRow 
               sx={{ 
                 height: TABLE_CONSTANTS.HEADER_HEIGHT,
-                bgcolor: theme.palette.mode === 'dark' ? '#10151f' : '#FAFAFA',
+                bgcolor: theme.palette.mode === 'dark' ? '#172136' : '#FAFAFA',
               }}
             >
               {selectable && (
@@ -302,7 +302,7 @@ export default function DataTable<T = any>({
                     cursor: onRowClick && !selectable ? 'pointer' : 'default',
                     '&:hover': hover ? {
                       bgcolor: theme.palette.mode === 'dark'
-                        ? 'rgba(255,255,255,0.04)'
+                        ? 'rgba(255,255,255,0.06)'
                         : '#F9F9FB',
                     } : {},
                     '&.Mui-selected': {

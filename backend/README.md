@@ -11,9 +11,17 @@ Princípios orientadores:
 Executar localmente:
 - npm run start:dev
 
+Build e execução:
+- npm run build
+- npm run start
+
+Scripts utilitários:
+- scripts/ (tarefas pontuais, migrações manuais, seed, testes rápidos)
+
 Estrutura:
 - src/domains
 - src/integrations
 - src/jobs
 - src/infra
+- scripts
 

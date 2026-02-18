@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Container,
   Paper,
@@ -11,7 +11,7 @@ import {
   Grid,
   Avatar,
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Email as EmailIcon, Lock as LockIcon, Person as PersonIcon } from '@mui/icons-material';
 import { authService } from '../../services/authService';
 
@@ -22,7 +22,19 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [name, setName] = useState('');
+  const [infoMessage, setInfoMessage] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const reason = params.get('reason');
+    if (reason === 'expired') {
+      setInfoMessage('Sua sessão expirou. Faça login novamente.');
+    } else {
+      setInfoMessage('');
+    }
+  }, [location.search]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,6 +145,12 @@ export default function LoginPage() {
                   {isRegistering ? 'Crie sua conta' : 'Bem-vindo de volta!'}
                 </Typography>
               </Box>
+
+          {infoMessage && (
+            <Alert severity="warning" sx={{ mb: 2, borderRadius: 1.5 }}>
+              {infoMessage}
+            </Alert>
+          )}
 
           {error && (
             <Alert severity="error" sx={{ mb: 3, borderRadius: 1.5 }}>

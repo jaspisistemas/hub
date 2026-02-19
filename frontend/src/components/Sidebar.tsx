@@ -130,6 +130,7 @@ export default function Sidebar() {
               fontWeight: 600,
               color: '#ffffff',
               cursor: 'pointer',
+              whiteSpace: 'nowrap',
             }}
             onClick={() => navigate('/')}
           >
@@ -138,7 +139,12 @@ export default function Sidebar() {
         )}
       </Box>
 
-      <List sx={{ flex: 1, px: 1.5, pb: 1 }}>
+      <List sx={{ 
+        flex: 1, 
+        px: 1.5, 
+        pb: 1,
+        transition: 'padding 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      }}>
         {menuItems.map((item) => (
           <Tooltip key={item.path} title={isCollapsed ? item.label : ''} placement="right">
             <ListItem
@@ -148,24 +154,23 @@ export default function Sidebar() {
                 borderRadius: 3,
                 mb: 0.5,
                 position: 'relative',
-                bgcolor: location.pathname === item.path
-                  ? theme.palette.mode === 'dark'
-                    ? 'rgba(79,156,249,0.18)'
-                    : 'rgba(255,255,255,0.2)'
-                  : 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                height: 44,
+                pl: 1.5,
+                pr: 2,
+                py: 0,
+                bgcolor: 'transparent',
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                justifyContent: isCollapsed ? 'center' : 'flex-start',
-                px: isCollapsed ? 1 : 2,
-                py: 1.25,
                 '&::before': {
                   content: '""',
                   position: 'absolute',
-                  left: 6,
+                  left: 0,
                   top: '50%',
                   transform: 'translateY(-50%)',
                   width: 3,
-                  height: 24,
-                  borderRadius: 2,
+                  height: location.pathname === item.path ? 24 : 0,
+                  borderRadius: 0,
                   backgroundColor: location.pathname === item.path
                     ? theme.palette.mode === 'dark'
                       ? '#4F9CF9'
@@ -174,21 +179,14 @@ export default function Sidebar() {
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 },
                 '&:hover': {
-                  bgcolor: location.pathname === item.path
-                    ? theme.palette.mode === 'dark'
-                      ? 'rgba(79,156,249,0.28)'
-                      : 'rgba(255,255,255,0.3)'
-                    : theme.palette.mode === 'dark'
-                      ? 'rgba(79,156,249,0.12)'
-                      : 'rgba(255,255,255,0.15)',
-                  transform: 'translateX(4px)',
+                  bgcolor: theme.palette.mode === 'dark'
+                    ? 'rgba(79,156,249,0.12)'
+                    : 'rgba(255,255,255,0.15)',
                   '&::before': {
+                    height: location.pathname === item.path ? 28 : 16,
                     backgroundColor: theme.palette.mode === 'dark'
                       ? '#4F9CF9'
                       : '#ffffff',
-                    boxShadow: theme.palette.mode === 'dark'
-                      ? '0 0 12px rgba(79,156,249,0.5)'
-                      : '0 0 12px rgba(255,255,255,0.5)',
                   },
                 },
               }}
@@ -196,8 +194,15 @@ export default function Sidebar() {
               <ListItemIcon
                 sx={{
                   color: '#ffffff',
-                  minWidth: isCollapsed ? 'auto' : 44,
-                  mr: isCollapsed ? 0 : 1.5,
+                  width: 28,
+                  height: 28,
+                  minWidth: 28,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  mr: isCollapsed ? 0 : 1.75,
+                  flexShrink: 0,
+                  transition: 'margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   '& svg': {
                     fontSize: '1.25rem',
                   },
@@ -205,18 +210,20 @@ export default function Sidebar() {
               >
                 <item.icon />
               </ListItemIcon>
-              {!isCollapsed && (
-                <ListItemText
-                  primary={item.label}
-                  sx={{
-                    color: '#ffffff',
-                    '& .MuiListItemText-primary': {
-                      fontWeight: location.pathname === item.path ? 600 : 500,
-                      fontSize: '0.95rem',
-                    },
-                  }}
-                />
-              )}
+              <ListItemText
+                primary={item.label}
+                sx={{
+                  flex: 1,
+                  opacity: isCollapsed ? 0 : 1,
+                  visibility: isCollapsed ? 'hidden' : 'visible',
+                  transition: 'opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  whiteSpace: 'nowrap',
+                  '& .MuiListItemText-primary': {
+                    fontWeight: location.pathname === item.path ? 600 : 500,
+                    fontSize: '0.95rem',
+                  },
+                }}
+              />
             </ListItem>
           </Tooltip>
         ))}
@@ -224,7 +231,11 @@ export default function Sidebar() {
 
       <Divider sx={{ borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.2)', mx: 2, mb: 1.5 }} />
 
-      <List sx={{ px: 1.5, pb: 2 }}>
+      <List sx={{ 
+        px: 1.5, 
+        pb: 2,
+        transition: 'padding 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      }}>
         <style>{`
           @keyframes spin {
             from {
@@ -244,24 +255,23 @@ export default function Sidebar() {
                 borderRadius: 3,
                 mb: 0.5,
                 position: 'relative',
-                bgcolor: location.pathname === item.path
-                  ? theme.palette.mode === 'dark'
-                    ? 'rgba(79,156,249,0.18)'
-                    : 'rgba(255,255,255,0.2)'
-                  : 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                height: 44,
+                pl: 1.5,
+                pr: 2,
+                py: 0,
+                bgcolor: 'transparent',
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                justifyContent: isCollapsed ? 'center' : 'flex-start',
-                px: isCollapsed ? 1 : 2,
-                py: 1.25,
                 '&::before': {
                   content: '""',
                   position: 'absolute',
-                  left: 6,
+                  left: 0,
                   top: '50%',
                   transform: 'translateY(-50%)',
                   width: 3,
-                  height: 24,
-                  borderRadius: 2,
+                  height: location.pathname === item.path ? 24 : 0,
+                  borderRadius: 0,
                   backgroundColor: location.pathname === item.path
                     ? theme.palette.mode === 'dark'
                       ? '#4F9CF9'
@@ -270,35 +280,35 @@ export default function Sidebar() {
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 },
                 '&:hover': {
-                  bgcolor: location.pathname === item.path
-                    ? theme.palette.mode === 'dark'
-                      ? 'rgba(79,156,249,0.28)'
-                      : 'rgba(255,255,255,0.3)'
-                    : theme.palette.mode === 'dark'
-                      ? 'rgba(79,156,249,0.12)'
-                      : 'rgba(255,255,255,0.15)',
-                  transform: 'translateX(4px)',
+                  bgcolor: theme.palette.mode === 'dark'
+                    ? 'rgba(79,156,249,0.12)'
+                    : 'rgba(255,255,255,0.15)',
+                  '&::before': {
+                    height: location.pathname === item.path ? 28 : 16,
+                    backgroundColor: theme.palette.mode === 'dark'
+                      ? '#4F9CF9'
+                      : '#ffffff',
+                  },
                   ...(item.label === 'Configurações' && {
                     '& svg': {
                       animation: 'spin 0.6s ease-in-out',
                     },
                   }),
-                  '&::before': {
-                    backgroundColor: theme.palette.mode === 'dark'
-                      ? '#4F9CF9'
-                      : '#ffffff',
-                    boxShadow: theme.palette.mode === 'dark'
-                      ? '0 0 12px rgba(79,156,249,0.5)'
-                      : '0 0 12px rgba(255,255,255,0.5)',
-                  },
                 },
               }}
             >
               <ListItemIcon
                 sx={{
                   color: '#ffffff',
-                  minWidth: isCollapsed ? 'auto' : 44,
-                  mr: isCollapsed ? 0 : 1.5,
+                  width: 28,
+                  height: 28,
+                  minWidth: 28,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  mr: isCollapsed ? 0 : 1.75,
+                  flexShrink: 0,
+                  transition: 'margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   '& svg': {
                     fontSize: '1.25rem',
                   },
@@ -306,18 +316,20 @@ export default function Sidebar() {
               >
                 <item.icon />
               </ListItemIcon>
-              {!isCollapsed && (
-                <ListItemText
-                  primary={item.label}
-                  sx={{
-                    color: '#ffffff',
-                    '& .MuiListItemText-primary': {
-                      fontWeight: location.pathname === item.path ? 600 : 500,
-                      fontSize: '0.95rem',
-                    },
-                  }}
-                />
-              )}
+              <ListItemText
+                primary={item.label}
+                sx={{
+                  flex: 1,
+                  opacity: isCollapsed ? 0 : 1,
+                  visibility: isCollapsed ? 'hidden' : 'visible',
+                  transition: 'opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  whiteSpace: 'nowrap',
+                  '& .MuiListItemText-primary': {
+                    fontWeight: location.pathname === item.path ? 600 : 500,
+                    fontSize: '0.95rem',
+                  },
+                }}
+              />
             </ListItem>
           </Tooltip>
         ))}

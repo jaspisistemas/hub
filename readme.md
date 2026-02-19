@@ -43,7 +43,9 @@ Sistema completo de integração com marketplaces (Mercado Livre, Shopee, etc.) 
 - [x] WebSocket para notificações em tempo real
 - [x] Sistema de temas (claro/escuro)
 - [x] Central de Ajuda completa com FAQs organizados
-- [x] Sistema de atendimento unificado
+- [x] Sistema de atendimento unificado com resposta automática
+- [x] Perfil de usuário com avatar e gestão de colaboradores
+- [x] Upload de logo da empresa com preview
 
 ### ✅ Integração Mercado Livre
 - [x] Fluxo OAuth completo (autorização e callback)
@@ -54,6 +56,7 @@ Sistema completo de integração com marketplaces (Mercado Livre, Shopee, etc.) 
 - [x] Busca de dados completos do pedido via API
 - [x] Mapeamento de dados do ML para formato interno
 - [x] Salvamento de dados do cliente (nome, email, endereço, etc.)
+- [x] **Resolução de nomes de clientes via API ML** (fallback multi-field)
 - [x] Sincronização de produtos do Mercado Livre
 - [x] Criação de anúncios no ML com categorias e atributos
 - [x] Sincronização automática de pedidos
@@ -67,8 +70,20 @@ Sistema completo de integração com marketplaces (Mercado Livre, Shopee, etc.) 
 - [x] Resposta direta pelo hub (enviada automaticamente ao ML)
 - [x] Filtros por tipo (pergunta, avaliação, mensagem de venda)
 - [x] Filtros por loja, status, origem
+- [x] **Filtro "Todas as lojas"** com comportamento correto
+- [x] Filtros por período com data range configurável
 - [x] Logs detalhados de sincronização
 - [x] Histórico completo de interações
+- [x] Dialog expandido para ver detalhes completos do atendimento
+
+### ✅ Dashboard & Analytics
+- [x] Gráfico de vendas por período (últimos N dias)
+- [x] **Gráfico de vendas usando data real dos pedidos** (não data de sync)
+- [x] Distribuição de pedidos por status
+- [x] Métricas de receita e quantidade
+- [x] Histórico de pedidos recentes
+- [x] Estatísticas por loja
+- [x] **Tradução de labels para português brasileiro**
 
 ### 🔄 Em Desenvolvimento
 - [ ] Integração com Shopee
@@ -345,6 +360,27 @@ O sistema emite eventos via WebSocket para:
 - `order:created` - Novo pedido criado
 - `order:updated` - Pedido atualizado
 - `order:deleted` - Pedido removido
+
+## 🆕 Atualizações Recentes (Fevereiro 2026)
+
+### Correções de UX
+- **Filtro de Loja**: Corrigido comportamento do filtro "Todas as lojas" (value='0') para mostrar todos os atendimentos
+- **Avatar do Perfil**: Corrigido sistema de preview e armazenamento de avatar
+- **Filtros Múltiplos**: Melhorado estado dos filtros para funcionar em combinação (loja + tipo + status + período)
+
+### Melhorias de Dados
+- **Gráfico de Vendas**: Agora usa a data real dos pedidos (`orderCreatedAt`) em vez da data de sincronização
+  - Evita concentração artificial de vendas em datas de bulk sync
+  - Mostra padrão real de vendas do cliente
+- **Nomes de Clientes**: Integração com API Mercado Livre para resolver nomes reais
+  - Fallback multi-field: nickname → name → display_name → API lookup → Cliente #{id}
+  - Evita exibição de "Anônimo" ou falta de identificação
+
+### Melhorias de Interface
+- **Dialog de Atendimento**: Expandido para `maxWidth="md"` com melhor visualização de contexto
+- **Botão de Atendimento**: Mudado para "Ver Detalhes & Responder" com estilo outlined
+- **Textarea de Resposta**: Aumentado para 7 linhas para mensagens mais longas
+- **PT-BR Translations**: Dashboard agora exibe labels em português (Cancelado, Pago, etc.)
 
 ## 📝 Scripts Disponíveis
 

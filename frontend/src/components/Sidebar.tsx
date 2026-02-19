@@ -51,8 +51,7 @@ export default function Sidebar() {
         top: 0,
         bottom: 0,
         transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        overflowY: 'auto',
-        overflowX: 'hidden',
+        overflow: 'hidden',
         borderRight: theme.palette.mode === 'dark'
           ? '1px solid rgba(255,255,255,0.08)'
           : '1px solid rgba(255,255,255,0.15)',
@@ -66,7 +65,6 @@ export default function Sidebar() {
           justifyContent: isCollapsed ? 'center' : 'flex-start',
           gap: isCollapsed ? 1 : 1.5,
           p: isCollapsed ? 2 : 3,
-          minWidth: 0,
         }}
       >
         <Tooltip title={isCollapsed ? 'Expandir' : 'Colapsar'}>
@@ -143,10 +141,9 @@ export default function Sidebar() {
 
       <List sx={{ 
         flex: 1, 
-        px: isCollapsed ? 0.75 : 1.5, 
+        px: 1.5, 
         pb: 1,
         transition: 'padding 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        minWidth: 0,
       }}>
         {menuItems.map((item) => (
           <Tooltip key={item.path} title={isCollapsed ? item.label : ''} placement="right">
@@ -160,10 +157,9 @@ export default function Sidebar() {
                 display: 'flex',
                 alignItems: 'center',
                 height: 44,
-                pl: isCollapsed ? 0.75 : 1.5,
-                pr: isCollapsed ? 0.75 : 2,
+                pl: 1.5,
+                pr: 2,
                 py: 0,
-                minWidth: 0,
                 bgcolor: 'transparent',
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 '&::before': {
@@ -233,13 +229,12 @@ export default function Sidebar() {
         ))}
       </List>
 
-      <Divider sx={{ borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.2)', mx: isCollapsed ? 0.75 : 2, mb: 1.5 }} />
+      <Divider sx={{ borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.2)', mx: 2, mb: 1.5 }} />
 
       <List sx={{ 
-        px: isCollapsed ? 0.75 : 1.5, 
+        px: 1.5, 
         pb: 2,
         transition: 'padding 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        minWidth: 0,
       }}>
         <style>{`
           @keyframes spin {
@@ -263,10 +258,9 @@ export default function Sidebar() {
                 display: 'flex',
                 alignItems: 'center',
                 height: 44,
-                pl: isCollapsed ? 0.75 : 1.5,
-                pr: isCollapsed ? 0.75 : 2,
+                pl: 1.5,
+                pr: 2,
                 py: 0,
-                minWidth: 0,
                 bgcolor: 'transparent',
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 '&::before': {

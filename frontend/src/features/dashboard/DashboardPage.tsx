@@ -288,12 +288,22 @@ export default function DashboardPage() {
             value={period}
             label="Período"
             onChange={(e) => setPeriod(Number(e.target.value))}
+            renderValue={(value) => {
+              const labels: Record<number, string> = {
+                7: 'Últimos 7 dias',
+                15: 'Últimos 15 dias',
+                30: 'Últimos 30 dias',
+                60: 'Últimos 60 dias',
+                90: 'Últimos 90 dias',
+              };
+              return labels[value as number] || 'Últimos 30 dias';
+            }}
           >
-            <MenuItem value={7}>7 dias</MenuItem>
-            <MenuItem value={15}>15 dias</MenuItem>
-            <MenuItem value={30}>30 dias</MenuItem>
-            <MenuItem value={60}>60 dias</MenuItem>
-            <MenuItem value={90}>90 dias</MenuItem>
+            <MenuItem value={7}>Últimos 7 dias</MenuItem>
+            <MenuItem value={15}>Últimos 15 dias</MenuItem>
+            <MenuItem value={30}>Últimos 30 dias</MenuItem>
+            <MenuItem value={60}>Últimos 60 dias</MenuItem>
+            <MenuItem value={90}>Últimos 90 dias</MenuItem>
           </Select>
         </FormControl>
       </Box>

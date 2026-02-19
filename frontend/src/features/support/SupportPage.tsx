@@ -393,6 +393,17 @@ const SupportPage: React.FC = () => {
                   value={filters.daysRange === undefined ? '30' : filters.daysRange.toString()}
                   label="Período"
                   onChange={(e) => setFilters({ ...filters, daysRange: parseInt(e.target.value) })}
+                  renderValue={(value) => {
+                    const daysRangeNum = parseInt(String(value), 10);
+                    const labels: Record<number, string> = {
+                      0: 'Todos',
+                      3: 'Últimos 3 dias',
+                      7: 'Últimos 7 dias',
+                      30: 'Últimos 30 dias',
+                      90: 'Últimos 90 dias',
+                    };
+                    return labels[daysRangeNum] || 'Últimos 30 dias';
+                  }}
                   MenuProps={{
                     PaperProps: {
                       sx: {

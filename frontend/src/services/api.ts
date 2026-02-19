@@ -21,15 +21,21 @@ export async function apiFetch<T = any>(
 ): Promise<T> {
   const { needsAuth = true, suppressAuthRedirect = false, ...fetchOptions } = options;
 
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
+  const headers = new Headers({
     'ngrok-skip-browser-warning': 'true',
     ...fetchOptions.headers,
-  };
+  });
+
+  // Só adicionar Content-Type se não for FormData
+  if (!(fetchOptions.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json');
+  }
 
   if (needsAuth) {
     const authHeader = authService.getAuthHeader();
-    Object.assign(headers, authHeader);
+    Object.entries(authHeader).forEach(([key, value]) => {
+      headers.set(key, value as string);
+    });
   }
 
   const response = await fetch(`${getApiBaseUrl()}${endpoint}`, {

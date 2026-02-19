@@ -22,6 +22,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const [infoMessage, setInfoMessage] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
@@ -56,11 +57,16 @@ export default function LoginPage() {
       return;
     }
 
+    if (isRegistering && !phone) {
+      setError('Por favor, informe seu telefone');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       if (isRegistering) {
-        const response = await authService.register({ email, password, name });
+        const response = await authService.register({ email, password, name, phone });
         authService.setToken(response.accessToken);
         localStorage.setItem('user', JSON.stringify(response.user));
         navigate('/');
@@ -160,20 +166,36 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit}>
             {isRegistering && (
-              <TextField
-                fullWidth
-                label="Nome"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                margin="normal"
-                required
-                placeholder="Seu nome completo"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 1.5,
-                  },
-                }}
-              />
+              <>
+                <TextField
+                  fullWidth
+                  label="Nome"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  margin="normal"
+                  required
+                  placeholder="Seu nome completo"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 1.5,
+                    },
+                  }}
+                />
+                <TextField
+                  fullWidth
+                  label="Telefone"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  margin="normal"
+                  required
+                  placeholder="(00) 00000-0000"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 1.5,
+                    },
+                  }}
+                />
+              </>
             )}
             <TextField
               fullWidth
@@ -278,6 +300,7 @@ export default function LoginPage() {
                   setIsRegistering(!isRegistering);
                   setError('');
                   setName('');
+                  setPhone('');
                 }}
               >
                 {isRegistering ? 'Fazer login' : 'Criar conta'}

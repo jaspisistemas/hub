@@ -140,6 +140,7 @@ export default function ProfilePage() {
 
   // Avatar state
   const [avatarPreview, setAvatarPreview] = useState<string>('');
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
   useEffect(() => {
     loadProfile();
@@ -167,6 +168,7 @@ export default function ProfilePage() {
     try {
       setLoading(true);
       const data = await profileService.getProfile();
+      console.log('Profile loaded:', data); // Debug
       setProfile(data);
       
       // Carregar empresa do usuário
@@ -194,6 +196,17 @@ export default function ProfilePage() {
         phone: data.phone || '',
         role: data.role || '',
       });
+      
+      // Carregar avatar existente
+      if (data.avatarUrl) {
+        console.log('Setting avatar preview to:', data.avatarUrl); // Debug
+        // Garantir que a URL seja completa se for relativa
+        const avatarUrl = data.avatarUrl.startsWith('http') ? data.avatarUrl : `${window.location.origin}${data.avatarUrl}`;
+        setAvatarPreview(avatarUrl);
+      } else {
+        setAvatarPreview('');
+      }
+      setAvatarFile(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao carregar perfil');
     } finally {
@@ -205,8 +218,25 @@ export default function ProfilePage() {
     setTabValue(newValue);
   };
 
+  const formatPhoneNumber = (value: string): string => {
+    // Remove tudo que não é número
+    const numbers = value.replace(/\D/g, '');
+    
+    // Limita a 11 dígitos (padrão brasileiro)
+    if (numbers.length === 0) return '';
+    if (numbers.length <= 2) return `(${numbers}`;
+    if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
+  };
+
   const handleInputChange = (field: string) => (event: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
-    const value = event.target.value;
+    let value = String(event.target.value);
+    
+    // Aplicar formatação para telefone
+    if (field === 'phone') {
+      value = formatPhoneNumber(value);
+    }
+    
     setFormData(prev => ({
       ...prev,
       [field]: value,
@@ -223,8 +253,30 @@ export default function ProfilePage() {
   const handleSaveProfile = async () => {
     try {
       setSaving(true);
-      await profileService.updateProfile(formData);
-      setSuccess('Perfil atualizado com sucesso!');
+      
+      if (avatarFile) {
+        // Se houver um arquivo de avatar, fazer upload usando FormData
+        const formDataWithAvatar = new FormData();
+        formDataWithAvatar.append('name', formData.name || '');
+        formDataWithAvatar.append('phone', formData.phone || '');
+        formDataWithAvatar.append('role', formData.role || '');
+        formDataWithAvatar.append('avatar', avatarFile);
+        
+        console.log('Sending avatar with form data'); // Debug
+        await apiFetch('/auth/profile', {
+          method: 'PUT',
+          body: formDataWithAvatar,
+        });
+        
+        setSuccess('Perfil atualizado com sucesso!');
+      } else {
+        // Se não houver arquivo, usar o método normal com JSON
+        await profileService.updateProfile(formData);
+        setSuccess('Perfil atualizado com sucesso!');
+      }
+      
+      // Limpar arquivo e recarregar profile (que vai trazer a URL de avatar do servidor)
+      setAvatarFile(null);
       await loadProfile();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao salvar perfil');
@@ -504,24 +556,52 @@ export default function ProfilePage() {
                 <Button
                   component="label"
                   startIcon={<CloudUploadIcon />}
-                  variant="outlined"
+                  variant="contained"
                   sx={{
-                    color: (theme) => theme.palette.mode === 'dark' ? '#42A5F5' : '#3b82f6',
-                    borderColor: (theme) => theme.palette.mode === 'dark' ? '#42A5F5' : '#3b82f6',
+                    bgcolor: (theme) => theme.palette.mode === 'dark' ? '#42A5F5' : '#3b82f6',
+                    color: '#ffffff',
                     '&:hover': {
-                      bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(66,165,245,0.08)' : 'rgba(59,130,246,0.05)',
+                      bgcolor: (theme) => theme.palette.mode === 'dark' ? '#2196F3' : '#2563eb',
                     },
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    py: 1.2,
+                    px: 3,
                   }}
                 >
                   Alterar Avatar
                   <input type="file" hidden accept="image/*" onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file && file.type.startsWith('image/')) {
+                    if (file) {
+                      // Validar tipo de arquivo
+                      if (!file.type.startsWith('image/')) {
+                        setError('Por favor, selecione um arquivo de imagem válido');
+                        return;
+                      }
+                      
+                      // Validar extensão
+                      const validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+                      const fileExtension = file.name.split('.').pop()?.toLowerCase();
+                      if (!fileExtension || !validExtensions.includes(fileExtension)) {
+                        setError('Formato inválido! Use: JPG, JPEG, PNG, GIF, WEBP ou SVG');
+                        return;
+                      }
+                      
+                      // Validar tamanho (máx 5MB)
+                      if (file.size > 5 * 1024 * 1024) {
+                        setError('A imagem não pode ser maior que 5MB');
+                        return;
+                      }
+                      
+                      setAvatarFile(file);
+                      
+                      // Criar preview
                       const reader = new FileReader();
-                      reader.onload = () => {
+                      reader.onloadend = () => {
                         setAvatarPreview(reader.result as string);
                       };
                       reader.readAsDataURL(file);
+                      setError('');
                     }
                   }} />
                 </Button>
@@ -693,9 +773,12 @@ export default function ProfilePage() {
                   onClick={() => setChangePasswordDialog(true)}
                   sx={{
                     bgcolor: '#f59e0b',
+                    color: '#ffffff',
                     '&:hover': { bgcolor: '#d97706' },
                     textTransform: 'none',
                     fontWeight: 600,
+                    py: 1.2,
+                    px: 3,
                   }}
                 >
                   Alterar Senha
@@ -972,6 +1055,7 @@ export default function ProfilePage() {
                     disabled={companySaving || !companyFormData.companyName || !companyFormData.cnpj || !companyFormData.address || (!company?.id && !companyLogo)}
                     sx={{
                       bgcolor: '#10b981',
+                      color: '#ffffff',
                       '&:hover': { bgcolor: '#059669' },
                       textTransform: 'none',
                       fontWeight: 600,
@@ -1100,8 +1184,15 @@ export default function ProfilePage() {
                   startIcon={<PersonAddIcon />}
                   onClick={() => setInviteDialogOpen(true)}
                   sx={{
-                    bgcolor: '#4F9CF9',
-                    '&:hover': { bgcolor: '#357FD7' },
+                    bgcolor: (theme) => theme.palette.mode === 'dark' ? '#4F9CF9' : '#3b82f6',
+                    color: '#ffffff',
+                    '&:hover': {
+                      bgcolor: (theme) => theme.palette.mode === 'dark' ? '#357FD7' : '#2563eb',
+                    },
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    py: 1.5,
+                    px: 3.5,
                   }}
                 >
                   Convidar Colaborador
@@ -1187,6 +1278,10 @@ export default function ProfilePage() {
               '&:hover': {
                 bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.08)' : 'rgba(100,116,139,0.05)',
               },
+              textTransform: 'none',
+              fontWeight: 600,
+              py: 1,
+              px: 2.5,
             }}
           >
             Cancelar
@@ -1196,8 +1291,15 @@ export default function ProfilePage() {
             variant="contained"
             disabled={inviteSending || !inviteEmail}
             sx={{
-              bgcolor: '#4F9CF9',
-              '&:hover': { bgcolor: '#357FD7' },
+              bgcolor: (theme) => theme.palette.mode === 'dark' ? '#4F9CF9' : '#3b82f6',
+              color: '#ffffff',
+              '&:hover': {
+                bgcolor: (theme) => theme.palette.mode === 'dark' ? '#357FD7' : '#2563eb',
+              },
+              textTransform: 'none',
+              fontWeight: 600,
+              py: 1,
+              px: 2.5,
             }}
           >
             {inviteSending ? 'Enviando...' : 'Enviar Convite'}
@@ -1312,6 +1414,10 @@ export default function ProfilePage() {
               '&:hover': {
                 bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.08)' : 'rgba(100,116,139,0.05)',
               },
+              textTransform: 'none',
+              fontWeight: 600,
+              py: 1,
+              px: 2.5,
             }}
           >
             Cancelar
@@ -1322,7 +1428,12 @@ export default function ProfilePage() {
             disabled={saving}
             sx={{
               bgcolor: '#f59e0b',
+              color: '#ffffff',
               '&:hover': { bgcolor: '#d97706' },
+              textTransform: 'none',
+              fontWeight: 600,
+              py: 1,
+              px: 2.5,
             }}
           >
             {saving ? 'Alterando...' : 'Alterar Senha'}

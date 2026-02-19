@@ -52,7 +52,7 @@ export class AuthService {
     };
   }
 
-  async register(email: string, password: string, name: string) {
+  async register(email: string, password: string, name: string, phone?: string) {
     // Verificar se usuário já existe
     const existingUser = await this.usersRepository.findOne({
       where: { email },
@@ -71,6 +71,7 @@ export class AuthService {
         email,
         password: hashedPassword,
         name,
+        ...(phone && { phone }),
       }),
     );
 
@@ -126,7 +127,22 @@ export class AuthService {
       throw new Error('Usuário não encontrado');
     }
 
-    await this.usersRepository.update(userId, updateProfileDto);
+    // Remover campos undefined para não sobrescrever dados existentes
+    const updateData: any = {};
+    
+    Object.entries(updateProfileDto).forEach(([key, value]) => {
+      // Só adicionar campos que têm valor
+      if (value !== undefined && value !== '') {
+        updateData[key] = value;
+      }
+      // Se for avatarUrl e tiver valor, sempre incluir (mesmo que esteja sendo alterado)
+      if (key === 'avatarUrl' && value) {
+        updateData[key] = value;
+      }
+    });
+
+    console.log('Updating profile with data:', updateData); // Debug
+    await this.usersRepository.update(userId, updateData);
 
     return this.getProfile(userId);
   }

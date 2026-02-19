@@ -1,6 +1,30 @@
 node_modules/
 dist/
 .env
+.env.local
+.env.*.local
 packages/*/node_modules/
 **/node_modules/
 .DS_Store
+
+# Secrets and Credentials
+*.pem
+*.key
+*.crt
+.ssh/
+credentials.json
+secrets.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

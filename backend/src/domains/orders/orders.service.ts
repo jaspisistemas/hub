@@ -512,7 +512,9 @@ export class OrdersService {
 
     // Preencher com dados reais
     orders.forEach(order => {
-      const dateKey = new Date(order.createdAt).toISOString().split('T')[0];
+      // Usar a data real do pedido no marketplace, não a data de sincronização
+      const orderDate = order.orderCreatedAt ?? order.createdAt;
+      const dateKey = new Date(orderDate).toISOString().split('T')[0];
       const existing = salesMap.get(dateKey);
       if (existing) {
         existing.revenue += Number(order.total);

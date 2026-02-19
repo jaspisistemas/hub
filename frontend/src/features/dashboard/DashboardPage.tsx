@@ -540,7 +540,26 @@ export default function DashboardPage() {
                       formatter={(value, entry) => {
                         const payload = entry?.payload as { status?: string } | undefined;
                         const status = payload?.status;
-                        return status ? status.charAt(0).toUpperCase() + status.slice(1) : String(value);
+                        if (!status) return String(value);
+                        
+                        const statusMap: Record<string, string> = {
+                          cancelled: 'Cancelado',
+                          cancelado: 'Cancelado',
+                          canceled: 'Cancelado',
+                          paid: 'Pago',
+                          approved: 'Pago',
+                          waiting_payment: 'Aguardando pagamento',
+                          pending: 'Aguardando pagamento',
+                          created: 'Aguardando pagamento',
+                          preparing_shipment: 'Preparar envio',
+                          processing: 'Preparar envio',
+                          shipped: 'Enviado',
+                          delivered: 'Entregue',
+                          completed: 'Finalizado',
+                          claim_open: 'Em reclamação',
+                        };
+                        
+                        return statusMap[status] || status.charAt(0).toUpperCase() + status.slice(1);
                       }}
                     />
                   </PieChart>

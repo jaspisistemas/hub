@@ -354,6 +354,36 @@ export class MarketplaceService {
   }
 
   /**
+   * Busca o nome real de um cliente do Mercado Livre pelo userId/nickname
+   */
+  async getCustomerRealName(userIdOrNickname: string | number, accessToken: string): Promise<string> {
+    try {
+      const response = await fetch(
+        `https://api.mercadolibre.com/users/${userIdOrNickname}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        console.warn(`⚠️ Não foi possível buscar nome do cliente ${userIdOrNickname}, usando fallback`);
+        return `Cliente #${userIdOrNickname}`;
+      }
+
+      const userData = await response.json();
+      // Retorna nome completo se disponível, senão nickname
+      return userData.first_name && userData.last_name 
+        ? `${userData.first_name} ${userData.last_name}`
+        : userData.nickname || `Cliente #${userIdOrNickname}`;
+    } catch (error: any) {
+      console.warn(`⚠️ Erro ao buscar nome do cliente:`, error?.message || String(error));
+      return `Cliente #${userIdOrNickname}`;
+    }
+  }
+
+  /**
    * Verifica se o token está expirado ou próximo de expirar
    * Retorna true se precisa renovar (expira em menos de 1 hora)
    */

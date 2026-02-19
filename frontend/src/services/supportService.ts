@@ -39,6 +39,7 @@ export interface SupportFilters {
   storeId?: string;
   productId?: string;
   search?: string;
+  daysRange?: number; // Número de dias para filtrar (ex: 7, 30, 90, ou null para todos)
 }
 
 export interface AnswerSupportDto {
@@ -54,6 +55,10 @@ export const supportService = {
     if (filters?.storeId) params.append('storeId', filters.storeId);
     if (filters?.productId) params.append('productId', filters.productId);
     if (filters?.search) params.append('search', filters.search);
+    if (filters?.daysRange !== undefined) params.append('daysRange', filters.daysRange.toString());
+
+    console.log(`[SUPPORT-SERVICE] Enviando filtros:`, filters);
+    console.log(`[SUPPORT-SERVICE] URL Query:`, params.toString());
 
     return apiFetch<Support[]>(`/supports?${params.toString()}`);
   },

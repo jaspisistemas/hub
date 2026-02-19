@@ -138,6 +138,9 @@ export default function ProfilePage() {
   const [logoPreview, setLogoPreview] = useState<string>('');
   const [companySaving, setCompanySaving] = useState(false);
 
+  // Avatar state
+  const [avatarPreview, setAvatarPreview] = useState<string>('');
+
   useEffect(() => {
     loadProfile();
   }, []);
@@ -190,7 +193,6 @@ export default function ProfilePage() {
         name: data.name,
         phone: data.phone || '',
         role: data.role || '',
-        avatarUrl: data.avatarUrl || '',
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao carregar perfil');
@@ -429,7 +431,6 @@ export default function ProfilePage() {
         <PageHeader
           title="Meu Perfil"
           subtitle="Gerencie suas informações, segurança e preferências"
-          icon={SettingsIcon}
         />
 
         {error && (
@@ -490,7 +491,7 @@ export default function ProfilePage() {
                 boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 24px rgba(0,0,0,0.35)' : '0 8px 24px rgba(15,23,42,0.10)',
               }}>
                 <Avatar
-                  src={formData.avatarUrl}
+                  src={avatarPreview}
                   alt={formData.name}
                   sx={{
                     width: 120,
@@ -513,7 +514,16 @@ export default function ProfilePage() {
                   }}
                 >
                   Alterar Avatar
-                  <input type="file" hidden accept="image/*" />
+                  <input type="file" hidden accept="image/*" onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file && file.type.startsWith('image/')) {
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        setAvatarPreview(reader.result as string);
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }} />
                 </Button>
               </Box>
 
@@ -614,7 +624,7 @@ export default function ProfilePage() {
                   variant="contained"
                   startIcon={<SaveIcon />}
                   onClick={handleSaveProfile}
-                  disabled={saving || (formData.phone ? !isValidPhone(formData.phone) : false) || (formData.avatarUrl ? !isValidUrl(formData.avatarUrl) : false)}
+                  disabled={saving || (formData.phone ? !isValidPhone(formData.phone) : false)}
                   sx={{
                     bgcolor: '#10b981',
                     '&:hover': { bgcolor: '#059669' },
@@ -929,7 +939,7 @@ export default function ProfilePage() {
                       </label>
                     </Box>
                   </Grid>
-                  {logoPreview || company?.logoUrl && (
+                  {(logoPreview || company?.logoUrl) && (
                     <Grid item xs={12}>
                       <Box sx={{
                         p: 2,

@@ -17,6 +17,7 @@ async function bootstrap() {
         'https://127.0.0.1:5173',
         'https://portsmouth-tin-import-favour.trycloudflare.com',
         'https://uneducated-georgiann-personifiant.ngrok-free.dev',
+        /^https:\/\/(.*\.)?trycloudflare\.com$/, // Permitir qualquer subdomínio Cloudflare
       ],
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

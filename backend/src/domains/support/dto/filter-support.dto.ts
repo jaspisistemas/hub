@@ -1,4 +1,5 @@
-import { IsOptional, IsString, IsEnum } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsNumber } from 'class-validator';
+import { Type } from 'class-transformer';
 import { SupportOrigin, SupportType, SupportStatus } from '../entities/support.entity';
 
 export class FilterSupportDto {
@@ -25,4 +26,9 @@ export class FilterSupportDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  daysRange?: number; // Número de dias para filtrar
 }

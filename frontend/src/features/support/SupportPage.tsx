@@ -38,7 +38,7 @@ const SupportPage: React.FC = () => {
   const [stores, setStores] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
-  const [filters, setFilters] = useState<SupportFilters>({});
+  const [filters, setFilters] = useState<SupportFilters>({ daysRange: 30 });
   const [selectedSupport, setSelectedSupport] = useState<Support | null>(null);
   const [answerText, setAnswerText] = useState('');
   const [answerDialogOpen, setAnswerDialogOpen] = useState(false);
@@ -54,6 +54,8 @@ const SupportPage: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
+      console.log('[LOADSUPP] Filtros completos:', filters);
+      console.log('[LOADSUPP] daysRange:', filters.daysRange, 'type:', typeof filters.daysRange);
       const data = await supportService.getAll(filters);
       console.log('Atendimentos carregados:', data);
       console.log('Filtros aplicados:', filters);
@@ -193,8 +195,8 @@ const SupportPage: React.FC = () => {
           bgcolor: (theme) => theme.palette.mode === 'dark' ? '#0d1117' : '#ffffff',
         }}
       >
-        <CardContent>
-          <Grid container spacing={2} alignItems="center">
+        <CardContent sx={{ py: 2, px: 2 }}>
+          <Grid container spacing={1.5} alignItems="center">
             <Grid item xs={12} sm={6} md={3}>
               <FormControl fullWidth size="small">
                 <InputLabel
@@ -208,9 +210,9 @@ const SupportPage: React.FC = () => {
                   Loja
                 </InputLabel>
                 <Select
-                  value={filters.storeId || ''}
+                  value={filters.storeId === undefined ? '0' : filters.storeId}
                   label="Loja"
-                  onChange={(e) => setFilters({ ...filters, storeId: e.target.value })}
+                  onChange={(e) => setFilters({ ...filters, storeId: e.target.value === '0' ? undefined : e.target.value })}
                   MenuProps={{
                     PaperProps: {
                       sx: {
@@ -247,7 +249,7 @@ const SupportPage: React.FC = () => {
                     },
                   }}
                 >
-                  <MenuItem value="">Todas</MenuItem>
+                  <MenuItem value="0">Todas</MenuItem>
                   {stores.map((store) => (
                     <MenuItem key={store.id} value={store.id}>
                       {store.name}
@@ -259,20 +261,19 @@ const SupportPage: React.FC = () => {
 
             <Grid item xs={12} sm={6} md={2}>
               <FormControl fullWidth size="small">
-                <InputLabel
-                  sx={{ 
-                    color: (theme) => theme.palette.mode === 'dark' ? '#8b949e' : 'rgba(0, 0, 0, 0.6)',
-                    '&.Mui-focused': {
-                      color: (theme) => theme.palette.mode === 'dark' ? '#58a6ff' : undefined,
-                    },
-                  }}
-                >
-                  Tipo
-                </InputLabel>
                 <Select
                   value={filters.type || ''}
-                  label="Tipo"
-                  onChange={(e) => setFilters({ ...filters, type: e.target.value })}
+                  displayEmpty
+                  renderValue={(value) => {
+                    if (!value) return 'Todos';
+                    const typeMap: Record<string, string> = {
+                      pergunta: 'Pergunta',
+                      avaliacao: 'Avaliação',
+                      mensagem_venda: 'Mensagem de Venda',
+                    };
+                    return typeMap[value] || value;
+                  }}
+                  onChange={(e) => setFilters({ ...filters, type: e.target.value || undefined })}
                   MenuProps={{
                     PaperProps: {
                       sx: {
@@ -319,20 +320,19 @@ const SupportPage: React.FC = () => {
 
             <Grid item xs={12} sm={6} md={2}>
               <FormControl fullWidth size="small">
-                <InputLabel
-                  sx={{ 
-                    color: (theme) => theme.palette.mode === 'dark' ? '#8b949e' : 'rgba(0, 0, 0, 0.6)',
-                    '&.Mui-focused': {
-                      color: (theme) => theme.palette.mode === 'dark' ? '#58a6ff' : undefined,
-                    },
-                  }}
-                >
-                  Status
-                </InputLabel>
                 <Select
                   value={filters.status || ''}
-                  label="Status"
-                  onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                  displayEmpty
+                  renderValue={(value) => {
+                    if (!value) return 'Todos';
+                    const statusMap: Record<string, string> = {
+                      nao_respondido: 'Não Respondido',
+                      respondido: 'Respondido',
+                      fechado: 'Fechado',
+                    };
+                    return statusMap[value] || value;
+                  }}
+                  onChange={(e) => setFilters({ ...filters, status: e.target.value || undefined })}
                   MenuProps={{
                     PaperProps: {
                       sx: {
@@ -377,43 +377,68 @@ const SupportPage: React.FC = () => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Buscar"
-                placeholder="Buscar na pergunta..."
-                value={filters.search || ''}
-                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    bgcolor: (theme) => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
-                    color: (theme) => theme.palette.mode === 'dark' ? '#c9d1d9' : '#1f2937',
-                    '& fieldset': {
-                      borderColor: (theme) => theme.palette.mode === 'dark' ? '#30363d' : undefined,
-                    },
-                    '&:hover fieldset': {
-                      borderColor: (theme) => theme.palette.mode === 'dark' ? '#58a6ff' : undefined,
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: (theme) => theme.palette.mode === 'dark' ? '#58a6ff' : undefined,
-                    },
-                    '& input::placeholder': {
-                      color: (theme) => theme.palette.mode === 'dark' ? '#8b949e' : '#9ca3af',
-                      opacity: 1,
-                    },
-                  },
-                  '& .MuiInputLabel-root': {
+            <Grid item xs={12} sm={6} md={2}>
+              <FormControl fullWidth size="small">
+                <InputLabel
+                  sx={{ 
                     color: (theme) => theme.palette.mode === 'dark' ? '#8b949e' : 'rgba(0, 0, 0, 0.6)',
                     '&.Mui-focused': {
                       color: (theme) => theme.palette.mode === 'dark' ? '#58a6ff' : undefined,
                     },
-                  },
-                }}
-              />
+                  }}
+                >
+                  Período
+                </InputLabel>
+                <Select
+                  value={filters.daysRange === undefined ? '30' : filters.daysRange.toString()}
+                  label="Período"
+                  onChange={(e) => setFilters({ ...filters, daysRange: parseInt(e.target.value) })}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        bgcolor: (theme) => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                        '& .MuiMenuItem-root': {
+                          color: (theme) => theme.palette.mode === 'dark' ? '#c9d1d9' : '#1f2937',
+                          '&:hover': {
+                            bgcolor: (theme) => theme.palette.mode === 'dark' ? '#21262d' : '#f3f4f6',
+                          },
+                          '&.Mui-selected': {
+                            bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1f6feb' : '#e0f2fe',
+                            '&:hover': {
+                              bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1f6feb' : '#bae6fd',
+                            },
+                          },
+                        },
+                      },
+                    },
+                  }}
+                  sx={{
+                    bgcolor: (theme) => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                    color: (theme) => theme.palette.mode === 'dark' ? '#c9d1d9' : '#1f2937',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: (theme) => theme.palette.mode === 'dark' ? '#30363d' : undefined,
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: (theme) => theme.palette.mode === 'dark' ? '#58a6ff' : undefined,
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: (theme) => theme.palette.mode === 'dark' ? '#58a6ff' : undefined,
+                    },
+                    '& .MuiSelect-icon': {
+                      color: (theme) => theme.palette.mode === 'dark' ? '#8b949e' : undefined,
+                    },
+                  }}
+                >
+                  <MenuItem value="0">Todos</MenuItem>
+                  <MenuItem value="3">Últimos 3 dias</MenuItem>
+                  <MenuItem value="7">Últimos 7 dias</MenuItem>
+                  <MenuItem value="30">Últimos 30 dias</MenuItem>
+                  <MenuItem value="90">Últimos 90 dias</MenuItem>
+                </Select>
+              </FormControl>
             </Grid>
 
-            <Grid item xs={12} sm={12} md={2}>
+            <Grid item xs={12} sm={12} md={3}>
               <Button
                 fullWidth
                 variant="outlined"
@@ -510,15 +535,23 @@ const SupportPage: React.FC = () => {
                     </Box>
                   )}
 
-                  {support.canAnswer && support.status === 'nao_respondido' && (
-                    <Box sx={{ mt: 2 }}>
+                  {support.canAnswer && (
+                    <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
                       <Button
-                        variant="contained"
+                        variant="outlined"
                         size="small"
-                        startIcon={<SendIcon />}
                         onClick={() => handleOpenAnswerDialog(support)}
+                        sx={{
+                          textTransform: 'none',
+                          borderColor: (theme) => theme.palette.mode === 'dark' ? '#30363d' : '#e5e7eb',
+                          color: (theme) => theme.palette.mode === 'dark' ? '#58a6ff' : '#3b82f6',
+                          '&:hover': {
+                            borderColor: (theme) => theme.palette.mode === 'dark' ? '#58a6ff' : '#93c5fd',
+                            bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(88, 166, 255, 0.1)' : 'rgba(59, 130, 246, 0.05)',
+                          },
+                        }}
                       >
-                        Responder
+                        Ver Detalhes & Responder
                       </Button>
                     </Box>
                   )}
@@ -529,15 +562,22 @@ const SupportPage: React.FC = () => {
         </Grid>
       )}
 
-      {/* Dialog de Resposta */}
+      {/* Dialog de Detalhes e Resposta */}
       <Dialog
         open={answerDialogOpen}
         onClose={handleCloseAnswerDialog}
-        maxWidth="sm"
+        maxWidth="md"
         fullWidth
+        PaperProps={{
+          sx: {
+            maxHeight: '90vh',
+            display: 'flex',
+            flexDirection: 'column',
+          }
+        }}
       >
         <DialogTitle>
-          Responder Pergunta
+          Detalhes & Respostas
           <IconButton
             onClick={handleCloseAnswerDialog}
             sx={{ position: 'absolute', right: 8, top: 8 }}
@@ -545,29 +585,100 @@ const SupportPage: React.FC = () => {
             <CloseIcon />
           </IconButton>
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ overflowY: 'auto' }}>
           {selectedSupport && (
-            <>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                <strong>Cliente:</strong> {selectedSupport.customerName}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" gutterBottom sx={{ mb: 2 }}>
-                <strong>Pergunta:</strong> {selectedSupport.question}
-              </Typography>
-              <TextField
-                fullWidth
-                multiline
-                rows={4}
-                label="Sua Resposta"
-                value={answerText}
-                onChange={(e) => setAnswerText(e.target.value)}
-                placeholder="Digite sua resposta..."
-              />
-            </>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {/* Informações da Mensagem */}
+              <Box>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  <strong>Cliente:</strong> {selectedSupport.customerName}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  <strong>Tipo:</strong> {getTypeLabel(selectedSupport.type)}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  <strong>Status:</strong>{' '}
+                  <Chip
+                    label={getStatusLabel(selectedSupport.status)}
+                    size="small"
+                    variant="outlined"
+                    color={selectedSupport.status === 'respondido' ? 'success' : 'warning'}
+                    sx={{ ml: 1 }}
+                  />
+                </Typography>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  <strong>Enviada em:</strong> {new Date(selectedSupport.questionDate).toLocaleString('pt-BR')}
+                </Typography>
+              </Box>
+
+              {/* Pergunta/Mensagem Original */}
+              <Box
+                sx={{
+                  p: 2,
+                  bgcolor: 'action.hover',
+                  borderRadius: 1,
+                  borderLeft: '4px solid',
+                  borderColor: 'info.main',
+                }}
+              >
+                <Typography variant="body2" gutterBottom>
+                  <strong>{selectedSupport.type === 'mensagem_venda' ? 'Mensagem Original:' : 'Pergunta Original:'}:</strong>
+                </Typography>
+                <Typography variant="body2">{selectedSupport.question}</Typography>
+              </Box>
+
+              {/* Resposta Anterior (se existir) */}
+              {selectedSupport.answer && (
+                <Box
+                  sx={{
+                    p: 2,
+                    bgcolor: 'success.lighter',
+                    borderRadius: 1,
+                    borderLeft: '4px solid',
+                    borderColor: 'success.main',
+                  }}
+                >
+                  <Typography variant="body2" color="success.main" gutterBottom>
+                    <strong>✓ Sua Resposta Anterior:</strong>
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    {selectedSupport.answer}
+                  </Typography>
+                  {selectedSupport.answerDate && (
+                    <Typography variant="caption" color="text.secondary">
+                      Enviada em {new Date(selectedSupport.answerDate).toLocaleString('pt-BR')}
+                    </Typography>
+                  )}
+                </Box>
+              )}
+
+              {/* Campo Para Nova Resposta */}
+              <Box>
+                <Typography variant="body2" gutterBottom>
+                  <strong>
+                    {selectedSupport.answer ? 'Enviar Resposta Adicional:' : 'Enviar Resposta:'}
+                  </strong>
+                </Typography>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={7}
+                  placeholder={selectedSupport.answer ? 'Digite uma resposta adicional...' : 'Digite sua resposta...'}
+                  value={answerText}
+                  onChange={(e) => setAnswerText(e.target.value)}
+                  variant="outlined"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      fontSize: '0.95rem',
+                    },
+                  }}
+                />
+              </Box>
+            </Box>
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseAnswerDialog}>Cancelar</Button>
+          <Button onClick={handleCloseAnswerDialog}>Fechar</Button>
           <Button
             variant="contained"
             onClick={handleAnswer}

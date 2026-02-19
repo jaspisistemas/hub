@@ -277,6 +277,70 @@ export class MarketplaceController {
   }
 
   /**
+   * Endpoint de teste para simular mensagens de venda
+   * POST /marketplace/test-message
+   */
+  @Post('test-message')
+  async testMessage(
+    @Body() body: { storeId: string; packId?: string; customerName?: string; message?: string }
+  ) {
+    console.log('🧪 Testando mensagem de venda:', body);
+
+    try {
+      if (!body.storeId) {
+        return { success: false, message: 'storeId é obrigatório' };
+      }
+
+      // Gerar packId automaticamente se não foi fornecido
+      const packId = body.packId || `test-pack-${Date.now()}`;
+      const customerName = body.customerName || 'Cliente Teste';
+      const message = body.message || 'Tem mais informações sobre este produto?';
+
+      // Verificar se a loja existe
+      const store = await this.storesService.findOne(body.storeId);
+      if (!store) {
+        return { success: false, message: 'Loja não encontrada' };
+      }
+
+      // Procurar mensagem existente pelo packId
+      let support = await this.supportService.findByPackId(packId);
+
+      if (support) {
+        console.log(`✏️ Atualizando mensagem existente (ID: ${support.id})`);
+        // Atualizar apenas a mensagem
+        support.question = message;
+        support.questionDate = new Date();
+        support = await this.supportService.saveDirect(support);
+      } else {
+        console.log(`🆕 Criando nova mensagem de pós-venda`);
+        // Criar novo registro de teste
+        support = await this.supportService.createTestMessage(
+          body.storeId,
+          {
+            packId,
+            customerName,
+            message,
+          }
+        );
+      }
+
+      return {
+        success: true,
+        message: 'Mensagem de teste criada/atualizada com sucesso!',
+        supportId: support.id,
+        support
+      };
+    } catch (error: any) {
+      console.error('❌ Erro ao testar mensagem:', error);
+      return {
+        success: false,
+        message: error.message || 'Erro ao processar mensagem de teste'
+      };
+    }
+  }
+
+
+  /**
    * Webhook da Shopee
    */
   @Post('shopee/webhook')

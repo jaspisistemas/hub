@@ -1,12 +1,13 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, LessThan } from 'typeorm';
-import { Support, SupportStatus, SupportType } from './entities/support.entity';
+import { Repository, Like, MoreThanOrEqual } from 'typeorm';
+import { Support, SupportStatus, SupportType, SupportOrigin } from './entities/support.entity';
 import { CreateSupportDto } from './dto/create-support.dto';
 import { UpdateSupportDto } from './dto/update-support.dto';
 import { FilterSupportDto } from './dto/filter-support.dto';
 import { AnswerSupportDto } from './dto/answer-support.dto';
 import { MarketplaceService } from '../../integrations/marketplace/marketplace.service';
+import { StoresService } from '../stores/stores.service';
 
 @Injectable()
 export class SupportService {
@@ -14,6 +15,8 @@ export class SupportService {
     @InjectRepository(Support)
     private supportRepository: Repository<Support>,
     private marketplaceService: MarketplaceService,
+    @Inject(forwardRef(() => StoresService))
+    private storesService: StoresService,
   ) {}
 
   async create(createSupportDto: CreateSupportDto): Promise<Support> {
@@ -36,7 +39,7 @@ export class SupportService {
       where.status = filters.status;
     }
 
-    if (filters.storeId) {
+    if (filters.storeId && filters.storeId !== '0') {
       where.storeId = filters.storeId;
     }
 
@@ -48,24 +51,42 @@ export class SupportService {
       where.question = Like(`%${filters.search}%`);
     }
 
-    // Filtrar apenas perguntas dos últimos 30 dias
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    // Log para debug
+    console.log(`\n[FINDALL] Filtros recebidos:`, filters);
+    console.log(`[FINDALL] daysRange value:`, filters.daysRange, `type:`, typeof filters.daysRange);
 
-    return this.supportRepository.find({
-      where: [
-        {
+    // Filtrar por período - padrão é 30 dias se não especificado
+    const daysRange = filters.daysRange ?? 30; // Se for 0, significa "Todos"
+    const dateLimit = new Date();
+    dateLimit.setDate(dateLimit.getDate() - daysRange);
+
+    console.log(`\n🔍 Buscando atendimentos com filtros:`, {
+      storeId: filters.storeId || 'todos',
+      type: filters.type || 'todos',
+      status: filters.status || 'todos',
+      daysRange: daysRange === 0 ? 'TODOS OS TEMPOS' : `${daysRange} dias`,
+      dataMinima: daysRange === 0 ? 'nenhuma' : dateLimit.toISOString(),
+    });
+
+    const whereCondition = daysRange === 0 
+      ? where 
+      : {
           ...where,
-          questionDate: LessThan(thirtyDaysAgo) ? undefined : where.questionDate,
-        },
-      ].map(() => ({
-        ...where,
-      })),
+          questionDate: MoreThanOrEqual(dateLimit),
+        };
+
+    const results = await this.supportRepository.find({
+      where: whereCondition,
       relations: ['store', 'product'],
       order: { questionDate: 'DESC' },
-    }).then(supports => 
-      supports.filter(s => new Date(s.questionDate) >= thirtyDaysAgo)
-    );
+    });
+
+    console.log(`📊 Resultados encontrados: ${results.length}`);
+    results.forEach((r, idx) => {
+      console.log(`  ${idx + 1}. ID: ${r.id}, Tipo: ${r.type}, Loja: ${r.storeId}, Data: ${r.questionDate}`);
+    });
+
+    return results;
   }
 
   async findOne(id: string): Promise<Support> {
@@ -144,6 +165,9 @@ export class SupportService {
     // Buscar perguntas do marketplace
     const questions = await this.marketplaceService.getQuestions(storeId);
     console.log(`📝 Perguntas encontradas: ${questions?.length || 0}`);
+    questions?.forEach((q, idx) => {
+      console.log(`  ${idx + 1}. ID: ${q.id}, Cliente: ${q.from?.nickname}, Data: ${q.date_created}`);
+    });
     
     // ⚠️ IMPORTANTE: Mensagens de pós-venda NÃO podem ser buscadas via API REST
     // Elas só chegam via WEBHOOK quando o cliente envia uma mensagem
@@ -188,13 +212,49 @@ export class SupportService {
         }
       } else {
         // Criar novo
+        console.log(`[SYNC] Nova pergunta - ID: ${question.id}`);
+        console.log(`       Estrutura de 'from':`, JSON.stringify(question.from, null, 2));
+        
+        // Tentar obter nome real do cliente - de múltiplos campos, com fallback
+        let customerName = question.from?.nickname || 
+                          question.from?.name || 
+                          question.from?.display_name;
+        
+        // Se nada encontrou, tenta buscar da API do ML usando o ID
+        if (!customerName && question.from?.id) {
+          try {
+            console.log(`       Buscando nome real do cliente na API do ML userID: ${question.from.id}`);
+            const store = await this.storesService.findOne(storeId);
+            
+            if (store?.mlAccessToken) {
+              const realName = await this.marketplaceService.getCustomerRealName(
+                question.from.id,
+                store.mlAccessToken
+              );
+              if (realName) {
+                customerName = realName;
+                console.log(`       ✅ Nome encontrado na API: ${customerName}`);
+              }
+            }
+          } catch (error: any) {
+            console.warn(`       ⚠️ Erro ao buscar nome na API:`, error?.message || String(error));
+          }
+        }
+        
+        // Fallback final se ainda não temos nome
+        if (!customerName) {
+          customerName = `Cliente #${question.from?.id || Math.random().toString(36).substring(7)}`;
+        }
+        
+        console.log(`       Resultado final: customerName = "${customerName}"`);
+        
         const support = this.supportRepository.create({
           origin: question.origin,
           type: question.type,
           externalId: question.id,
           productExternalId: question.item_id,
           productTitle: question.item_title,
-          customerName: question.from?.nickname || 'Anônimo',
+          customerName,
           customerExternalId: question.from?.id?.toString(),
           question: question.text,
           questionDate: new Date(question.date_created),
@@ -257,6 +317,13 @@ export class SupportService {
     }
 
     console.log(`\n✨ Sincronização concluída! Importadas: ${imported}, Atualizadas: ${updated}\n`);
+    
+    // Log de verificação final
+    const totalInDb = await this.supportRepository.count({
+      where: { storeId },
+    });
+    console.log(`📊 Total de atendimentos na loja após sync: ${totalInDb}`);
+    
     return { imported, updated };
   }
 
@@ -323,6 +390,39 @@ export class SupportService {
       console.error(`❌ Erro ao processar mensagem via webhook:`, error);
       return null;
     }
+  }
+
+  async findByPackId(packId: string): Promise<Support | null> {
+    return this.supportRepository.findOne({
+      where: { packId },
+    });
+  }
+
+  async saveDirect(support: Support): Promise<Support> {
+    return this.supportRepository.save(support);
+  }
+
+  async createTestMessage(
+    storeId: string,
+    data: { packId: string; customerName: string; message: string }
+  ): Promise<Support> {
+    const support = this.supportRepository.create({
+      origin: SupportOrigin.MERCADO_LIVRE,
+      type: SupportType.MENSAGEM_VENDA,
+      externalId: data.packId,
+      packId: data.packId,
+      productTitle: 'Pedido de Teste',
+      customerName: data.customerName,
+      customerExternalId: 'test-customer',
+      question: data.message,
+      questionDate: new Date(),
+      canAnswer: true,
+      status: SupportStatus.NAO_RESPONDIDO,
+      storeId,
+      metadata: { isTestMessage: true },
+    } as any);
+
+    return await this.supportRepository.save(support) as unknown as Support;
   }
 
   async remove(id: string): Promise<void> {

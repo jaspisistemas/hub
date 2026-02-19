@@ -7,7 +7,7 @@ export class InvoiceDataDto {
 
   // Dados do cliente
   customerName!: string;
-  customerEmail!: string;
+  customerEmail?: string;
   customerPhone?: string;
   customerCpfCnpj?: string;
   customerInscricaoEstadual?: string;

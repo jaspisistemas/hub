@@ -7,13 +7,16 @@ interface CompanyData {
   logoUrl?: string;
 }
 
+type CompanyInput = CompanyData | FormData;
+
 export const companyService = {
   // Criar empresa
-  createCompany: async (data: CompanyData) => {
+  createCompany: async (data: CompanyInput) => {
+    const isFormData = data instanceof FormData;
     return await apiFetch('/companies', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      ...(isFormData ? {} : { headers: { 'Content-Type': 'application/json' } }),
+      body: isFormData ? data : JSON.stringify(data),
     });
   },
 
@@ -25,11 +28,12 @@ export const companyService = {
   },
 
   // Atualizar empresa
-  updateCompany: async (id: string, data: Partial<CompanyData>) => {
+  updateCompany: async (id: string, data: CompanyInput) => {
+    const isFormData = data instanceof FormData;
     return await apiFetch(`/companies/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      ...(isFormData ? {} : { headers: { 'Content-Type': 'application/json' } }),
+      body: isFormData ? data : JSON.stringify(data),
     });
   },
 

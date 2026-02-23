@@ -102,10 +102,12 @@ export class CreateInvoicesTable20260211143312 implements MigrationInterface {
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     const table = await queryRunner.getTable('invoices');
-    const foreignKey = table.foreignKeys.find(
+    const foreignKey = table?.foreignKeys.find(
       (fk) => fk.columnNames.indexOf('orderId') !== -1,
     );
-    await queryRunner.dropForeignKey('invoices', foreignKey);
+    if (foreignKey) {
+      await queryRunner.dropForeignKey('invoices', foreignKey);
+    }
     await queryRunner.dropTable('invoices');
   }
 }

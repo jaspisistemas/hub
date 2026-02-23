@@ -18,7 +18,7 @@ Sistema completo de integração com marketplaces (Mercado Livre, Shopee, etc.) 
 ### Backend
 - **Framework**: NestJS
 - **ORM**: TypeORM
-- **Database**: SQLite (desenvolvimento) / SQL Server (produção)
+- **Database**: PostgreSQL
 - **Autenticação**: JWT + Passport
 - **Validação**: class-validator + class-transformer
 - **WebSocket**: Socket.io para notificações em tempo real
@@ -109,7 +109,11 @@ Crie o arquivo `backend/.env` com base no `.env.example`:
 
 ```env
 # Database
-DATABASE_URL="file:./dev.db"
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=postgres
+DB_PASSWORD=postgres
+DB_NAME=jaspi_hub
 
 # JWT
 JWT_SECRET=sua-chave-secreta-aqui
@@ -126,6 +130,30 @@ ML_CLIENT_SECRET=seu-client-secret-aqui
 ML_REDIRECT_URI=${BACKEND_URL}/marketplace/mercadolivre/callback
 ```
 
+### Redis (obrigatorio para queues)
+
+As filas usam Redis via BullMQ. Garanta um Redis ativo antes de iniciar o backend.
+
+Variaveis utilizadas:
+```env
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+```
+
+### Variaveis de ambiente criticas
+
+Backend:
+- `PORT`
+- `BACKEND_URL`
+- `FRONTEND_URL`
+- `CORS_ORIGINS`
+- `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_NAME`
+- `ML_APP_ID`, `ML_CLIENT_SECRET`, `ML_REDIRECT_URI`
+
+Frontend:
+- `VITE_API_URL`
+
 ### 3. Executar em modo desenvolvimento
 
 ```bash
@@ -137,11 +165,27 @@ npm run dev:backend  # Backend na porta 3000
 npm run dev:frontend # Frontend na porta 5174
 ```
 
+### Migrations
+
+As migrations ficam em `backend/src/migrations` e sao a fonte primaria.
+
+```bash
+npm -w backend run migration:run
+```
+
 ### 4. Acessar aplicação
 
 - **Frontend**: ${FRONTEND_URL}
 - **Backend**: ${BACKEND_URL}
 - **Login padrão**: Criar conta na tela de registro
+
+## 🧰 Troubleshooting
+
+- **Erro [ENV] ... is required**: confira se `backend/.env` existe e contem as variaveis criticas.
+- **Erro de CORS (Access-Control-Allow-Origin)**: valide `CORS_ORIGINS` e reinicie o backend.
+- **Frontend sem API**: configure `VITE_API_URL` e reinicie o dev server.
+- **Falha Redis / BullMQ**: verifique se o Redis esta ativo e se `REDIS_HOST/REDIS_PORT` estao corretos.
+- **Erro de conexao com banco**: confirme `DB_HOST/DB_PORT/DB_USERNAME/DB_PASSWORD/DB_NAME`.
 
 ## 📡 Endpoints da API
 

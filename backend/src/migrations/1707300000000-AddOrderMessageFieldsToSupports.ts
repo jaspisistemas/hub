@@ -33,6 +33,6 @@ export class AddOrderMessageFieldsToSupports1707300000000 implements MigrationIn
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.dropColumn('supports', 'orderExternalId');
     await queryRunner.dropColumn('supports', 'packId');
-    // Nota: não é possível remover valores de um enum no PostgreSQL facilmente
+    // Nota: nao e possivel remover valores de um enum no PostgreSQL facilmente
   }
 }

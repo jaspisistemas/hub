@@ -176,8 +176,13 @@ it('deveria retornar com sucesso imediato', async () => {
 import { rest } from 'msw';
 import { setupServer } from 'msw/node';
 
+const apiBaseUrl = process.env.API_URL;
+if (!apiBaseUrl) {
+  throw new Error('API_URL is required');
+}
+
 const server = setupServer(
-  rest.get('http://api.example.com/test', (req, res, ctx) => {
+  rest.get(`${apiBaseUrl}/test`, (req, res, ctx) => {
     return res(ctx.status(200), ctx.json({ success: true }));
   })
 );

@@ -3,7 +3,16 @@
  * Verifica comunicação, autenticação e features
  */
 
-const TEST_API_URL = process.env.API_URL || 'https://uneducated-georgiann-personifiant.ngrok-free.dev';
+const requiredEnv = (name: string): string => {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`[ENV] ${name} is required`);
+  }
+  return value;
+};
+
+const TEST_API_URL = requiredEnv('API_URL');
+const TEST_ORIGIN = requiredEnv('FRONTEND_URL');
 
 // Gerar senha segura para testes (nunca reutilizar em produção)
 function createSecurePassword(): string {
@@ -177,7 +186,7 @@ async function runAllTests() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Origin': 'http://localhost:5173',
+        'Origin': TEST_ORIGIN,
       },
       body: JSON.stringify({ token }),
     });

@@ -6,6 +6,7 @@ import { StoresService } from '../../domains/stores/stores.service';
 import { ProductsService } from '../../domains/products/products.service';
 import { SupportService } from '../../domains/support/support.service';
 import { QueueService } from '../../infra/queue/queue.service';
+import { environmentConfig } from '../../config/environment.config';
 
 /**
  * Controller para receber webhooks e gerenciar integrações com marketplaces
@@ -377,7 +378,7 @@ export class MarketplaceController {
     try {
       if (!code) {
         console.error('❌ Code não fornecido no callback');
-        const errorUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/lojas?ml_auth=error&reason=no_code`;
+        const errorUrl = `${environmentConfig.frontendUrl}/lojas?ml_auth=error&reason=no_code`;
         
         // Retornar HTML que notifica popup pai
         return res.send(`
@@ -452,7 +453,7 @@ export class MarketplaceController {
       });
       
       // Redirecionar para o frontend com sucesso
-      const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/lojas?ml_auth=success&store_id=${store.id}`;
+      const redirectUrl = `${environmentConfig.frontendUrl}/lojas?ml_auth=success&store_id=${store.id}`;
       console.log('🔄 Redirecionando para:', redirectUrl);
       
       // Retornar HTML que notifica popup pai e depois redireciona
@@ -480,7 +481,7 @@ export class MarketplaceController {
         reason = 'store_already_connected';
       }
       
-      const errorUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/lojas?ml_auth=error&reason=${reason}`;
+      const errorUrl = `${environmentConfig.frontendUrl}/lojas?ml_auth=error&reason=${reason}`;
       
       // Retornar HTML que notifica popup pai
       return res.send(`
@@ -518,10 +519,8 @@ export class MarketplaceController {
     }
     
     // Credenciais do Mercado Livre (em produção, usar variáveis de ambiente)
-    const APP_ID = process.env.ML_APP_ID || 'YOUR_APP_ID';
-    const REDIRECT_URI = encodeURIComponent(
-      process.env.ML_REDIRECT_URI || 'http://localhost:3000/marketplace/mercadolivre/callback'
-    );
+    const APP_ID = environmentConfig.mercadoLivre.appId;
+    const REDIRECT_URI = encodeURIComponent(environmentConfig.mercadoLivre.redirectUri);
     
     const statePayload = Buffer.from(JSON.stringify({ userId, companyId })).toString('base64url');
     console.log('✅ Redirecionando para ML com state (base64):', statePayload);

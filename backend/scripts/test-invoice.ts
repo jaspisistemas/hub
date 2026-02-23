@@ -14,7 +14,16 @@
 
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:3000';
+const requiredEnv = (name: string): string => {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`[ENV] ${name} is required`);
+  }
+  return value;
+};
+
+const API_BASE_URL = requiredEnv('BACKEND_URL');
+const FRONTEND_URL = requiredEnv('FRONTEND_URL');
 
 // Dados de exemplo de uma nota fiscal
 const mockInvoiceData = {
@@ -51,7 +60,7 @@ async function testCreateInvoice() {
     if (token === 'SEU_TOKEN_JWT_AQUI') {
       console.error('\n❌ ERRO: Você precisa configurar um token válido!');
       console.log('\n📋 Como obter um token:');
-      console.log('1. Acesse o frontend (http://localhost:5174)');
+      console.log(`1. Acesse o frontend (${FRONTEND_URL})`);
       console.log('2. Faça login');
       console.log('3. Abra DevTools > Application > Local Storage');
       console.log('4. Copie o valor de "token"');

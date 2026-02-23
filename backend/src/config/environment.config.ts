@@ -1,42 +1,45 @@
+import { config as loadEnv } from 'dotenv';
+
+loadEnv();
+
 /**
- * Configuração centralizada de URLs e ambientes
- * Lê automaticamente do .env
+ * Configuracao centralizada de URLs e ambientes
+ * Le automaticamente do .env
  */
+
+export const requiredEnv = (name: string): string => {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`[ENV] ${name} is required`);
+  }
+  return value;
+};
+
+const optionalEnv = (name: string): string | undefined => {
+  const value = process.env[name];
+  return value && value.trim().length > 0 ? value : undefined;
+};
+
+const parseCorsOrigins = (raw: string): Array<string | RegExp> =>
+  raw
+    .split(',')
+    .map(origin => origin.trim())
+    .filter(Boolean)
+    .map(origin => {
+      if (origin.startsWith('/') && origin.endsWith('/')) {
+        return new RegExp(origin.slice(1, -1));
+      }
+      return origin;
+    });
 
 export const environmentConfig = {
   // URLs
-  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
-  backendUrl: process.env.BACKEND_URL || 'http://localhost:3000',
+  frontendUrl: requiredEnv('FRONTEND_URL'),
+  backendUrl: requiredEnv('BACKEND_URL'),
   
   // CORS - todas as origens permitidas
   corsOrigins: (() => {
-    const origins = [
-      // Desenvolvimento local
-      'http://localhost:3000',
-      'https://localhost:3000',
-      'http://localhost:5173',
-      'https://localhost:5173',
-      'http://localhost:5174',
-      'https://localhost:5174',
-      'http://127.0.0.1:5173',
-      'https://127.0.0.1:5173',
-      
-      // Cloudflare Tunnels
-      'https://portsmouth-tin-import-favour.trycloudflare.com',
-      'https://panel-joshua-norfolk-molecular.trycloudflare.com',
-      
-      // ngrok
-      'https://uneducated-georgiann-personifiant.ngrok-free.dev',
-    ];
-    
-    // Adiciona URLs de ambiente se definidas
-    if (process.env.FRONTEND_URL && !origins.includes(process.env.FRONTEND_URL)) {
-      origins.push(process.env.FRONTEND_URL);
-    }
-    if (process.env.BACKEND_URL && !origins.includes(process.env.BACKEND_URL)) {
-      origins.push(process.env.BACKEND_URL);
-    }
-    
+    const origins = parseCorsOrigins(requiredEnv('CORS_ORIGINS'));
     console.log('[CORS] Origens permitidas:', origins);
     return origins;
   })(),
@@ -57,14 +60,14 @@ export const environmentConfig = {
 
   // APIs de terceiros
   mercadoLivre: {
-    appId: process.env.ML_APP_ID,
-    clientSecret: process.env.ML_CLIENT_SECRET,
-    redirectUri: process.env.ML_REDIRECT_URI || 'http://localhost:3000/marketplace/mercadolivre/callback',
+    appId: requiredEnv('ML_APP_ID'),
+    clientSecret: requiredEnv('ML_CLIENT_SECRET'),
+    redirectUri: requiredEnv('ML_REDIRECT_URI'),
   },
 
   shopee: {
-    partnerId: process.env.SHOPEE_PARTNER_ID,
-    partnerKey: process.env.SHOPEE_PARTNER_KEY,
-    redirectUri: process.env.SHOPEE_REDIRECT_URI || 'http://localhost:3000/marketplace/shopee/callback',
+    partnerId: optionalEnv('SHOPEE_PARTNER_ID'),
+    partnerKey: optionalEnv('SHOPEE_PARTNER_KEY'),
+    redirectUri: optionalEnv('SHOPEE_REDIRECT_URI'),
   },
 };

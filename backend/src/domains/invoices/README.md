@@ -61,7 +61,7 @@ orderId: "uuid-do-pedido"
 
 **Exemplo CURL:**
 ```bash
-curl -X POST http://localhost:3000/invoices/upload \
+curl -X POST ${BACKEND_URL}/invoices/upload \
   -H "Authorization: Bearer SEU_TOKEN" \
   -F "file=@nota.xml" \
   -F "orderId=123e4567-e89b-12d3-a456-426614174000"
@@ -341,5 +341,5 @@ backend/uploads/invoices/
 
 Acessíveis via:
 ```
-http://localhost:3000/uploads/invoices/{filename}
+${BACKEND_URL}/uploads/invoices/{filename}
 ```

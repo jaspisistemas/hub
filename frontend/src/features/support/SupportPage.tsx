@@ -607,16 +607,17 @@ const SupportPage: React.FC = () => {
                 <Typography variant="body2" color="text.secondary" gutterBottom>
                   <strong>Tipo:</strong> {getTypeLabel(selectedSupport.type)}
                 </Typography>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  <strong>Status:</strong>{' '}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="body2" color="text.secondary" component="span">
+                    <strong>Status:</strong>
+                  </Typography>
                   <Chip
                     label={getStatusLabel(selectedSupport.status)}
                     size="small"
                     variant="outlined"
                     color={selectedSupport.status === 'respondido' ? 'success' : 'warning'}
-                    sx={{ ml: 1 }}
                   />
-                </Typography>
+                </Box>
                 <Typography variant="body2" color="text.secondary" gutterBottom>
                   <strong>Enviada em:</strong> {new Date(selectedSupport.questionDate).toLocaleString('pt-BR')}
                 </Typography>

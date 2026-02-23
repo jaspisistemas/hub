@@ -3,7 +3,7 @@
 ## 1️⃣ Login (Obter Token)
 
 **Método:** `POST`  
-**URL:** `http://localhost:3000/auth/login`  
+**URL:** `${BACKEND_URL}/auth/login`  
 **Headers:**
 ```
 Content-Type: application/json
@@ -36,7 +36,7 @@ Content-Type: application/json
 ## 2️⃣ Listar Pedidos (Obter orderId)
 
 **Método:** `GET`  
-**URL:** `http://localhost:3000/orders`  
+**URL:** `${BACKEND_URL}/orders`  
 **Headers:**
 ```
 Authorization: Bearer SEU_TOKEN_AQUI
@@ -62,11 +62,11 @@ Authorization: Bearer SEU_TOKEN_AQUI
 ## 3️⃣ Buscar Dados Fiscais do Pedido (PRINCIPAL)
 
 **Método:** `GET`  
-**URL:** `http://localhost:3000/invoices/order/{ORDER_ID}/invoice-data`  
+**URL:** `${BACKEND_URL}/invoices/order/{ORDER_ID}/invoice-data`  
 
 Exemplo:
 ```
-http://localhost:3000/invoices/order/fe54c8f2-e374-43b6-8342-6564ed16672b/invoice-data
+${BACKEND_URL}/invoices/order/fe54c8f2-e374-43b6-8342-6564ed16672b/invoice-data
 ```
 
 **Headers:**
@@ -138,7 +138,7 @@ Authorization: Bearer SEU_TOKEN_AQUI
 ## 4️⃣ Anexar Nota Fiscal (Upload de Arquivo)
 
 **Método:** `POST`  
-**URL:** `http://localhost:3000/invoices/upload`  
+**URL:** `${BACKEND_URL}/invoices/upload`  
 **Headers:**
 ```
 Authorization: Bearer SEU_TOKEN_AQUI
@@ -176,7 +176,7 @@ Authorization: Bearer SEU_TOKEN_AQUI
 Se não tiver pedidos, crie um:
 
 **Método:** `POST`  
-**URL:** `http://localhost:3000/orders`  
+**URL:** `${BACKEND_URL}/orders`  
 **Headers:**
 ```
 Authorization: Bearer SEU_TOKEN_AQUI
@@ -238,7 +238,7 @@ Content-Type: application/json
 
 ### 1. Login
 1. Nova requisição → `POST`
-2. URL: `http://localhost:3000/auth/login`
+2. URL: `${BACKEND_URL}/auth/login`
 3. Body → raw → JSON
 4. Cole: `{"email": "admin@jaspi.com", "password": "admin123"}`
 5. **Send**
@@ -251,28 +251,28 @@ Content-Type: application/json
 
 ### 3. Buscar Pedidos
 1. Nova requisição → `GET`
-2. URL: `http://localhost:3000/orders`
+2. URL: `${BACKEND_URL}/orders`
 3. Authorization: Bearer Token (cole o token)
 4. **Send**
 5. Copie um `id` de pedido
 
 **Filtros opcionais:**
-- Apenas pedidos pagos: `http://localhost:3000/orders?paidOnly=true`
-- Filtrar por status: `http://localhost:3000/orders?status=paid,approved`
-- Filtrar por data de atualização: `http://localhost:3000/orders?updatedSince=2026-02-11T00:00:00.000Z`
-- Atalho para pagos: `http://localhost:3000/orders/paid`
-- Pagos + data: `http://localhost:3000/orders/paid?updatedSince=2026-02-11T00:00:00.000Z`
+- Apenas pedidos pagos: `${BACKEND_URL}/orders?paidOnly=true`
+- Filtrar por status: `${BACKEND_URL}/orders?status=paid,approved`
+- Filtrar por data de atualização: `${BACKEND_URL}/orders?updatedSince=2026-02-11T00:00:00.000Z`
+- Atalho para pagos: `${BACKEND_URL}/orders/paid`
+- Pagos + data: `${BACKEND_URL}/orders/paid?updatedSince=2026-02-11T00:00:00.000Z`
 
 ### 4. Buscar Dados Fiscais
 1. Nova requisição → `GET`
-2. URL: `http://localhost:3000/invoices/order/COLE_O_ID_AQUI/invoice-data`
+2. URL: `${BACKEND_URL}/invoices/order/COLE_O_ID_AQUI/invoice-data`
 3. Authorization: Bearer Token (cole o token)
 4. **Send**
 5. ✅ Veja todos os dados fiscais!
 
 ### 5. Anexar Nota Fiscal (Upload)
 1. Nova requisição → `POST`
-2. URL: `http://localhost:3000/invoices/upload`
+2. URL: `${BACKEND_URL}/invoices/upload`
 3. Authorization: Bearer Token (cole o token)
 4. Body → **form-data**
 5. Adicione chave `file` (type: File) e selecione o PDF/XML
@@ -327,6 +327,6 @@ GET    /invoices/order/:orderId                     - Buscar nota por pedido
 1. Crie uma **Collection** chamada "Jaspi Hub"
 2. Salve todas as requisições
 3. Configure uma **Variable** `{{token}}` para o accessToken
-4. Configure uma **Variable** `{{baseUrl}}` = `http://localhost:3000`
+4. Configure uma **Variable** `{{baseUrl}}` = `${BACKEND_URL}`
 
 Assim você reutiliza facilmente! 🚀

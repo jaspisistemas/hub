@@ -36,7 +36,11 @@ const invoicesService = {
     try {
       return await apiFetch<Invoice>(`/invoices/order/${orderId}`);
     } catch (error: any) {
-      if (error.message?.includes('404') || error.message?.includes('não encontrada')) {
+      if (
+        error.message?.includes('404') ||
+        error.message?.includes('não encontrada') ||
+        error.message?.includes('Resposta vazia do servidor')
+      ) {
         return null;
       }
       throw error;

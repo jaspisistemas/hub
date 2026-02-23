@@ -8,6 +8,12 @@ export default defineConfig({
     allowedHosts: ['portsmouth-tin-import-favour.trycloudflare.com', 'localhost'],
   },
   define: {
-    __API_URL__: JSON.stringify(process.env.VITE_API_URL || 'http://localhost:3000'),
+    __API_URL__: (() => {
+      const apiUrl = process.env.VITE_API_URL;
+      if (!apiUrl) {
+        throw new Error('VITE_API_URL is required');
+      }
+      return JSON.stringify(apiUrl);
+    })(),
   },
 });

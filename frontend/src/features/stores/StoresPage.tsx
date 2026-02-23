@@ -13,7 +13,6 @@ import {
   DialogContent,
   DialogActions,
   CircularProgress,
-  Alert,
   TextField,
   FormControl,
   InputLabel,
@@ -39,6 +38,7 @@ import { ordersService } from '../../services/ordersService';
 import PageHeader from '../../components/PageHeader';
 import StatusBadge from '../../components/StatusBadge';
 import EmptyState from '../../components/EmptyState';
+import InlineError from '../../components/InlineError';
 
 export default function StoresPage() {
   const [stores, setStores] = useState<Store[]>([]);
@@ -266,9 +266,9 @@ export default function StoresPage() {
       />
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
+        <Box sx={{ mb: 3 }}>
+          <InlineError message={error} onClose={() => setError(null)} />
+        </Box>
       )}
 
       {stores.length === 0 ? (

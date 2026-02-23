@@ -51,6 +51,7 @@ import PageHeader from '../../components/PageHeader';
 import StatusBadge from '../../components/StatusBadge';
 import EmptyState from '../../components/EmptyState';
 import DataTable, { Column } from '../../components/DataTable';
+import InlineError from '../../components/InlineError';
 import { storesService, Store } from '../../services/storesService';
 import * as websocket from '../../services/websocket';
 import invoicesService, { Invoice } from '../../services/invoicesService';
@@ -128,10 +129,12 @@ export default function OrdersPage() {
     };
   }, []);
 
-  const loadOrders = async () => {
+  const loadOrders = async ({ silent = false }: { silent?: boolean } = {}) => {
     console.log('loadOrders iniciado');
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
       setError(null);
       console.log('Chamando ordersService.getAll()');
       const data = await ordersService.getAll();
@@ -143,7 +146,9 @@ export default function OrdersPage() {
       setOrders([]);
     } finally {
       console.log('loadOrders finalizado');
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   };
 
@@ -153,7 +158,7 @@ export default function OrdersPage() {
       setError(null);
       const result = await ordersService.sync();
       setNotification(`Sincronização concluída: ${result.imported} novos, ${result.updated} atualizados`);
-      await loadOrders();
+      await loadOrders({ silent: true });
     } catch (err) {
       console.error('Erro ao sincronizar pedidos:', err);
       setError(err instanceof Error ? err.message : 'Erro ao sincronizar pedidos');
@@ -530,7 +535,7 @@ export default function OrdersPage() {
           <Button
             variant="outlined"
             color="success"
-            startIcon={<SyncIcon />}
+            startIcon={syncing ? <CircularProgress size={16} color="inherit" /> : <SyncIcon />}
             onClick={handleSyncOrders}
             disabled={syncing}
           >
@@ -718,9 +723,10 @@ export default function OrdersPage() {
           <Grid item xs={12} md={6}>
             <TextField
               fullWidth
-              placeholder="Buscar por ID, marketplace ou nome do cliente..."
+              placeholder="Buscar pedidos"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              size="small"
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -884,9 +890,9 @@ export default function OrdersPage() {
       </Paper>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
+        <Box sx={{ mb: 3 }}>
+          <InlineError message={error} onClose={() => setError(null)} />
+        </Box>
       )}
 
       <DataTable<Order>

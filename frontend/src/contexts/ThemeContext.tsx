@@ -25,7 +25,7 @@ export function ThemeContextProvider({ children }: { children: React.ReactNode }
   }, [isDarkMode]);
 
   const toggleTheme = () => {
-    setIsDarkMode((prev) => !prev);
+    setIsDarkMode((prev: boolean) => !prev);
   };
 
   const theme = useMemo(
@@ -85,6 +85,10 @@ export function ThemeContextProvider({ children }: { children: React.ReactNode }
                 backgroundColor: isDarkMode ? '#0b0f17' : '#F5F5F7',
                 color: isDarkMode ? '#E5E7EB' : '#1D1D1F',
               },
+              '*:focus-visible': {
+                outline: `2px solid ${isDarkMode ? '#7AB7FF' : '#2D6FD6'}`,
+                outlineOffset: 2,
+              },
               '*::-webkit-scrollbar': {
                 width: 10,
                 height: 10,
@@ -118,6 +122,32 @@ export function ThemeContextProvider({ children }: { children: React.ReactNode }
               },
               outlined: {
                 borderColor: isDarkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.12)',
+              },
+            },
+          },
+          MuiButtonBase: {
+            styleOverrides: {
+              root: {
+                '&.Mui-focusVisible': {
+                  outline: `2px solid ${isDarkMode ? '#7AB7FF' : '#2D6FD6'}`,
+                  outlineOffset: 2,
+                },
+              },
+            },
+          },
+          MuiMenu: {
+            defaultProps: {
+              MenuListProps: {
+                autoFocusItem: true,
+              },
+            },
+          },
+          MuiMenuItem: {
+            styleOverrides: {
+              root: {
+                '&.Mui-focusVisible': {
+                  backgroundColor: isDarkMode ? 'rgba(255,255,255,0.12)' : 'rgba(79,156,249,0.12)',
+                },
               },
             },
           },
@@ -177,6 +207,22 @@ export function ThemeContextProvider({ children }: { children: React.ReactNode }
                     opacity: 1,
                   },
                 },
+              },
+            },
+          },
+          MuiInputLabel: {
+            styleOverrides: {
+              root: {
+                fontWeight: 500,
+              },
+            },
+          },
+          MuiFormHelperText: {
+            styleOverrides: {
+              root: {
+                marginLeft: 0,
+                marginRight: 0,
+                fontSize: '0.75rem',
               },
             },
           },

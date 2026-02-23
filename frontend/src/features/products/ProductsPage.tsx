@@ -14,7 +14,6 @@ import {
   DialogContent,
   DialogActions,
   Grid,
-  Snackbar,
   IconButton,
   Avatar,
   Checkbox,
@@ -34,6 +33,7 @@ import {
   Menu,
   MenuItem,
   LinearProgress,
+  Snackbar,
 } from '@mui/material';
 import {
   Add as AddIcon, 
@@ -51,6 +51,7 @@ import PageHeader from '../../components/PageHeader';
 import StatusBadge from '../../components/StatusBadge';
 import EmptyState from '../../components/EmptyState';
 import DataTable, { Column, TableImage, TruncatedText } from '../../components/DataTable';
+import InlineError from '../../components/InlineError';
 import { productsService, Product, CreateProductInput } from '../../services/productsService';
 import { storesService, Store } from '../../services/storesService';
 import * as websocket from '../../services/websocket';
@@ -131,16 +132,20 @@ export default function ProductsPage() {
     };
   }, []);
 
-  const loadProducts = async () => {
+  const loadProducts = async ({ silent = false }: { silent?: boolean } = {}) => {
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
       setError(null);
       const data = await productsService.getAll();
       setProducts(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao carregar produtos');
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   };
 
@@ -486,7 +491,7 @@ export default function ProductsPage() {
       const data = await response.json();
       setNotification(`${data.count || 0} produtos sincronizados com sucesso!`);
       setSyncDialogOpen(false);
-      loadProducts();
+      loadProducts({ silent: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao sincronizar produtos');
     } finally {
@@ -517,10 +522,11 @@ export default function ProductsPage() {
             <Button 
               variant="outlined" 
               color="success" 
-              startIcon={<SyncIcon />} 
+              startIcon={syncing ? <CircularProgress size={16} color="inherit" /> : <SyncIcon />} 
               onClick={() => setSyncDialogOpen(true)}
+              disabled={syncing}
             >
-              Sincronizar
+              {syncing ? 'Sincronizando...' : 'Sincronizar'}
             </Button>
             <Button 
               variant="outlined" 
@@ -543,9 +549,9 @@ export default function ProductsPage() {
       />
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
+        <Box sx={{ mb: 3 }}>
+          <InlineError message={error} onClose={() => setError(null)} />
+        </Box>
       )}
 
       <Paper 
@@ -562,9 +568,10 @@ export default function ProductsPage() {
       >
         <TextField
           fullWidth
-          placeholder="Buscar por nome ou SKU..."
+          placeholder="Buscar produtos"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
+          size="small"
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">

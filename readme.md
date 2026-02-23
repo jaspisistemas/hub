@@ -116,11 +116,14 @@ JWT_SECRET=sua-chave-secreta-aqui
 
 # Servidor
 PORT=3000
+BACKEND_URL=https://seu-server.com
+FRONTEND_URL=https://seu-frontend.com
+CORS_ORIGINS=https://seu-frontend.com,https://seu-server.com
 
 # Mercado Livre API
 ML_APP_ID=seu-app-id-aqui
 ML_CLIENT_SECRET=seu-client-secret-aqui
-ML_REDIRECT_URI=http://localhost:3000/marketplace/mercadolivre/callback
+ML_REDIRECT_URI=${BACKEND_URL}/marketplace/mercadolivre/callback
 ```
 
 ### 3. Executar em modo desenvolvimento
@@ -136,8 +139,8 @@ npm run dev:frontend # Frontend na porta 5174
 
 ### 4. Acessar aplicação
 
-- **Frontend**: http://localhost:5174
-- **Backend**: http://localhost:3000
+- **Frontend**: ${FRONTEND_URL}
+- **Backend**: ${BACKEND_URL}
 - **Login padrão**: Criar conta na tela de registro
 
 ## 📡 Endpoints da API
@@ -196,8 +199,8 @@ npm run dev:frontend # Frontend na porta 5174
 2. Faça login com sua conta ML
 3. Vá em "Minhas Aplicações" > "Criar nova aplicação"
 4. Configure:
-   - **URL de redirect**: `http://localhost:3000/marketplace/mercadolivre/callback` ou URL do ngrok
-   - **Webhook**: `https://seu-ngrok-url/marketplace/mercadolivre/webhook`
+  - **URL de redirect**: `${BACKEND_URL}/marketplace/mercadolivre/callback`
+  - **Webhook**: `${BACKEND_URL}/marketplace/mercadolivre/webhook`
 
 ### 2. Configurar credenciais
 
@@ -206,14 +209,14 @@ Adicione as credenciais no arquivo `backend/.env`:
 ```env
 ML_APP_ID=seu-app-id
 ML_CLIENT_SECRET=seu-client-secret
-ML_REDIRECT_URI=http://localhost:3000/marketplace/mercadolivre/callback
+ML_REDIRECT_URI=${BACKEND_URL}/marketplace/mercadolivre/callback
 ```
 
 ### 3. Autorizar aplicação
 
 Acesse no navegador:
 ```
-http://localhost:3000/marketplace/mercadolivre/auth
+${BACKEND_URL}/marketplace/mercadolivre/auth
 ```
 
 Os tokens serão salvos automaticamente no banco de dados.

@@ -2,6 +2,11 @@ import { API_BASE_URL, getApiBaseUrl } from './api';
 
 const API_URL = getApiBaseUrl();
 
+const buildHeaders = () => ({
+  'Content-Type': 'application/json',
+  'ngrok-skip-browser-warning': 'true',
+});
+
 export interface LoginResponse {
   accessToken: string;
   user: {
@@ -19,18 +24,21 @@ export interface RegisterRequest {
   phone?: string;
 }
 
+export interface RegisterResponse {
+  message: string;
+  verificationUrl?: string;
+}
+
 export interface LoginRequest {
   email: string;
   password: string;
 }
 
 export const authService = {
-  async register(data: RegisterRequest): Promise<LoginResponse> {
+  async register(data: RegisterRequest): Promise<RegisterResponse> {
     const response = await fetch(`${API_URL}/auth/register`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: buildHeaders(),
       body: JSON.stringify(data),
     });
 
@@ -42,12 +50,42 @@ export const authService = {
     return response.json();
   },
 
+  async verifyEmail(token: string): Promise<{ message: string }> {
+    const response = await fetch(`${API_URL}/auth/verify-email/${token}`, {
+      method: 'GET',
+      headers: {
+        'ngrok-skip-browser-warning': 'true',
+      },
+    });
+
+    const rawText = await response.text();
+
+    const parseJson = () => {
+      try {
+        return JSON.parse(rawText);
+      } catch (parseError) {
+        return null;
+      }
+    };
+
+    if (!response.ok) {
+      const parsed = parseJson();
+      const message = parsed?.message || rawText || 'Erro ao verificar email';
+      throw new Error(message);
+    }
+
+    const parsed = parseJson();
+    if (parsed?.message) {
+      return { message: parsed.message };
+    }
+
+    return { message: rawText || 'Email verificado com sucesso' };
+  },
+
   async login(data: LoginRequest): Promise<LoginResponse> {
     const response = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: buildHeaders(),
       body: JSON.stringify(data),
     });
 

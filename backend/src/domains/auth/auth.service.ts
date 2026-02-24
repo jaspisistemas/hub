@@ -3,10 +3,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { v4 as uuid } from 'uuid';
+import { environmentConfig } from '../../config/environment.config';
 import { User } from './entities/user.entity';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdatePreferencesDto } from './dto/update-preferences.dto';
+import { EmailService } from '../../infra/email/email.service';
 
 @Injectable()
 export class AuthService {
@@ -14,6 +17,7 @@ export class AuthService {
     @InjectRepository(User)
     private usersRepository: Repository<User>,
     private jwtService: JwtService,
+    private emailService: EmailService,
   ) {}
 
   async login(email: string, password: string) {
@@ -31,6 +35,10 @@ export class AuthService {
 
     if (!isPasswordValid) {
       throw new Error('Email ou senha inválidos');
+    }
+
+    if (!user.emailVerifiedAt) {
+      throw new UnauthorizedException('Email nao verificado. Verifique sua caixa de entrada.');
     }
 
     // Gerar JWT token
@@ -65,33 +73,54 @@ export class AuthService {
     // Criptografar senha
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Criar usuário
-    const user = await this.usersRepository.save(
+    const verificationToken = uuid();
+
+    await this.usersRepository.save(
       this.usersRepository.create({
         email,
         password: hashedPassword,
         name,
         ...(phone && { phone }),
+        emailVerifiedAt: null,
+        emailVerificationToken: verificationToken,
+        emailVerificationSentAt: new Date(),
       }),
     );
 
-    // Gerar JWT token
-    const token = this.jwtService.sign({
-      sub: user.id,
-      email: user.email,
-      name: user.name,
-      companyId: user.companyId,
-    });
+    const frontendUrl = environmentConfig.frontendUrl.replace(/\/$/, '');
+    const verificationUrl = `${frontendUrl}/verificar-email/${verificationToken}`;
+
+    try {
+      await this.emailService.sendVerificationEmail(email, verificationUrl);
+    } catch (error) {
+      console.error('[EMAIL] Failed to send verification email:', error);
+    }
 
     return {
-      accessToken: token,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        companyId: user.companyId,
-      },
+      message: 'Conta criada. Verifique seu email para ativar o acesso.',
+      verificationUrl,
     };
+  }
+
+  async verifyEmail(token: string) {
+    const user = await this.usersRepository.findOne({
+      where: { emailVerificationToken: token },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Token de verificacao invalido');
+    }
+
+    if (user.emailVerifiedAt) {
+      return { message: 'Email ja verificado' };
+    }
+
+    user.emailVerifiedAt = new Date();
+    user.emailVerificationToken = null as any;
+    user.emailVerificationSentAt = null as any;
+    await this.usersRepository.save(user);
+
+    return { message: 'Email verificado com sucesso' };
   }
 
   async validateToken(token: string) {

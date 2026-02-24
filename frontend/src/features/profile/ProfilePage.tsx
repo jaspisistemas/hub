@@ -51,7 +51,7 @@ import {
 import { profileService } from '../../services/profileService';
 import { companyService } from '../../services/companyService';
 import { apiFetch } from '../../services/api';
-import collaboratorsService from '../../services/collaboratorsService';
+import collaboratorsService, { CompanyMember } from '../../services/collaboratorsService';
 import PageHeader from '../../components/PageHeader';
 import { useThemeMode } from '../../contexts/ThemeContext';
 
@@ -121,7 +121,7 @@ export default function ProfilePage() {
   const [changePasswordDialog, setChangePasswordDialog] = useState(false);
 
   // Colaboradores states
-  const [members, setMembers] = useState<any[]>([]);
+  const [members, setMembers] = useState<CompanyMember[]>([]);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('member');
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
@@ -293,11 +293,25 @@ export default function ProfilePage() {
 
     try {
       setInviteSending(true);
-      await collaboratorsService.inviteMember(company.id, {
+      const result = await collaboratorsService.inviteMember(company.id, {
         email: inviteEmail,
         role: inviteRole as any,
       });
-      setSuccess('Convite enviado com sucesso!');
+      if (result?.inviteToken) {
+        const inviteUrl = `${window.location.origin}/invite/${result.inviteToken}`;
+        if (navigator.clipboard?.writeText) {
+          try {
+            await navigator.clipboard.writeText(inviteUrl);
+            setSuccess('Convite enviado! Link copiado para a area de transferencia.');
+          } catch (copyError) {
+            setSuccess(`Convite enviado! Link: ${inviteUrl}`);
+          }
+        } else {
+          setSuccess(`Convite enviado! Link: ${inviteUrl}`);
+        }
+      } else {
+        setSuccess('Convite enviado com sucesso!');
+      }
       setInviteEmail('');
       setInviteRole('member');
       setInviteDialogOpen(false);

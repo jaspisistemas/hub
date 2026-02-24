@@ -3,7 +3,7 @@ import { apiFetch } from './api';
 export interface CompanyMember {
   id: string;
   email: string;
-  role: 'owner' | 'admin' | 'manager' | 'member';
+  role: 'admin' | 'member';
   acceptedAt?: string;
   inviteSentAt?: string;
   user?: {
@@ -15,7 +15,12 @@ export interface CompanyMember {
 
 export interface InvitePayload {
   email: string;
-  role: 'owner' | 'admin' | 'manager' | 'member';
+  role: 'admin' | 'member';
+}
+
+export interface InviteResponse {
+  member: CompanyMember;
+  inviteToken: string;
 }
 
 const collaboratorsService = {
@@ -27,7 +32,7 @@ const collaboratorsService = {
   },
 
   // Convidar novo colaborador
-  async inviteMember(companyId: string, data: InvitePayload): Promise<CompanyMember> {
+  async inviteMember(companyId: string, data: InvitePayload): Promise<InviteResponse> {
     return apiFetch(`/companies/${companyId}/members`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -38,7 +43,7 @@ const collaboratorsService = {
   // Atualizar função do colaborador
   async updateMemberRole(
     memberId: string,
-    role: 'owner' | 'admin' | 'manager' | 'member'
+    role: 'admin' | 'member'
   ): Promise<CompanyMember> {
     return apiFetch(`/companies/members/${memberId}/role`, {
       method: 'PUT',
@@ -58,6 +63,8 @@ const collaboratorsService = {
   async acceptInvite(inviteToken: string): Promise<any> {
     return apiFetch(`/companies/invite/${inviteToken}`, {
       method: 'POST',
+      needsAuth: false,
+      suppressAuthRedirect: true,
     });
   },
 };

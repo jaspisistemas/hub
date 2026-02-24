@@ -8,6 +8,7 @@ import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './features/auth/LoginPage';
+import VerifyEmailPage from './features/auth/VerifyEmailPage';
 import CompanyOnboardingPage from './features/onboarding/CompanyOnboardingPage';
 import DashboardPage from './features/dashboard/DashboardPage';
 import OrdersPage from './features/orders/OrdersPage';
@@ -17,6 +18,7 @@ import SupportPage from './features/support/SupportPage';
 import HelpCenterPage from './features/support/HelpCenterPage';
 import ProfilePage from './features/profile/ProfilePage';
 import ReportsPage from './features/reports/ReportsPage';
+import AcceptInvitePage from './features/invite/AcceptInvitePage';
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
@@ -51,6 +53,8 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/auth/login" element={<Navigate to="/login" replace />} />
+            <Route path="/verificar-email/:token" element={<VerifyEmailPage />} />
+            <Route path="/invite/:token" element={<AcceptInvitePage />} />
             <Route path="/onboarding/empresa" element={<CompanyOnboardingPage />} />
 
         <Route

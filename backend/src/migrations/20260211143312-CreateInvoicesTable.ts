@@ -88,16 +88,26 @@ export class CreateInvoicesTable20260211143312 implements MigrationInterface {
       true,
     );
 
-    // Foreign key para orders
-    await queryRunner.createForeignKey(
-      'invoices',
-      new TableForeignKey({
-        columnNames: ['orderId'],
-        referencedColumnNames: ['id'],
-        referencedTableName: 'orders',
-        onDelete: 'CASCADE',
-      }),
-    );
+    // Foreign key para orders (evitar duplicacao)
+    const table = await queryRunner.getTable('invoices');
+    const hasOrderFk =
+      table?.foreignKeys.some(
+        (fk) =>
+          fk.columnNames.includes('orderId') &&
+          fk.referencedTableName === 'orders',
+      ) ?? false;
+
+    if (!hasOrderFk) {
+      await queryRunner.createForeignKey(
+        'invoices',
+        new TableForeignKey({
+          columnNames: ['orderId'],
+          referencedColumnNames: ['id'],
+          referencedTableName: 'orders',
+          onDelete: 'CASCADE',
+        }),
+      );
+    }
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

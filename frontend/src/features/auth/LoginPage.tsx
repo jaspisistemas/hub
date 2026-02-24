@@ -10,9 +10,17 @@ import {
   InputAdornment,
   Grid,
   Avatar,
+  IconButton,
 } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Email as EmailIcon, Lock as LockIcon, Person as PersonIcon } from '@mui/icons-material';
+import {
+  Email as EmailIcon,
+  Lock as LockIcon,
+  Person as PersonIcon,
+  Phone as PhoneIcon,
+  Visibility as VisibilityIcon,
+  VisibilityOff as VisibilityOffIcon,
+} from '@mui/icons-material';
 import { authService } from '../../services/authService';
 
 export default function LoginPage() {
@@ -21,6 +29,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [infoMessage, setInfoMessage] = useState('');
@@ -67,23 +76,49 @@ export default function LoginPage() {
     try {
       if (isRegistering) {
         const response = await authService.register({ email, password, name, phone });
-        authService.setToken(response.accessToken);
-        localStorage.setItem('user', JSON.stringify(response.user));
-        navigate('/');
-      } else {
-        const response = await authService.login({ email, password });
-        authService.setToken(response.accessToken);
-        localStorage.setItem('user', JSON.stringify(response.user));
-        navigate('/');
+        const baseMessage = response.message || 'Conta criada. Verifique seu email para ativar o acesso.';
+
+        if (response.verificationUrl) {
+          if (navigator.clipboard?.writeText) {
+            try {
+              await navigator.clipboard.writeText(response.verificationUrl);
+              setInfoMessage(`${baseMessage} Link copiado para a area de transferencia.`);
+            } catch (copyError) {
+              setInfoMessage(`${baseMessage} Link: ${response.verificationUrl}`);
+            }
+          } else {
+            setInfoMessage(`${baseMessage} Link: ${response.verificationUrl}`);
+          }
+        } else {
+          setInfoMessage(baseMessage);
+        }
+
+        setIsRegistering(false);
+        setName('');
+        setPhone('');
+        setEmail('');
+        setPassword('');
+        return;
       }
+
+      const response = await authService.login({ email, password });
+      authService.setToken(response.accessToken);
+      localStorage.setItem('user', JSON.stringify(response.user));
+      navigate('/');
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : isRegistering
-            ? 'Erro ao registrar. Tente novamente.'
-            : 'Erro ao fazer login. Tente novamente.'
-      );
+      const message = err instanceof Error
+        ? err.message
+        : isRegistering
+          ? 'Erro ao registrar. Tente novamente.'
+          : 'Erro ao fazer login. Tente novamente.';
+
+      if (!isRegistering && message.toLowerCase().includes('email nao verificado')) {
+        setInfoMessage(message);
+        setError('');
+      } else {
+        setError(message);
+      }
+    } finally {
       setIsLoading(false);
     }
   };
@@ -166,36 +201,27 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit}>
             {isRegistering && (
-              <>
-                <TextField
-                  fullWidth
-                  label="Nome"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  margin="normal"
-                  required
-                  placeholder="Seu nome completo"
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 1.5,
-                    },
-                  }}
-                />
-                <TextField
-                  fullWidth
-                  label="Telefone"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  margin="normal"
-                  required
-                  placeholder="(00) 00000-0000"
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 1.5,
-                    },
-                  }}
-                />
-              </>
+              <TextField
+                fullWidth
+                label="Nome"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                margin="normal"
+                required
+                placeholder="Seu nome completo"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <PersonIcon sx={{ color: '#555555', mr: 1 }} />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 1.5,
+                  },
+                }}
+              />
             )}
             <TextField
               fullWidth
@@ -219,10 +245,33 @@ export default function LoginPage() {
                 },
               }}
             />
+            {isRegistering && (
+              <TextField
+                fullWidth
+                label="Telefone"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                margin="normal"
+                required
+                placeholder="(00) 00000-0000"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <PhoneIcon sx={{ color: '#555555', mr: 1 }} />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 1.5,
+                  },
+                }}
+              />
+            )}
             <TextField
               fullWidth
               label="Senha"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               margin="normal"
@@ -232,6 +281,18 @@ export default function LoginPage() {
                 startAdornment: (
                   <InputAdornment position="start">
                     <LockIcon sx={{ color: '#555555', mr: 1 }} />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                      edge="end"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      onMouseDown={(event) => event.preventDefault()}
+                    >
+                      {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                    </IconButton>
                   </InputAdornment>
                 ),
               }}

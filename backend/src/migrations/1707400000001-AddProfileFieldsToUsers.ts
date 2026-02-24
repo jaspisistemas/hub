@@ -2,8 +2,14 @@ import { MigrationInterface, QueryRunner, TableColumn } from 'typeorm';
 
 export class AddProfileFieldsToUsers1707400000001 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.addColumn(
-      'users',
+    const addColumnIfMissing = async (column: TableColumn) => {
+      const exists = await queryRunner.hasColumn('users', column.name);
+      if (!exists) {
+        await queryRunner.addColumn('users', column);
+      }
+    };
+
+    await addColumnIfMissing(
       new TableColumn({
         name: 'phone',
         type: 'varchar',
@@ -11,8 +17,7 @@ export class AddProfileFieldsToUsers1707400000001 implements MigrationInterface 
       }),
     );
 
-    await queryRunner.addColumn(
-      'users',
+    await addColumnIfMissing(
       new TableColumn({
         name: 'role',
         type: 'varchar',
@@ -20,8 +25,7 @@ export class AddProfileFieldsToUsers1707400000001 implements MigrationInterface 
       }),
     );
 
-    await queryRunner.addColumn(
-      'users',
+    await addColumnIfMissing(
       new TableColumn({
         name: 'companyName',
         type: 'varchar',
@@ -29,8 +33,7 @@ export class AddProfileFieldsToUsers1707400000001 implements MigrationInterface 
       }),
     );
 
-    await queryRunner.addColumn(
-      'users',
+    await addColumnIfMissing(
       new TableColumn({
         name: 'cnpj',
         type: 'varchar',
@@ -38,8 +41,7 @@ export class AddProfileFieldsToUsers1707400000001 implements MigrationInterface 
       }),
     );
 
-    await queryRunner.addColumn(
-      'users',
+    await addColumnIfMissing(
       new TableColumn({
         name: 'address',
         type: 'text',
@@ -47,8 +49,7 @@ export class AddProfileFieldsToUsers1707400000001 implements MigrationInterface 
       }),
     );
 
-    await queryRunner.addColumn(
-      'users',
+    await addColumnIfMissing(
       new TableColumn({
         name: 'avatarUrl',
         type: 'varchar',
@@ -56,8 +57,7 @@ export class AddProfileFieldsToUsers1707400000001 implements MigrationInterface 
       }),
     );
 
-    await queryRunner.addColumn(
-      'users',
+    await addColumnIfMissing(
       new TableColumn({
         name: 'logoUrl',
         type: 'varchar',
@@ -65,8 +65,7 @@ export class AddProfileFieldsToUsers1707400000001 implements MigrationInterface 
       }),
     );
 
-    await queryRunner.addColumn(
-      'users',
+    await addColumnIfMissing(
       new TableColumn({
         name: 'theme',
         type: 'varchar',
@@ -75,8 +74,7 @@ export class AddProfileFieldsToUsers1707400000001 implements MigrationInterface 
       }),
     );
 
-    await queryRunner.addColumn(
-      'users',
+    await addColumnIfMissing(
       new TableColumn({
         name: 'language',
         type: 'varchar',
@@ -85,8 +83,7 @@ export class AddProfileFieldsToUsers1707400000001 implements MigrationInterface 
       }),
     );
 
-    await queryRunner.addColumn(
-      'users',
+    await addColumnIfMissing(
       new TableColumn({
         name: 'currency',
         type: 'varchar',
@@ -95,8 +92,7 @@ export class AddProfileFieldsToUsers1707400000001 implements MigrationInterface 
       }),
     );
 
-    await queryRunner.addColumn(
-      'users',
+    await addColumnIfMissing(
       new TableColumn({
         name: 'defaultDashboardPeriod',
         type: 'int',
@@ -105,8 +101,7 @@ export class AddProfileFieldsToUsers1707400000001 implements MigrationInterface 
       }),
     );
 
-    await queryRunner.addColumn(
-      'users',
+    await addColumnIfMissing(
       new TableColumn({
         name: 'notificationsEmail',
         type: 'boolean',
@@ -115,8 +110,7 @@ export class AddProfileFieldsToUsers1707400000001 implements MigrationInterface 
       }),
     );
 
-    await queryRunner.addColumn(
-      'users',
+    await addColumnIfMissing(
       new TableColumn({
         name: 'notificationsSystem',
         type: 'boolean',
@@ -125,17 +119,15 @@ export class AddProfileFieldsToUsers1707400000001 implements MigrationInterface 
       }),
     );
 
-    await queryRunner.addColumn(
-      'users',
+    await addColumnIfMissing(
       new TableColumn({
         name: 'lastLoginAt',
-        type: 'datetime',
+        type: 'timestamp',
         isNullable: true,
       }),
     );
 
-    await queryRunner.addColumn(
-      'users',
+    await addColumnIfMissing(
       new TableColumn({
         name: 'lastLoginIp',
         type: 'varchar',
@@ -143,8 +135,7 @@ export class AddProfileFieldsToUsers1707400000001 implements MigrationInterface 
       }),
     );
 
-    await queryRunner.addColumn(
-      'users',
+    await addColumnIfMissing(
       new TableColumn({
         name: 'loginHistory',
         type: 'simple-json',
@@ -154,21 +145,28 @@ export class AddProfileFieldsToUsers1707400000001 implements MigrationInterface 
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.dropColumn('users', 'phone');
-    await queryRunner.dropColumn('users', 'role');
-    await queryRunner.dropColumn('users', 'companyName');
-    await queryRunner.dropColumn('users', 'cnpj');
-    await queryRunner.dropColumn('users', 'address');
-    await queryRunner.dropColumn('users', 'avatarUrl');
-    await queryRunner.dropColumn('users', 'logoUrl');
-    await queryRunner.dropColumn('users', 'theme');
-    await queryRunner.dropColumn('users', 'language');
-    await queryRunner.dropColumn('users', 'currency');
-    await queryRunner.dropColumn('users', 'defaultDashboardPeriod');
-    await queryRunner.dropColumn('users', 'notificationsEmail');
-    await queryRunner.dropColumn('users', 'notificationsSystem');
-    await queryRunner.dropColumn('users', 'lastLoginAt');
-    await queryRunner.dropColumn('users', 'lastLoginIp');
-    await queryRunner.dropColumn('users', 'loginHistory');
+    const dropColumnIfExists = async (name: string) => {
+      const exists = await queryRunner.hasColumn('users', name);
+      if (exists) {
+        await queryRunner.dropColumn('users', name);
+      }
+    };
+
+    await dropColumnIfExists('phone');
+    await dropColumnIfExists('role');
+    await dropColumnIfExists('companyName');
+    await dropColumnIfExists('cnpj');
+    await dropColumnIfExists('address');
+    await dropColumnIfExists('avatarUrl');
+    await dropColumnIfExists('logoUrl');
+    await dropColumnIfExists('theme');
+    await dropColumnIfExists('language');
+    await dropColumnIfExists('currency');
+    await dropColumnIfExists('defaultDashboardPeriod');
+    await dropColumnIfExists('notificationsEmail');
+    await dropColumnIfExists('notificationsSystem');
+    await dropColumnIfExists('lastLoginAt');
+    await dropColumnIfExists('lastLoginIp');
+    await dropColumnIfExists('loginHistory');
   }
 }

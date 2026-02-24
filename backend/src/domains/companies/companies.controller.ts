@@ -103,12 +103,6 @@ export class CompaniesController {
     return this.companiesService.getMembers(companyId);
   }
 
-  // Aceitar convite
-  @Post('invite/:token')
-  async acceptInvite(@Param('token') token: string) {
-    return this.companiesService.acceptInvite(token);
-  }
-
   // Alterar role do colaborador
   @Put('members/:memberId/role')
   async updateMemberRole(

@@ -27,7 +27,6 @@ import {
   Settings as SettingsIcon,
   Storefront as StorefrontIcon,
   Close as CloseIcon,
-  Edit as EditIcon,
   Delete as DeleteIcon,
   Link as LinkIcon,
   Info as InfoIcon,
@@ -142,16 +141,6 @@ export default function StoresPage() {
       name: '',
       marketplace: '',
       status: 'pending',
-    });
-    setOpenDialog(true);
-  };
-
-  const handleOpenEdit = (store: Store) => {
-    setEditingId(store.id);
-    setFormData({
-      name: store.name,
-      marketplace: store.marketplace,
-      status: store.status,
     });
     setOpenDialog(true);
   };
@@ -354,20 +343,13 @@ export default function StoresPage() {
                   Última sincronização: {store.updatedAt || 'Nunca'}
                 </Typography>
 
-                <Box sx={{ display: 'flex', gap: 1 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
                   <Button
                     size="small"
-                    variant="outlined"
-                    color="primary"
-                    startIcon={<EditIcon />}
-                    onClick={() => handleOpenEdit(store)}
-                    sx={{ flex: 1 }}
-                  >
-                    Editar
-                  </Button>
-                  <IconButton
-                    size="small"
+                    variant="contained"
                     color="error"
+                    startIcon={<DeleteIcon />}
+                    fullWidth
                     onClick={() => {
                       const isMLActive = store.marketplace === 'MercadoLivre' && store.status === 'active';
                       if (isMLActive) {
@@ -376,10 +358,11 @@ export default function StoresPage() {
                         handleDeleteStore(store.id);
                       }
                     }}
-                    title={store.marketplace === 'MercadoLivre' && store.status === 'active' ? 'Desconectar' : 'Deletar'}
                   >
-                    <DeleteIcon />
-                  </IconButton>
+                    {store.marketplace === 'MercadoLivre' && store.status === 'active'
+                      ? 'Desconectar'
+                      : 'Excluir'}
+                  </Button>
                 </Box>
               </CardContent>
             </Card>

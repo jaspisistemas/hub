@@ -70,4 +70,12 @@ export const environmentConfig = {
     partnerKey: optionalEnv('SHOPEE_PARTNER_KEY'),
     redirectUri: optionalEnv('SHOPEE_REDIRECT_URI'),
   },
+
+  email: {
+    host: optionalEnv('SMTP_HOST'),
+    port: optionalEnv('SMTP_PORT') ? parseInt(optionalEnv('SMTP_PORT') as string, 10) : undefined,
+    user: optionalEnv('SMTP_USER'),
+    pass: optionalEnv('SMTP_PASS'),
+    from: optionalEnv('SMTP_FROM'),
+  },
 };

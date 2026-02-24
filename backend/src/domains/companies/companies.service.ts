@@ -126,16 +126,29 @@ export class CompaniesService {
 
     await this.membersRepository.save(member);
 
-    // Atualizar user com companyId
-    await this.usersRepository.update(member.userId, { companyId: member.companyId });
+    // Atualizar user com companyId e marcar email como verificado
+    const user = await this.usersRepository.findOne({ where: { id: member.userId } });
+    if (user && !user.emailVerifiedAt) {
+      await this.usersRepository.update(member.userId, {
+        companyId: member.companyId,
+        emailVerifiedAt: new Date(),
+      });
+    } else {
+      await this.usersRepository.update(member.userId, { companyId: member.companyId });
+    }
 
     return member;
   }
 
   async getMembers(companyId: string) {
     return this.membersRepository.find({
-      where: { companyId, isActive: true },
+      where: { companyId },
       relations: ['user'],
+      order: {
+        isActive: 'DESC',
+        acceptedAt: 'DESC',
+        inviteSentAt: 'DESC',
+      },
     });
   }
 

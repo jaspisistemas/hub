@@ -4,6 +4,7 @@ import {
   Get, 
   Put, 
   Body, 
+  Param,
   HttpException, 
   HttpStatus,
   UseGuards,
@@ -84,6 +85,19 @@ export class AuthController {
       return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Erro ao registrar';
+      throw new HttpException(
+        message,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  @Get('verify-email/:token')
+  async verifyEmail(@Param('token') token: string) {
+    try {
+      return await this.authService.verifyEmail(token);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Erro ao verificar email';
       throw new HttpException(
         message,
         HttpStatus.BAD_REQUEST,

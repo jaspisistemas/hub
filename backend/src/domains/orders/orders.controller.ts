@@ -1,12 +1,19 @@
-import { Controller, Post, Body, Get, Param, Patch, UseGuards, Request, Query } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Patch, UseGuards, Request, Query, Res, BadRequestException } from '@nestjs/common';
+import { Response } from 'express';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { MarketplaceService } from '../../integrations/marketplace/marketplace.service';
+import { StoresService } from '../stores/stores.service';
 
 @Controller('orders')
 @UseGuards(JwtAuthGuard)
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService) {}
+  constructor(
+    private readonly ordersService: OrdersService,
+    private readonly marketplaceService: MarketplaceService,
+    private readonly storesService: StoresService,
+  ) {}
 
   @Post()
   async create(@Body() dto: CreateOrderDto) {
@@ -75,6 +82,38 @@ export class OrdersController {
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.ordersService.getOrderById(id);
+  }
+
+  @Get(':id/label')
+  async getShippingLabel(@Param('id') id: string, @Res() res: Response) {
+    const order = await this.ordersService.getOrderById(id);
+
+    if (!order || order.marketplace?.toLowerCase() !== 'mercadolivre') {
+      throw new BadRequestException('Etiqueta disponível apenas para pedidos do Mercado Livre');
+    }
+
+    if (!order.externalShipmentId) {
+      throw new BadRequestException('Shipment ID não encontrado para este pedido');
+    }
+
+    if (!order.storeId) {
+      throw new BadRequestException('Loja não encontrada para este pedido');
+    }
+
+    const store = await this.storesService.findOne(order.storeId);
+
+    if (!store.mlAccessToken) {
+      throw new BadRequestException('Token do Mercado Livre não configurado para a loja');
+    }
+
+    const label = await this.marketplaceService.getMercadoLivreShipmentLabel(
+      order.externalShipmentId,
+      store.mlAccessToken,
+    );
+
+    res.setHeader('Content-Type', label.contentType || 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="etiqueta-${order.externalShipmentId}.pdf"`);
+    return res.send(label.buffer);
   }
 
   @Patch(':id')

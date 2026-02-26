@@ -5,6 +5,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { multerConfig } from '../../config/multer.config';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('products')
 @UseGuards(JwtAuthGuard)
@@ -63,6 +64,12 @@ export class ProductsController {
     }
     // Senão retorna produtos do usuário
     return this.productsService.findAllByUser(req.user.id);
+  }
+
+  @Public()
+  @Get('info-page')
+  async getInfoPage() {
+    return this.productsService.getInfoPage();
   }
 
   @Get(':id')

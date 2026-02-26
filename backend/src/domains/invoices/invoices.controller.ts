@@ -92,6 +92,15 @@ export class InvoicesController {
     return await this.invoicesService.markAsFailed(id, errorMessage);
   }
 
+  @Post(':id/send-to-marketplace')
+  @HttpCode(HttpStatus.OK)
+  async sendToMarketplace(
+    @Param('id') id: string,
+    @Body() body: { mlOrderId?: string; packId?: string },
+  ) {
+    return await this.invoicesService.sendToMarketplace(id, body.mlOrderId, body.packId);
+  }
+
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id') id: string) {

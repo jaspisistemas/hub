@@ -34,7 +34,8 @@ export class OrdersService {
 
   private extractMarketplaceStatus(dto: CreateOrderDto): string | undefined {
     const raw: any = dto.raw || {};
-    return raw.order_status || raw.status || raw.payments?.[0]?.status;
+    // Priorizar substatus de shipping se disponível (mais detalhado)
+    return raw.status || raw.shipping_substatus || raw.order_status || raw.payments?.[0]?.status;
   }
 
   async createOrder(dto: CreateOrderDto) {
@@ -51,6 +52,9 @@ export class OrdersService {
 
     const order = this.ordersRepository.create({
       externalId: dto.externalId,
+      externalOrderId: dto.externalOrderId,
+      externalShipmentId: dto.externalShipmentId,
+      externalPackId: dto.externalPackId,
       marketplace: dto.marketplace,
       status: this.extractMarketplaceStatus(dto) || 'created',
       total: dto.total,
@@ -288,6 +292,9 @@ export class OrdersService {
         orderCreatedAt: dto.orderCreatedAt ? new Date(dto.orderCreatedAt) : existing.orderCreatedAt,
         rawData: dto.raw ? JSON.stringify(dto.raw) : existing.rawData,
         storeId: dto.storeId || existing.storeId,
+        externalOrderId: dto.externalOrderId || existing.externalOrderId,
+        externalShipmentId: dto.externalShipmentId || existing.externalShipmentId,
+        externalPackId: dto.externalPackId || existing.externalPackId,
         customerName: dto.customerName || existing.customerName,
         customerEmail: dto.customerEmail || existing.customerEmail,
         customerPhone: dto.customerPhone || existing.customerPhone,

@@ -6,6 +6,7 @@ import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { InvoiceDataDto } from './dto/invoice-data.dto';
 import { OrdersService } from '../orders/orders.service';
+import { MercadoLivreIntegrationService } from '../../integrations/marketplace/mercadolivre-integration.service';
 import * as fs from 'fs';
 import * as path from 'path';
 import { XMLParser } from 'fast-xml-parser';
@@ -17,6 +18,8 @@ export class InvoicesService {
     private invoicesRepository: Repository<Invoice>,
     @Inject(forwardRef(() => OrdersService))
     private ordersService: OrdersService,
+    @Inject(forwardRef(() => MercadoLivreIntegrationService))
+    private mlIntegrationService: MercadoLivreIntegrationService,
   ) {}
 
   async create(createInvoiceDto: CreateInvoiceDto): Promise<Invoice> {
@@ -98,6 +101,21 @@ export class InvoicesService {
 
   async remove(id: string): Promise<void> {
     const invoice = await this.findOne(id);
+    
+    // Remover arquivo físico se existir
+    if (invoice.pdfUrl) {
+      const fullPath = path.join(process.cwd(), invoice.pdfUrl);
+      if (fs.existsSync(fullPath)) {
+        try {
+          fs.unlinkSync(fullPath);
+          console.log(`Arquivo da nota fiscal removido: ${fullPath}`);
+        } catch (error) {
+          console.error(`Erro ao remover arquivo físico: ${error.message}`);
+          // Não falha a operação se não conseguir remover o arquivo
+        }
+      }
+    }
+    
     await this.invoicesRepository.remove(invoice);
   }
 
@@ -272,4 +290,93 @@ export class InvoicesService {
     const invoice = this.invoicesRepository.create(invoiceData);
     return await this.invoicesRepository.save(invoice);
   }
+
+  async sendToMarketplace(
+    invoiceId: string, 
+    mlOrderId?: string,
+    packId?: string,
+  ): Promise<any> {
+    // Buscar a nota fiscal
+    const invoice = await this.findOne(invoiceId);
+
+    if (!invoice) {
+      throw new NotFoundException('Nota fiscal não encontrada');
+    }
+
+    if (invoice.sentToMarketplace) {
+      throw new BadRequestException('Esta nota fiscal já foi enviada ao marketplace');
+    }
+
+    if (!invoice.number || !invoice.accessKey) {
+      throw new BadRequestException('Nota fiscal deve ter número e chave de acesso para ser enviada');
+    }
+
+    // Buscar o pedido associado com a store
+    const order = await this.ordersService.getOrderById(invoice.orderId);
+
+    if (!order) {
+      throw new NotFoundException('Pedido associado não encontrado');
+    }
+
+    // Verificar se o pedido tem uma store com token do Mercado Livre
+    if (!order.store && order.storeId) {
+      // Se order.store não foi carregado, precisamos fazer isso
+      const { ordersRepository } = this.ordersService as any;
+      const fullOrder = await (ordersRepository as any).findOne({
+        where: { id: order.id },
+        relations: ['store'],
+      });
+      if (fullOrder) {
+        order.store = fullOrder.store;
+      }
+    }
+
+    if (!order.store?.mlAccessToken) {
+      throw new BadRequestException(
+        'Loja não possui token de autenticação com o Mercado Livre. Conecte a loja primeiro.',
+      );
+    }
+
+    // Se não forneceu mlOrderId ou packId, tentar obter do pedido
+    const finalMlOrderId = mlOrderId || order.externalOrderId || order.id;
+    const finalPackId = packId || order.externalPackId;
+
+    if (!finalPackId) {
+      throw new BadRequestException(
+        'Pack ID não fornecido e não encontrado no pedido. Sincronize o pedido novamente para obter o Pack ID do Mercado Livre.',
+      );
+    }
+
+    try {
+      // Enviar para o Mercado Livre
+      const result = await this.mlIntegrationService.sendInvoiceToMarketplace(
+        invoice.orderId,
+        finalMlOrderId,
+        finalPackId,
+        invoice.number,
+        invoice.accessKey,
+        order.store.mlAccessToken,
+        invoice.pdfUrl,
+        invoice.xmlContent,
+        order.externalShipmentId, // Adicionar shipmentId para fallback
+      );
+
+      // Se bem-sucedido, atualizar o status
+      if (result.success) {
+        invoice.sentToMarketplace = true;
+        invoice.sentAt = new Date();
+        invoice.status = 'sent';
+        await this.invoicesRepository.save(invoice);
+      }
+
+      return result;
+    } catch (error: any) {
+      console.error('Erro ao enviar para marketplace:', error);
+      return {
+        success: false,
+        message: error.message || 'Erro ao enviar nota fiscal ao marketplace',
+      };
+    }
+  }
 }
+

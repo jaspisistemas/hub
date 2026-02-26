@@ -1,0 +1,252 @@
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
+	<NFe xmlns="http://www.portalfiscal.inf.br/nfe">
+		<infNFe versao="4.00" Id="NFe41260221826923000177550010000048501000048514">
+			<ide>
+				<cUF>41</cUF>
+				<cNF>00004851</cNF>
+				<natOp>VENDA DE MERCADORIAS</natOp>
+				<mod>55</mod>
+				<serie>1</serie>
+				<nNF>4850</nNF>
+				<dhEmi>2026-02-26T09:39:47-03:00</dhEmi>
+				<dhSaiEnt>2026-02-26T09:39:47-03:00</dhSaiEnt>
+				<tpNF>1</tpNF>
+				<idDest>2</idDest>
+				<cMunFG>4117909</cMunFG>
+				<tpImp>1</tpImp>
+				<tpEmis>1</tpEmis>
+				<cDV>4</cDV>
+				<tpAmb>1</tpAmb>
+				<finNFe>1</finNFe>
+				<indFinal>1</indFinal>
+				<indPres>2</indPres>
+				<indIntermed>1</indIntermed>
+				<procEmi>0</procEmi>
+				<verProc>2.2.247</verProc>
+			</ide>
+			<emit>
+				<CNPJ>21826923000177</CNPJ>
+				<xNome>JASPI SISTEMAS DE INFORMATICA LTDA</xNome>
+				<xFant>JASPI SISTEMAS</xFant>
+				<enderEmit>
+					<xLgr>RUA MONTEIRO LOBATO</xLgr>
+					<nro>985</nro>
+					<xBairro>CENTRO</xBairro>
+					<cMun>4117909</cMun>
+					<xMun>PALOTINA</xMun>
+					<UF>PR</UF>
+					<CEP>85950005</CEP>
+					<cPais>1058</cPais>
+					<xPais>BRASIL</xPais>
+					<fone>4499017683</fone>
+				</enderEmit>
+				<IE>9071477620</IE>
+				<CRT>1</CRT>
+			</emit>
+			<dest>
+				<CPF>07559659578</CPF>
+				<xNome>CAIQUE MARCELINO SOUZA</xNome>
+				<enderDest>
+					<xLgr>RUA BELA CINTRA</xLgr>
+					<nro>643</nro>
+					<xBairro>CONSOLACAO</xBairro>
+					<cMun>3550308</cMun>
+					<xMun>SAO PAULO</xMun>
+					<UF>SP</UF>
+					<CEP>01415003</CEP>
+					<cPais>1058</cPais>
+					<xPais>BRASIL</xPais>
+				</enderDest>
+				<indIEDest>9</indIEDest>
+			</dest>
+			<autXML>
+				<CNPJ>80878119000109</CNPJ>
+			</autXML>
+			<det nItem="1">
+				<prod>
+					<cProd>A3-TOKEN</cProd>
+					<cEAN>SEM GTIN</cEAN>
+					<xProd>ETOKEN SAFENET 5110</xProd>
+					<NCM>85437099</NCM>
+					<CFOP>6102</CFOP>
+					<uCom>UND</uCom>
+					<qCom>1.0000</qCom>
+					<vUnCom>93.50000</vUnCom>
+					<vProd>93.50</vProd>
+					<cEANTrib>SEM GTIN</cEANTrib>
+					<uTrib>UND</uTrib>
+					<qTrib>1.0000</qTrib>
+					<vUnTrib>93.500000</vUnTrib>
+					<indTot>1</indTot>
+				</prod>
+				<imposto>
+					<vTotTrib>20.80</vTotTrib>
+					<ICMS>
+						<ICMSSN102>
+							<orig>0</orig>
+							<CSOSN>103</CSOSN>
+						</ICMSSN102>
+					</ICMS>
+					<PIS>
+						<PISOutr>
+							<CST>99</CST>
+							<vBC>0.00</vBC>
+							<pPIS>0.0000</pPIS>
+							<vPIS>0.00</vPIS>
+						</PISOutr>
+					</PIS>
+					<COFINS>
+						<COFINSOutr>
+							<CST>99</CST>
+							<vBC>0.00</vBC>
+							<pCOFINS>0.0000</pCOFINS>
+							<vCOFINS>0.00</vCOFINS>
+						</COFINSOutr>
+					</COFINS>
+					<IBSCBS>
+						<CST>000</CST>
+						<cClassTrib>000001</cClassTrib>
+						<gIBSCBS>
+							<vBC>93.50</vBC>
+							<gIBSUF>
+								<pIBSUF>0.1000</pIBSUF>
+								<vIBSUF>0.09</vIBSUF>
+							</gIBSUF>
+							<gIBSMun>
+								<pIBSMun>0.0000</pIBSMun>
+								<vIBSMun>0.00</vIBSMun>
+							</gIBSMun>
+							<vIBS>0.09</vIBS>
+							<gCBS>
+								<pCBS>0.9000</pCBS>
+								<vCBS>0.84</vCBS>
+							</gCBS>
+						</gIBSCBS>
+					</IBSCBS>
+				</imposto>
+			</det>
+			<total>
+				<ICMSTot>
+					<vBC>0.00</vBC>
+					<vICMS>0.00</vICMS>
+					<vICMSDeson>0.00</vICMSDeson>
+					<vFCP>0.00</vFCP>
+					<vBCST>0.00</vBCST>
+					<vST>0.00</vST>
+					<vFCPST>0.00</vFCPST>
+					<vFCPSTRet>0.00</vFCPSTRet>
+					<vProd>93.50</vProd>
+					<vFrete>0.00</vFrete>
+					<vSeg>0.00</vSeg>
+					<vDesc>0.00</vDesc>
+					<vII>0.00</vII>
+					<vIPI>0.00</vIPI>
+					<vIPIDevol>0.00</vIPIDevol>
+					<vPIS>0.00</vPIS>
+					<vCOFINS>0.00</vCOFINS>
+					<vOutro>0.00</vOutro>
+					<vNF>93.50</vNF>
+					<vTotTrib>20.80</vTotTrib>
+				</ICMSTot>
+				<IBSCBSTot>
+					<vBCIBSCBS>93.50</vBCIBSCBS>
+					<gIBS>
+						<gIBSUF>
+							<vDif>0.00</vDif>
+							<vDevTrib>0.00</vDevTrib>
+							<vIBSUF>0.09</vIBSUF>
+						</gIBSUF>
+						<gIBSMun>
+							<vDif>0.00</vDif>
+							<vDevTrib>0.00</vDevTrib>
+							<vIBSMun>0.00</vIBSMun>
+						</gIBSMun>
+						<vIBS>0.09</vIBS>
+						<vCredPres>0.00</vCredPres>
+						<vCredPresCondSus>0.00</vCredPresCondSus>
+					</gIBS>
+					<gCBS>
+						<vDif>0.00</vDif>
+						<vDevTrib>0.00</vDevTrib>
+						<vCBS>0.84</vCBS>
+						<vCredPres>0.00</vCredPres>
+						<vCredPresCondSus>0.00</vCredPresCondSus>
+					</gCBS>
+					<gMono>
+						<vIBSMono>0.00</vIBSMono>
+						<vCBSMono>0.00</vCBSMono>
+						<vIBSMonoReten>0.00</vIBSMonoReten>
+						<vCBSMonoReten>0.00</vCBSMonoReten>
+						<vIBSMonoRet>0.00</vIBSMonoRet>
+						<vCBSMonoRet>0.00</vCBSMonoRet>
+					</gMono>
+				</IBSCBSTot>
+				<vNFTot>93.50</vNFTot>
+			</total>
+			<transp>
+				<modFrete>1</modFrete>
+				<transporta>
+					<CNPJ>21826923000177</CNPJ>
+					<xNome>JASPI SISTEMAS DE INFORMATICA LTDA   (44) 9753 8680</xNome>
+					<IE>9071477620</IE>
+					<xEnder>RUA MONTEIRO LOBATO, 985</xEnder>
+					<xMun>PALOTINA</xMun>
+					<UF>PR</UF>
+				</transporta>
+			</transp>
+			<pag>
+				<detPag>
+					<tPag>90</tPag>
+					<vPag>0.00</vPag>
+				</detPag>
+			</pag>
+			<infIntermed>
+				<CNPJ>03007331000141</CNPJ>
+				<idCadIntTran>JASPISISTEMAS</idCadIntTran>
+			</infIntermed>
+			<infAdic>
+				<infCpl>LEI 12.741/12, VALOR APROX.TRIB: R$20,80 (22,25%) FONTE:IBPT</infCpl>
+			</infAdic>
+			<infRespTec>
+				<CNPJ>21826923000177</CNPJ>
+				<xContato>JEAN DIEGO FAE</xContato>
+				<email>contato@jaspi.com.br</email>
+				<fone>44997538680</fone>
+				<idCSRT>01</idCSRT>
+				<hashCSRT>XL+aIjzMDfq9h48eNU9J+5BU/GM=</hashCSRT>
+			</infRespTec>
+		</infNFe>
+		<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
+			<SignedInfo>
+				<CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315" />
+				<SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" />
+				<Reference URI="#NFe41260221826923000177550010000048501000048514">
+					<Transforms>
+						<Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" />
+						<Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315" />
+					</Transforms>
+					<DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
+					<DigestValue>yIFXLSM/+NK//ljzzzGHoj0Jvaw=</DigestValue>
+				</Reference>
+			</SignedInfo>
+			<SignatureValue>QzQWvBo5jBnFZxa+DHjbT2JYYkJ3S1QatPtLczX55dEnopo/Ht1yagXUO9dF4UMfnZlQJGzSax6DYUaEqi2vI/MxnYj/Tx8mCnGYwYnZNTkmqJFEoV5yamf0TJfbVbISdE45VGdmnT1efys38JLG46dm6EvfXlO2mxqFXgHgSOZZVxmKeX8iD8TBBwBxuEhHQTx55FA+V0UXVJZ05Cg9A+ZSjgog13tY1dIzLnE7tkpRMowXIxqtM2LjZreQ3dVhNF/H+g1VPkr7HO+JDxJtvTnrcXOvnoOs6pHpu8kf5HiULCOisV5BgC1ERLbtRVZHbyGbJKrtTjKD5w8V11naow==</SignatureValue>
+			<KeyInfo>
+				<X509Data>
+					<X509Certificate>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</X509Certificate>
+				</X509Data>
+			</KeyInfo>
+		</Signature>
+	</NFe>
+	<protNFe versao="4.00" xmlns="http://www.portalfiscal.inf.br/nfe">
+		<infProt Id="ID141260075343368">
+			<tpAmb>1</tpAmb>
+			<verAplic>PR-v4_9_67</verAplic>
+			<chNFe>41260221826923000177550010000048501000048514</chNFe>
+			<dhRecbto>2026-02-26T09:41:21-03:00</dhRecbto>
+			<nProt>141260075343368</nProt>
+			<digVal>yIFXLSM/+NK//ljzzzGHoj0Jvaw=</digVal>
+			<cStat>100</cStat>
+			<xMotivo>Autorizado o uso da NF-e</xMotivo>
+		</infProt>
+	</protNFe>
+</nfeProc>

@@ -6,12 +6,14 @@ import { Order } from './entities/order.entity';
 import { Store } from '../stores/entities/store.entity';
 import { WebsocketModule } from '../../infra/websocket/websocket.module';
 import { MarketplaceModule } from '../../integrations/marketplace/marketplace.module';
+import { StoresModule } from '../stores/stores.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Order, Store]),
     WebsocketModule,
     forwardRef(() => MarketplaceModule),
+    StoresModule,
   ],
   providers: [OrdersService],
   controllers: [OrdersController],

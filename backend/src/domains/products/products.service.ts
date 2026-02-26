@@ -106,6 +106,49 @@ export class ProductsService {
     return { deleted: true };
   }
 
+  async getInfoPage() {
+    return {
+      hero: {
+        title: 'Gerencie seus pedidos em um só lugar',
+        subtitle: 'Simplifique sua operação com uma plataforma completa de gestão de vendas para Mercado Livre, Shopee e sua loja própria',
+        cta: 'Começar agora',
+      },
+      problems: [
+        { description: 'Pedidos espalhados em diferentes plataformas e é difícil acompanhá-los' },
+        { description: 'Falta de controle sobre estoque, vendas e finanças em tempo real' },
+        { description: 'Muito tempo gasto em tarefas repetitivas e administrativas' },
+      ],
+      solutions: [
+        { title: 'Gestão de Pedidos', description: 'Centralize todos os seus pedidos do Mercado Livre, Shopee e outras plataformas em um único dashboard' },
+        { title: 'Dashboard Financeiro', description: 'Visualize sua receita, custos e lucro em tempo real com gráficos e relatórios detalhados' },
+        { title: 'Integrações Automáticas', description: 'Sincronize automaticamente seus pedidos, estoque e produtos com suas plataformas de venda' },
+        { title: 'Atendimento Centralizado', description: 'Gerencie comunicação com clientes de todos os canais em um único lugar' },
+      ],
+      benefits: [
+        { title: 'Mais Controle', description: 'Tenha visibilidade completa do seu negócio e tome decisões baseadas em dados reais' },
+        { title: 'Menos Erros', description: 'Automação reduz erros manuais e aumenta a consistência dos dados' },
+        { title: 'Economia de Tempo', description: 'Trabalhe mais eficientemente e foque no crescimento do seu negócio' },
+        { title: 'Visão Real da Receita', description: 'Entenda exatamente quanto você está ganhando em cada canal de vendas' },
+      ],
+      targetAudience: 'Vendedores do Mercado Livre e lojas que querem escalar',
+      howItWorks: [
+        { step: 1, title: 'Conecte', description: 'Conecte suas contas do Mercado Livre, Shopee e outras plataformas em poucos cliques' },
+        { step: 2, title: 'Sincronize', description: 'Seus pedidos e estoque são sincronizados automaticamente em tempo real' },
+        { step: 3, title: 'Gerencie', description: 'Gerencie tudo de um só lugar: pedidos, finanças, estoque e atendimento' },
+      ],
+      socialProof: [
+        { metric: 'Pedidos Gerenciados', value: '1000+' },
+        { metric: 'Receita Controlada', value: 'R$ 5M' },
+        { metric: 'Horas Economizadas', value: '5000+' },
+      ],
+      cta: {
+        title: 'Pronto para profissionalizar sua operação?',
+        subtitle: 'Junte-se a centenas de vendedores que já estão crescendo com nossa plataforma',
+        buttonText: 'Começar Agora',
+      },
+    };
+  }
+
   async findBySku(sku: string) {
     return this.productsRepository.findOne({ where: { sku } });
   }

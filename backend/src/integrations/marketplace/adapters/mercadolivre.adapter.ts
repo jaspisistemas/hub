@@ -66,8 +66,30 @@ export class MercadoLivreAdapter {
     const dateCreated = orderData.date_created || orderData.date_closed;
     const orderStatus = orderData.order_status || orderData.status;
     
+    // Capturar substatus do shipping para status mais detalhados
+    const shippingSubstatus = orderData.shipping?.substatus;
+    const shippingStatus = orderData.shipping?.status;
+    
+    // Usar substatus se disponível e mais específico
+    let finalStatus = orderStatus;
+    if (shippingSubstatus) {
+      // Mapear substatus para status mais descritivos
+      const substatusMap: Record<string, string> = {
+        'invoice_pending': 'invoice_pending',
+        'ready_to_ship': 'ready_to_ship',
+        'picked_up': 'picked_up',
+        'shipped': 'shipped',
+        'delivered': 'delivered',
+        'ready_to_print': 'ready_to_print',
+      };
+      finalStatus = substatusMap[shippingSubstatus] || orderStatus;
+    }
+    
     return {
       externalId: orderData.id?.toString() || 'ml-unknown',
+      externalOrderId: orderData.id?.toString() || 'ml-unknown',
+      externalShipmentId: orderData.shipping?.id?.toString(),
+      externalPackId: orderData.pack_id?.toString() || orderData.context?.flow?.toString(),
       marketplace: 'mercadolivre',
       total: Number(orderData.total_amount) || 0,
       orderCreatedAt: dateCreated ? new Date(dateCreated) : undefined,
@@ -79,13 +101,16 @@ export class MercadoLivreAdapter {
       customerAddress: orderData.shipping?.receiver_address?.address_line,
       customerZipCode: orderData.shipping?.receiver_address?.zip_code,
       raw: {
-        status: orderStatus,
+        status: finalStatus,
         order_status: orderStatus,
+        shipping_status: shippingStatus,
+        shipping_substatus: shippingSubstatus,
         date_created: orderData.date_created,
         buyer: orderData.buyer,
         items: orderData.order_items,
         shipping: orderData.shipping,
         payments: orderData.payments,
+        pack_id: orderData.pack_id,
       },
     };
   }

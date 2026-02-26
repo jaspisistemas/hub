@@ -45,6 +45,9 @@ import {
   Sync as SyncIcon,
   Receipt as ReceiptIcon,
   ContentCopy as ContentCopyIcon,
+  Send as SendIcon,
+  Delete as DeleteIcon,
+  Print as PrintIcon,
 } from '@mui/icons-material';
 import { ordersService, Order } from '../../services/ordersService';
 import PageHeader from '../../components/PageHeader';
@@ -92,6 +95,11 @@ export default function OrdersPage() {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loadingInvoice, setLoadingInvoice] = useState(false);
   const [issuingInvoice, setIssuingInvoice] = useState(false);
+  const [sendingToMarketplace, setSendingToMarketplace] = useState(false);
+  const [removingInvoice, setRemovingInvoice] = useState(false);
+  const [printingLabel, setPrintingLabel] = useState(false);
+  const [shipmentIdDialogOpen, setShipmentIdDialogOpen] = useState(false);
+  const [manualPackId, setManualPackId] = useState('');
 
   console.log('OrdersPage renderizando', { loading, ordersCount: orders?.length });
 
@@ -199,20 +207,46 @@ export default function OrdersPage() {
 
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
-      waiting_payment: 'Aguardando pagamento',
-      pending: 'Aguardando pagamento',
-      created: 'Aguardando pagamento',
+      // Pagamento
+      waiting_payment: 'Aguardando Pagamento',
+      pending: 'Aguardando Pagamento',
+      created: 'Criado',
+      
+      // Pago
       paid: 'Pago',
-      approved: 'Pago',
-      preparing_shipment: 'Preparar envio',
-      processing: 'Preparar envio',
-      shipped: 'Enviado',
+      approved: 'Aprovado',
+      
+      // Preparação
+      invoice_pending: 'Aguardando NF-e',
+      awaiting_invoice: 'Aguardando NF-e',
+      invoice_issued: 'NF-e Emitida',
+      handling: 'Separando Produtos',
+      preparing_shipment: 'Preparando Envio',
+      processing: 'Processando',
+      preparing: 'Preparando',
+      
+      // Pronto para envio
+      ready_to_ship: 'Etiqueta Pronta para Imprimir',
+      ready_to_print: 'Etiqueta Pronta',
+      label_printed: 'Etiqueta Impressa',
+      
+      // Enviado
+      picked_up: 'Coletado pela Transportadora',
+      shipped: 'Em Trânsito',
+      in_transit: 'Em Trânsito',
+      out_for_delivery: 'Saiu para Entrega',
+      
+      // Finalizado
       delivered: 'Entregue',
       completed: 'Finalizado',
+      
+      // Problemas
       cancelled: 'Cancelado',
       canceled: 'Cancelado',
       cancelado: 'Cancelado',
-      claim_open: 'Em reclamação',
+      claim_open: 'Em Reclamação',
+      failed_delivery: 'Falha na Entrega',
+      returned: 'Devolvido',
     };
     return labels[status] || status;
   };
@@ -272,6 +306,37 @@ export default function OrdersPage() {
         const newInvoice = await invoicesService.uploadFile(selectedOrder.id, file);
         setInvoice(newInvoice);
         setNotification('Nota fiscal anexada com sucesso!');
+
+        // Tentar enviar para o Mercado Livre automaticamente
+        try {
+          const mlOrderId = selectedOrder.externalOrderId || selectedOrder.id;
+          const packId = selectedOrder.externalPackId;
+
+          if (packId) {
+            const sendResult = await invoicesService.sendToMarketplace(
+              newInvoice.id,
+              mlOrderId,
+              packId,
+            );
+
+            if (sendResult.success) {
+              setNotification('Nota fiscal enviada ao Mercado Livre com sucesso!');
+              // Recarregar a nota fiscal para atualizar o status
+              const updatedInvoice = await invoicesService.getByOrderId(selectedOrder.id);
+              if (updatedInvoice) {
+                setInvoice(updatedInvoice);
+              }
+            } else {
+              setNotification(`Nota anexada, mas erro ao enviar para ML: ${sendResult.message}`);
+            }
+          } else {
+            setNotification('Nota anexada, mas Pack ID não encontrado. Sincronize o pedido novamente.');
+          }
+        } catch (mlError: any) {
+          console.warn('Aviso ao enviar para ML:', mlError);
+          // Não interrompe o fluxo se falhar o envio ao ML
+          // A nota já foi anexada com sucesso
+        }
       } catch (err: any) {
         console.error('Erro ao anexar nota fiscal:', err);
         const errorMsg = err.message || 'Erro ao anexar nota fiscal';
@@ -283,6 +348,109 @@ export default function OrdersPage() {
 
     // Abrir seletor de arquivos
     input.click();
+  };
+
+  const handleRemoveInvoice = async () => {
+    if (!invoice || !selectedOrder) return;
+
+    const confirmDelete = window.confirm(
+      'Tem certeza que deseja remover a nota fiscal? Esta ação não pode ser desfeita.'
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      setRemovingInvoice(true);
+      await invoicesService.delete(invoice.id);
+      setInvoice(null);
+      setNotification('Nota fiscal removida com sucesso!');
+    } catch (error: any) {
+      console.error('Erro ao remover nota fiscal:', error);
+      setNotification(error.message || 'Erro ao remover nota fiscal');
+    } finally {
+      setRemovingInvoice(false);
+    }
+  };
+
+  const handlePrintLabel = async () => {
+    if (!selectedOrder) return;
+
+    if (!selectedOrder.externalShipmentId) {
+      setNotification('Shipment ID não encontrado para este pedido');
+      return;
+    }
+
+    try {
+      setPrintingLabel(true);
+      const blob = await ordersService.getLabelPdf(selectedOrder.id);
+      if (!blob.size || blob.size < 200) {
+        throw new Error('Etiqueta vazia retornada pelo Mercado Livre');
+      }
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `etiqueta-${selectedOrder.externalShipmentId || selectedOrder.id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Liberar memória depois de um tempo
+      setTimeout(() => URL.revokeObjectURL(url), 60 * 1000);
+    } catch (error: any) {
+      console.error('Erro ao imprimir etiqueta:', error);
+      setNotification(error.message || 'Erro ao imprimir etiqueta');
+    } finally {
+      setPrintingLabel(false);
+    }
+  };
+
+  const handleSendToMarketplace = async () => {
+    if (!selectedOrder || !invoice) return;
+
+    const packId = selectedOrder.externalPackId;
+
+    // Se não tiver Pack ID, abrir diálogo para usuário inserir
+    if (!packId) {
+      setManualPackId('');
+      setShipmentIdDialogOpen(true);
+      return;
+    }
+
+    // Se tiver Pack ID, enviar direto
+    await performSendToMarketplace(packId);
+  };
+
+  const performSendToMarketplace = async (packId: string) => {
+    if (!selectedOrder || !invoice) return;
+
+    try {
+      setSendingToMarketplace(true);
+      const mlOrderId = selectedOrder.externalOrderId || selectedOrder.id;
+
+      const result = await invoicesService.sendToMarketplace(
+        invoice.id,
+        mlOrderId,
+        packId,
+      );
+
+      if (result.success) {
+        setNotification('Nota fiscal enviada ao Mercado Livre com sucesso!');
+        // Recarregar a nota fiscal para atualizar o status
+        const updatedInvoice = await invoicesService.getByOrderId(selectedOrder.id);
+        if (updatedInvoice) {
+          setInvoice(updatedInvoice);
+        }
+      } else {
+        setNotification(`Erro ao enviar nota para ML: ${result.message}`);
+      }
+    } catch (err: any) {
+      console.error('Erro ao enviar nota fiscal para Mercado Livre:', err);
+      const errorMsg = err.message || 'Erro ao enviar nota fiscal para Mercado Livre';
+      setNotification(errorMsg);
+    } finally {
+      setSendingToMarketplace(false);
+      setShipmentIdDialogOpen(false);
+    }
   };
 
   const getParsedRawData = (rawData?: string) => {
@@ -1578,18 +1746,56 @@ export default function OrdersPage() {
                 )}
               </Box>
 
-              <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                {!invoice && (
-                  <Button
-                    variant="contained"
-                    size="small"
-                    startIcon={issuingInvoice ? <CircularProgress size={16} color="inherit" /> : <ReceiptIcon />}
-                    onClick={handleAttachInvoice}
-                    disabled={issuingInvoice || loadingInvoice}
-                  >
-                    {issuingInvoice ? 'Anexando...' : 'Anexar Nota Fiscal'}
-                  </Button>
-                )}
+              <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  {selectedOrder?.marketplace?.toLowerCase() === 'mercadolivre' &&
+                    selectedOrder.externalShipmentId && (
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={printingLabel ? <CircularProgress size={16} color="inherit" /> : <PrintIcon />}
+                      onClick={handlePrintLabel}
+                      disabled={printingLabel}
+                    >
+                      {printingLabel ? 'Gerando...' : 'Imprimir Etiqueta'}
+                    </Button>
+                  )}
+                  {!invoice && (
+                    <Button
+                      variant="contained"
+                      size="small"
+                      startIcon={issuingInvoice ? <CircularProgress size={16} color="inherit" /> : <ReceiptIcon />}
+                      onClick={handleAttachInvoice}
+                      disabled={issuingInvoice || loadingInvoice}
+                    >
+                      {issuingInvoice ? 'Anexando...' : 'Anexar Nota Fiscal'}
+                    </Button>
+                  )}
+                  {invoice && !invoice.sentToMarketplace && invoice.status === 'generated' && (
+                    <Button
+                      variant="contained"
+                      size="small"
+                      color="success"
+                      startIcon={sendingToMarketplace ? <CircularProgress size={16} color="inherit" /> : <SendIcon />}
+                      onClick={() => handleSendToMarketplace()}
+                      disabled={sendingToMarketplace}
+                    >
+                      {sendingToMarketplace ? 'Enviando...' : 'Enviar ao Mercado Livre'}
+                    </Button>
+                  )}
+                  {invoice && (
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      color="error"
+                      startIcon={removingInvoice ? <CircularProgress size={16} color="inherit" /> : <DeleteIcon />}
+                      onClick={handleRemoveInvoice}
+                      disabled={removingInvoice || sendingToMarketplace}
+                    >
+                      {removingInvoice ? 'Removendo...' : 'Remover Nota'}
+                    </Button>
+                  )}
+                </Box>
                 {(selectedOrderAddressJson || selectedOrder.rawData) && (
                   <Button
                     variant="text"
@@ -1656,6 +1862,49 @@ export default function OrdersPage() {
         <DialogActions>
           <Button onClick={handleCloseDetails} variant="contained">
             Fechar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog para inserir Shipment ID */}
+      <Dialog 
+        open={shipmentIdDialogOpen} 
+        onClose={() => setShipmentIdDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          Inserir Pack ID do Mercado Livre
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
+          <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+            O Pack ID não foi encontrado automaticamente. Por favor, insira o Pack ID do Mercado Livre para esta nota fiscal.
+            Você pode encontrá-lo no painel do Mercado Livre ou sincronizando o pedido novamente.
+          </Typography>
+          <TextField
+            autoFocus
+            fullWidth
+            label="Pack ID"
+            placeholder="Ex: 123456789"
+            value={manualPackId}
+            onChange={(e) => setManualPackId(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter' && manualPackId.trim()) {
+                performSendToMarketplace(manualPackId.trim());
+              }
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShipmentIdDialogOpen(false)}>
+            Cancelar
+          </Button>
+          <Button
+            onClick={() => performSendToMarketplace(manualPackId.trim())}
+            variant="contained"
+            disabled={!manualPackId.trim() || sendingToMarketplace}
+          >
+            {sendingToMarketplace ? 'Enviando...' : 'Enviar'}
           </Button>
         </DialogActions>
       </Dialog>

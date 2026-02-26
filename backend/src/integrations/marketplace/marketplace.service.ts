@@ -167,12 +167,13 @@ export class MarketplaceService {
 
       const orderData = await response.json();
 
-      // Se o pedido traz apenas o shipping.id, buscar o shipment para obter endereço completo
+      // Se o pedido traz apenas o shipping.id ou não tem substatus, buscar o shipment
       try {
         const shippingId = orderData?.shipping?.id;
         const hasReceiverAddress = !!orderData?.shipping?.receiver_address;
+        const hasSubstatus = !!orderData?.shipping?.substatus;
 
-        if (shippingId && !hasReceiverAddress) {
+        if (shippingId && (!hasReceiverAddress || !hasSubstatus)) {
           const shipmentResponse = await fetch(
             `https://api.mercadolibre.com/shipments/${shippingId}`,
             {
@@ -189,6 +190,8 @@ export class MarketplaceService {
               receiver_address: shipmentData?.receiver_address || orderData.shipping?.receiver_address,
               shipping_cost: shipmentData?.shipping_cost ?? orderData.shipping?.shipping_cost,
               cost: shipmentData?.cost ?? orderData.shipping?.cost,
+              status: shipmentData?.status || orderData.shipping?.status,
+              substatus: shipmentData?.substatus || orderData.shipping?.substatus,
             };
           } else {
             const error = await shipmentResponse.text();
@@ -204,6 +207,64 @@ export class MarketplaceService {
       console.error('❌ Erro ao buscar pedido do ML:', error);
       throw new HttpException(
         'Erro ao buscar pedido do Mercado Livre',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Baixa etiqueta de envio do Mercado Livre em PDF
+   */
+  async getMercadoLivreShipmentLabel(shipmentId: string, accessToken: string) {
+    try {
+      const response = await fetch(
+        `https://api.mercadolibre.com/shipment_labels?shipment_ids=${shipmentId}&response_type=pdf`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error(`❌ Erro ao buscar etiqueta do shipment ${shipmentId}:`, error);
+        throw new HttpException(
+          'Erro ao buscar etiqueta do Mercado Livre',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const contentType = response.headers.get('content-type') || 'application/pdf';
+
+      if (contentType.includes('application/json')) {
+        const errorJson = await response.json();
+        console.error(`❌ Resposta JSON inesperada ao buscar etiqueta ${shipmentId}:`, errorJson);
+        throw new HttpException(
+          errorJson?.message || 'Resposta invalida ao buscar etiqueta do Mercado Livre',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      if (!buffer.length || buffer.length < 200) {
+        console.error(`❌ Etiqueta vazia ou muito pequena (${buffer.length} bytes) para shipment ${shipmentId}`);
+        throw new HttpException(
+          'Etiqueta vazia retornada pelo Mercado Livre',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      return {
+        buffer,
+        contentType,
+      };
+    } catch (error) {
+      console.error('❌ Erro ao buscar etiqueta do ML:', error);
+      throw new HttpException(
+        'Erro ao buscar etiqueta do Mercado Livre',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

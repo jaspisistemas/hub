@@ -18,6 +18,18 @@ export class CreateOrderDto {
   @IsOptional()
   raw?: any; // original payload from marketplace adapter
 
+  @IsOptional()
+  @IsString()
+  externalOrderId?: string;
+
+  @IsOptional()
+  @IsString()
+  externalShipmentId?: string;
+
+  @IsOptional()
+  @IsString()
+  externalPackId?: string;
+
   // Dados do cliente (obrigatórios)
   @IsString()
   @MaxLength(255)

@@ -1,4 +1,5 @@
 import { apiFetch, getApiBaseUrl } from './api';
+import { authService } from './authService';
 
 export interface Invoice {
   id: string;
@@ -79,7 +80,18 @@ const invoicesService = {
     formData.append('orderId', orderId);
 
     const baseUrl = getApiBaseUrl();
-    const token = localStorage.getItem('token');
+    const token = authService.getToken();
+
+    console.log('Upload de nota fiscal:', {
+      baseUrl,
+      orderId,
+      fileName: file.name,
+      hasToken: !!token,
+    });
+
+    if (!token) {
+      throw new Error('Token de autenticação não encontrado. Faça login novamente.');
+    }
     
     const response = await fetch(`${baseUrl}/invoices/upload`, {
       method: 'POST',
@@ -89,12 +101,43 @@ const invoicesService = {
       body: formData,
     });
 
+    console.log('Response upload:', {
+      status: response.status,
+      ok: response.ok,
+    });
+
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Erro ao fazer upload' }));
-      throw new Error(error.message || 'Erro ao fazer upload da nota fiscal');
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = { message: 'Erro ao fazer upload' };
+      }
+      
+      if (response.status === 401) {
+        authService.removeToken();
+        throw new Error('Token expirado. Por favor, faça login novamente.');
+      }
+
+      console.error('Erro no upload:', errorData);
+      throw new Error(errorData.message || `Erro ao fazer upload (${response.status})`);
     }
 
     return await response.json();
+  },
+
+  async sendToMarketplace(
+    invoiceId: string,
+    mlOrderId?: string,
+    packId?: string,
+  ): Promise<any> {
+    return await apiFetch<any>(`/invoices/${invoiceId}/send-to-marketplace`, {
+      method: 'POST',
+      body: JSON.stringify({
+        mlOrderId,
+        packId,
+      }),
+    });
   },
 };
 

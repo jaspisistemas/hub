@@ -17,6 +17,15 @@ export class Order {
   @Column({ unique: true })
   externalId!: string;
 
+  @Column({ nullable: true })
+  externalOrderId?: string;
+
+  @Column({ nullable: true })
+  externalShipmentId?: string;
+
+  @Column({ nullable: true })
+  externalPackId?: string;
+
   @Column()
   marketplace!: string;
 

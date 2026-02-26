@@ -13,6 +13,7 @@ import CompanyOnboardingPage from './features/onboarding/CompanyOnboardingPage';
 import DashboardPage from './features/dashboard/DashboardPage';
 import OrdersPage from './features/orders/OrdersPage';
 import ProductsPage from './features/products/ProductsPage';
+import ProductInfoPage from './features/products/ProductInfoPage';
 import StoresPage from './features/stores/StoresPage';
 import SupportPage from './features/support/SupportPage';
 import HelpCenterPage from './features/support/HelpCenterPage';
@@ -56,6 +57,7 @@ export default function App() {
             <Route path="/verificar-email/:token" element={<VerifyEmailPage />} />
             <Route path="/invite/:token" element={<AcceptInvitePage />} />
             <Route path="/onboarding/empresa" element={<CompanyOnboardingPage />} />
+            <Route path="/infoPage" element={<ProductInfoPage />} />
 
         <Route
           path="/"

@@ -43,6 +43,23 @@ export class Company {
   @Column({ type: 'simple-json', nullable: true })
   settings?: Record<string, any>;
 
+  // Campos de atualização do sistema (como no SEJA)
+  // name em camelCase (migration RenameCompanyVersionColumnsToCamelCase)
+  @Column({ name: 'empVer', type: 'varchar', length: 50, default: '0.0.0', nullable: true })
+  empVer?: string;
+
+  @Column({ name: 'empAttIs', default: false, nullable: true })
+  empAttIs?: boolean;
+
+  @Column({ name: 'empAttDisp', type: 'varchar', length: 50, nullable: true })
+  empAttDisp?: string;
+
+  @Column({ name: 'empAttDtaHorIni', type: 'timestamp', nullable: true })
+  empAttDtaHorIni?: Date;
+
+  @Column({ name: 'empAttDtaHorFim', type: 'timestamp', nullable: true })
+  empAttDtaHorFim?: Date;
+
   @OneToMany(() => CompanyMember, member => member.company, { cascade: true })
   members!: CompanyMember[];
 

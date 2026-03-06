@@ -8,6 +8,7 @@ packages/*/node_modules/
 .DS_Store
 
 # Secrets and Credentials
+infra/config.secrets.env
 *.pem
 *.key
 *.crt
@@ -31,3 +32,6 @@ yarn-error.log*
 
 # Uploads
 backend/uploads/invoices/
+
+infra/hub*
+infra/deploy_*

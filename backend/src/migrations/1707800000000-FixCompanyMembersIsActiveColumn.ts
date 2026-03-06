@@ -2,10 +2,13 @@ import { MigrationInterface, QueryRunner, TableColumn } from 'typeorm';
 
 export class FixCompanyMembersIsActiveColumn1707800000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Renomear coluna isactive para isActive
-    await queryRunner.query(
-      `ALTER TABLE "company_members" RENAME COLUMN "isactive" TO "isActive"`
-    );
+    // Renomear coluna isactive para isActive (se existir - CreateCompaniesAndMembers ja cria como isActive)
+    const hasIsactive = await queryRunner.hasColumn('company_members', 'isactive');
+    if (hasIsactive) {
+      await queryRunner.query(
+        `ALTER TABLE "company_members" RENAME COLUMN "isactive" TO "isActive"`
+      );
+    }
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

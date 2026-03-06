@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  web.config para o frontend HUB
+  - Proxy /api para o backend
+  - SPA fallback: rotas como /seja/login servem index.html para o React Router
+  Requer: URL Rewrite + Application Request Routing (ARR) instalados no IIS.
+  Se proxy nao funcionar: IIS Manager > Application Request Routing > Server Proxy Settings > Enable proxy
+-->
+<configuration>
+  <system.webServer>
+    <!-- Permite servir CHANGELOG.md (IIS bloqueia .md por padrao) -->
+    <staticContent>
+      <mimeMap fileExtension=".md" mimeType="text/markdown" />
+    </staticContent>
+    <!-- Necessario para ARR fazer proxy para URLs externas (ex: localhost:3668) -->
+    <proxy enabled="true" preserveHostHeader="false" />
+    <rewrite>
+      <rules>
+        <!-- 1. Proxy /api/* para o backend NestJS -->
+        <rule name="Proxy API para Backend" stopProcessing="true">
+          <match url="^api/(.*)" />
+          <action type="Rewrite" url="{{BACKEND_URL}}/{R:1}" appendQueryString="true" />
+        </rule>
+        <!-- 2. SPA fallback: rotas inexistentes servem index.html (exclui .js .css e outros assets) -->
+        <rule name="SPA Fallback" stopProcessing="true">
+          <match url=".*" />
+          <conditions logicalGrouping="MatchAll">
+            <add input="{REQUEST_FILENAME}" matchType="IsFile" negate="true" />
+            <add input="{REQUEST_FILENAME}" matchType="IsDirectory" negate="true" />
+            <add input="{REQUEST_URI}" pattern="\.(js|css|ico|png|jpg|jpeg|gif|svg|woff2?|ttf|eot|map|md)(\?.*)?$" negate="true" />
+          </conditions>
+          <action type="Rewrite" url="/index.html" />
+        </rule>
+      </rules>
+    </rewrite>
+  </system.webServer>
+</configuration>

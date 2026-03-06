@@ -1,6 +1,11 @@
-import { authService } from './authService';
+// Import dinâmico para evitar "Cannot access before initialization" no build (dependência circular)
+const getAuthService = () => import('./authService').then((m) => m.authService);
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+declare const __API_URL__: string;
+export const API_BASE_URL =
+  (typeof __API_URL__ !== 'undefined' ? __API_URL__ : null) ||
+  import.meta.env.VITE_API_URL ||
+  '/api';
 
 export const getApiBaseUrl = () =>
   API_BASE_URL.startsWith('http') ? API_BASE_URL : `${window.location.origin}${API_BASE_URL}`;
@@ -191,6 +196,7 @@ async function apiFetchWithRetry<T = any>(
 
       // Adicionar headers de auth
       if (needsAuth) {
+        const authService = await getAuthService();
         const authHeader = authService.getAuthHeader();
         Object.entries(authHeader).forEach(([key, value]) => {
           headers.set(key, value as string);
@@ -209,6 +215,7 @@ async function apiFetchWithRetry<T = any>(
 
       // Verifica erros de autenticação (não deve fazer retry)
       if (response.status === 401) {
+        const authService = await getAuthService();
         authService.removeToken();
         if (!suppressAuthRedirect) {
           window.location.href = '/login?reason=expired';

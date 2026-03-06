@@ -8,7 +8,10 @@
   ],
   "scripts": {
     "bootstrap": "npm install",
-    "start:dev": "npm -w backend run start:dev & npm -w frontend run dev",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "npm run start:dev -w backend",
+    "dev:frontend": "npm run dev -w frontend",
+    "start:dev": "npm run dev",
     "build": "npm -w backend run build && npm -w frontend run build"
   },
   "dependencies": {
@@ -17,6 +20,7 @@
     "uuid": "^13.0.0"
   },
   "devDependencies": {
-    "@types/uuid": "^11.0.0"
+    "@types/uuid": "^11.0.0",
+    "concurrently": "^9.1.0"
   }
 }

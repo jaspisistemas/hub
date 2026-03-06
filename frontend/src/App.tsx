@@ -4,6 +4,8 @@ import { Container, Box } from '@mui/material';
 import { ThemeContextProvider } from './contexts/ThemeContext';
 import { SidebarContextProvider } from './contexts/SidebarContext';
 import { useSidebar } from './contexts/SidebarContext';
+import { AtualizacaoContextProvider, useAtualizacao } from './contexts/AtualizacaoContext';
+import AtualizacaoOverlay from './components/AtualizacaoOverlay';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -46,11 +48,10 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function App() {
+function AppContent() {
   return (
-    <ThemeContextProvider>
-      <SidebarContextProvider>
-        <BrowserRouter>
+    <SidebarContextProvider>
+      <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/auth/login" element={<Navigate to="/login" replace />} />
@@ -180,8 +181,23 @@ export default function App() {
           }
         />
       </Routes>
-    </BrowserRouter>
-  </SidebarContextProvider>
-  </ThemeContextProvider>
+      </BrowserRouter>
+    </SidebarContextProvider>
   );
+}
+
+export default function App() {
+  return (
+    <ThemeContextProvider>
+      <AtualizacaoContextProvider>
+        <AppWithAtualizacaoCheck />
+      </AtualizacaoContextProvider>
+    </ThemeContextProvider>
+  );
+}
+
+function AppWithAtualizacaoCheck() {
+  const { emAtualizacao } = useAtualizacao();
+  if (emAtualizacao) return <AtualizacaoOverlay />;
+  return <AppContent />;
 }

@@ -19,6 +19,7 @@ import { Invoice } from './domains/invoices/entities/invoice.entity';
 import { CompaniesModule } from './domains/companies/companies.module';
 import { Company } from './domains/companies/entities/company.entity';
 import { CompanyMember } from './domains/companies/entities/company-member.entity';
+import { AppVersionModule } from './domains/app-version/app-version.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { CompanyMember } from './domains/companies/entities/company-member.entit
       synchronize: false, // Usar migrations em vez de sincronizar automaticamente
     }),
     AuthModule,
+    AppVersionModule,
     CompaniesModule,
     ProductsModule,
     StoresModule,

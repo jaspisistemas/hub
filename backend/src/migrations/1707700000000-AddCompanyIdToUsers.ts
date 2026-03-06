@@ -2,17 +2,25 @@ import { MigrationInterface, QueryRunner, TableColumn, TableForeignKey } from 't
 
 export class AddCompanyIdToUsers1707700000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.addColumn(
-      'users',
-      new TableColumn({
-        name: 'companyId',
-        type: 'uuid',
-        isNullable: true,
-      })
-    );
+    const hasCompanyId = await queryRunner.hasColumn('users', 'companyId');
+    if (!hasCompanyId) {
+      await queryRunner.addColumn(
+        'users',
+        new TableColumn({
+          name: 'companyId',
+          type: 'uuid',
+          isNullable: true,
+        })
+      );
+    }
 
-    // Adicionar foreign key
-    await queryRunner.createForeignKey(
+    // Adicionar foreign key (se ainda nao existir)
+    const table = await queryRunner.getTable('users');
+    const hasFk = table?.foreignKeys.some(
+      (fk) => fk.columnNames.includes('companyId') && fk.referencedTableName === 'companies'
+    );
+    if (!hasFk) {
+      await queryRunner.createForeignKey(
       'users',
       new TableForeignKey({
         columnNames: ['companyId'],
@@ -21,6 +29,7 @@ export class AddCompanyIdToUsers1707700000000 implements MigrationInterface {
         onDelete: 'SET NULL',
       })
     );
+    }
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

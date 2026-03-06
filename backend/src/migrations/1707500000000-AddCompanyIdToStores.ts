@@ -2,26 +2,35 @@ import { MigrationInterface, QueryRunner, TableColumn, TableForeignKey } from 't
 
 export class AddCompanyIdToStores1707500000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Adicionar coluna companyId
-    await queryRunner.addColumn(
-      'stores',
-      new TableColumn({
-        name: 'companyId',
-        type: 'uuid',
-        isNullable: true,
-      })
-    );
+    // Adicionar coluna companyId (CreateCompaniesAndMembers ja pode ter adicionado)
+    const hasCompanyId = await queryRunner.hasColumn('stores', 'companyId');
+    if (!hasCompanyId) {
+      await queryRunner.addColumn(
+        'stores',
+        new TableColumn({
+          name: 'companyId',
+          type: 'uuid',
+          isNullable: true,
+        })
+      );
+    }
 
-    // Adicionar foreign key
-    await queryRunner.createForeignKey(
-      'stores',
-      new TableForeignKey({
-        columnNames: ['companyId'],
-        referencedColumnNames: ['id'],
-        referencedTableName: 'companies',
-        onDelete: 'SET NULL',
-      })
+    // Adicionar foreign key (se ainda nao existir)
+    const table = await queryRunner.getTable('stores');
+    const hasFk = table?.foreignKeys.some(
+      (fk) => fk.columnNames.includes('companyId') && fk.referencedTableName === 'companies'
     );
+    if (!hasFk) {
+      await queryRunner.createForeignKey(
+        'stores',
+        new TableForeignKey({
+          columnNames: ['companyId'],
+          referencedColumnNames: ['id'],
+          referencedTableName: 'companies',
+          onDelete: 'SET NULL',
+        })
+      );
+    }
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

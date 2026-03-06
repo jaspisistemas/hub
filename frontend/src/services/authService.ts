@@ -1,6 +1,11 @@
-import { API_BASE_URL, getApiBaseUrl } from './api';
+declare const __API_URL__: string;
 
-const API_URL = getApiBaseUrl();
+const getApiUrl = () => {
+  const base = (typeof __API_URL__ !== 'undefined' ? __API_URL__ : null) ||
+    import.meta.env.VITE_API_URL ||
+    '/api';
+  return base.startsWith('http') ? base : `${window.location.origin}${base}`;
+};
 
 const buildHeaders = () => ({
   'Content-Type': 'application/json',
@@ -36,7 +41,7 @@ export interface LoginRequest {
 
 export const authService = {
   async register(data: RegisterRequest): Promise<RegisterResponse> {
-    const response = await fetch(`${API_URL}/auth/register`, {
+    const response = await fetch(`${getApiUrl()}/auth/register`, {
       method: 'POST',
       headers: buildHeaders(),
       body: JSON.stringify(data),
@@ -51,7 +56,7 @@ export const authService = {
   },
 
   async verifyEmail(token: string): Promise<{ message: string }> {
-    const response = await fetch(`${API_URL}/auth/verify-email/${token}`, {
+    const response = await fetch(`${getApiUrl()}/auth/verify-email/${token}`, {
       method: 'GET',
       headers: {
         'ngrok-skip-browser-warning': 'true',
@@ -83,7 +88,7 @@ export const authService = {
   },
 
   async login(data: LoginRequest): Promise<LoginResponse> {
-    const response = await fetch(`${API_URL}/auth/login`, {
+    const response = await fetch(`${getApiUrl()}/auth/login`, {
       method: 'POST',
       headers: buildHeaders(),
       body: JSON.stringify(data),

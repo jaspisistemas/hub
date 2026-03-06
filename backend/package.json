@@ -1,13 +1,16 @@
 {
   "name": "backend",
-  "version": "0.2.0",
+  "version": "0.2.25",
   "private": true,
   "main": "dist/main.js",
   "scripts": {
     "start": "node dist/main.js",
     "start:dev": "ts-node-dev --respawn --transpile-only src/main.ts",
     "build": "tsc",
-    "migration:run": "node ../node_modules/typeorm/cli-ts-node-commonjs.js migration:run -d src/data-source.ts",
+    "migration:run": "node ../node_modules/typeorm/cli.js migration:run -d dist/data-source.js",
+    "migration:run:dev": "node ../node_modules/typeorm/cli-ts-node-commonjs.js migration:run -d src/data-source.ts",
+    "db:create": "npx ts-node --transpile-only scripts/create-database.ts",
+    "db:setup": "npm run build && npm run db:create && npm run migration:run",
     "migration:generate": "typeorm migration:generate src/migrations",
     "migration:create": "typeorm migration:create src/migrations"
   },

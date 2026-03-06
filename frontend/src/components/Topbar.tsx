@@ -1,5 +1,5 @@
-import React from 'react';
-import { AppBar, Toolbar, Typography, Box, Avatar, Menu, MenuItem, IconButton, Tooltip, Badge, Divider, List, ListItem, ListItemText, ListItemAvatar, Paper, ListItemIcon, Button, useTheme } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { AppBar, Toolbar, Typography, Box, Avatar, Menu, MenuItem, IconButton, Tooltip, Badge, Divider, List, ListItem, ListItemText, ListItemAvatar, ListItemIcon, Button, useTheme, Chip } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { 
   ExpandMore as ExpandMoreIcon,
@@ -8,15 +8,26 @@ import {
   Logout as LogoutIcon,
   Person as PersonIcon,
   BugReportOutlined as BugReportOutlinedIcon,
+  SystemUpdateAlt as SystemUpdateAltIcon,
 } from '@mui/icons-material';
+import ChangelogModal from './ChangelogModal/ChangelogModal';
+import { appVersionService } from '../services/appVersionService';
 
 export default function Topbar() {
   const theme = useTheme();
   const navigate = useNavigate();
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-  const [notificationsAnchor, setNotificationsAnchor] = React.useState<null | HTMLElement>(null);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [notificationsAnchor, setNotificationsAnchor] = useState<null | HTMLElement>(null);
+  const [changelogOpen, setChangelogOpen] = useState(false);
+  const [versaoAtual, setVersaoAtual] = useState<string | null>(null);
+  const [podeAtualizar, setPodeAtualizar] = useState(false);
   const user = JSON.parse(localStorage.getItem('user') || '{"email":""}');
-  const [notificationCount] = React.useState(0);
+  const [notificationCount] = useState(0);
+
+  useEffect(() => {
+    appVersionService.getVersaoSistema().then((r) => setVersaoAtual(r.version)).catch(() => {});
+    appVersionService.getVersaoNovaStatus().then((r) => setPodeAtualizar(r.podeAtualizar)).catch(() => {});
+  }, []);
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -83,6 +94,18 @@ export default function Topbar() {
       <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', px: 4, py: 2 }}>
         <Box></Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Tooltip title="Clique para ver histórico de alterações">
+            <Chip
+              icon={<SystemUpdateAltIcon sx={{ fontSize: 18 }} />}
+              label={`v${versaoAtual || '—'}`}
+              size="small"
+              onClick={() => setChangelogOpen(true)}
+              sx={{
+                cursor: 'pointer',
+                '& .MuiChip-icon': { color: 'inherit' },
+              }}
+            />
+          </Tooltip>
           <Tooltip title="Notificações">
             <IconButton 
               size="small"
@@ -329,6 +352,13 @@ export default function Topbar() {
               <Typography variant="body2" sx={{ fontWeight: 500 }}>Sair</Typography>
             </MenuItem>
           </Menu>
+
+          <ChangelogModal
+            open={changelogOpen}
+            onClose={() => setChangelogOpen(false)}
+            versaoAtual={versaoAtual ?? undefined}
+            podeAtualizar={podeAtualizar}
+          />
         </Box>
       </Toolbar>
 

@@ -3,19 +3,20 @@
   "version": "0.2.0",
   "private": true,
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "node scripts/copy-changelog.cjs && vite",
+    "build": "node scripts/copy-changelog.cjs && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
-    "@hub/shared": "file:../packages/shared",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@hub/shared": "file:../packages/shared",
     "@mui/icons-material": "^7.3.7",
     "@mui/material": "^5.0.0",
     "@reduxjs/toolkit": "^1.9.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
+    "react-markdown": "^10.1.0",
     "react-redux": "^8.0.0",
     "react-router-dom": "^7.13.0",
     "recharts": "^3.7.0",

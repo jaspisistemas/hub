@@ -109,8 +109,9 @@ export class InvoicesService {
         try {
           fs.unlinkSync(fullPath);
           console.log(`Arquivo da nota fiscal removido: ${fullPath}`);
-        } catch (error) {
-          console.error(`Erro ao remover arquivo físico: ${error.message}`);
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          console.error(`Erro ao remover arquivo físico: ${errorMessage}`);
           // Não falha a operação se não conseguir remover o arquivo
         }
       }

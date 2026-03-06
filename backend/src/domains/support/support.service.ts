@@ -8,6 +8,7 @@ import { FilterSupportDto } from './dto/filter-support.dto';
 import { AnswerSupportDto } from './dto/answer-support.dto';
 import { MarketplaceService } from '../../integrations/marketplace/marketplace.service';
 import { StoresService } from '../stores/stores.service';
+import { DATE_CONSTANTS } from '@hub/shared';
 
 @Injectable()
 export class SupportService {
@@ -56,7 +57,7 @@ export class SupportService {
     console.log(`[FINDALL] daysRange value:`, filters.daysRange, `type:`, typeof filters.daysRange);
 
     // Filtrar por período - padrão é 30 dias se não especificado
-    const daysRange = filters.daysRange ?? 30; // Se for 0, significa "Todos"
+    const daysRange = filters.daysRange ?? DATE_CONSTANTS.DEFAULT_DATE_RANGE_DAYS; // Se for 0, significa "Todos"
     const dateLimit = new Date();
     dateLimit.setDate(dateLimit.getDate() - daysRange);
 
@@ -147,15 +148,15 @@ export class SupportService {
     console.log(`\n🔄 Iniciando sincronização para loja: ${storeId}`);
     
     // Limpar perguntas antigas (mais de 30 dias)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const dateLimit = new Date();
+    dateLimit.setDate(dateLimit.getDate() - DATE_CONSTANTS.DEFAULT_DATE_RANGE_DAYS);
     
     const deletedCount = await this.supportRepository
       .createQueryBuilder()
       .delete()
       .from(Support)
       .where('storeId = :storeId', { storeId })
-      .andWhere('questionDate < :thirtyDaysAgo', { thirtyDaysAgo })
+      .andWhere('questionDate < :dateLimit', { dateLimit })
       .execute();
     
     if (deletedCount?.affected && deletedCount.affected > 0) {

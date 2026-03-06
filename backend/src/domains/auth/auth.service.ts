@@ -81,7 +81,6 @@ export class AuthService {
         password: hashedPassword,
         name,
         ...(phone && { phone }),
-        emailVerifiedAt: null,
         emailVerificationToken: verificationToken,
         emailVerificationSentAt: new Date(),
       }),

@@ -14,44 +14,13 @@ import {
   UploadedFile,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdatePreferencesDto } from './dto/update-preferences.dto';
-
-const multerOptions = {
-  storage: diskStorage({
-    destination: './uploads/avatars',
-    filename: (req, file, callback) => {
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-      const ext = extname(file.originalname);
-      const filename = `avatar-${uniqueSuffix}${ext}`;
-      callback(null, filename);
-    },
-  }),
-  fileFilter: (req: any, file: any, callback: any) => {
-    // Validar extensão (case-insensitive)
-    const validExtensions = /\.(jpg|jpeg|png|gif|webp|svg)$/i;
-    // Validar MIME type
-    const validMimeTypes = /^image\/(jpeg|png|gif|webp|svg\+xml)$/;
-    
-    if (!validExtensions.test(file.originalname)) {
-      return callback(new Error('Extensão de arquivo inválida! Use: jpg, jpeg, png, gif, webp ou svg'), false);
-    }
-    
-    if (!validMimeTypes.test(file.mimetype)) {
-      return callback(new Error('Tipo de arquivo inválido! Use um arquivo de imagem válido'), false);
-    }
-    
-    callback(null, true);
-  },
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB
-  },
-};
+import { createImageUploadConfig } from '../../config/upload.config';
+import { buildUploadUrl } from '../../utils/file.helpers';
 
 @Controller('auth')
 export class AuthController {
@@ -135,7 +104,7 @@ export class AuthController {
 
   @Put('profile')
   @UseGuards(JwtAuthGuard)
-  @UseInterceptors(FileInterceptor('avatar', multerOptions))
+  @UseInterceptors(FileInterceptor('avatar', createImageUploadConfig('avatars', true)))
   async updateProfile(
     @Request() req: any,
     @Body() updateProfileDto?: UpdateProfileDto,
@@ -150,7 +119,7 @@ export class AuthController {
         // Quando vem com arquivo, multer coloca os campos em req.body
         profileData = {
           ...req.body,
-          avatarUrl: `/uploads/avatars/${file.filename}`,
+          avatarUrl: buildUploadUrl('AVATARS', file.filename),
         };
         console.log('Updating with file, avatar URL:', profileData.avatarUrl); // Debug
       } else {

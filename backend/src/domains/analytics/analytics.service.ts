@@ -11,6 +11,7 @@ import {
   MarketplacePerformanceDto,
   OrdersByStatusDto,
 } from './dto/analytics-response.dto';
+import { DATE_CONSTANTS } from '@hub/shared';
 
 @Injectable()
 export class AnalyticsService {
@@ -32,7 +33,7 @@ export class AnalyticsService {
 
     // Define período padrão: últimos 30 dias
     const end = endDate || new Date();
-    const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const start = startDate || new Date(Date.now() - DATE_CONSTANTS.DEFAULT_DATE_RANGE_DAYS * DATE_CONSTANTS.MS_PER_DAY);
 
     // Período anterior para comparação (mesmo tamanho)
     const periodDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));

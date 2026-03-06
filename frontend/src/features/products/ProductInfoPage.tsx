@@ -129,16 +129,94 @@ export default function ProductInfoPage() {
 
   return (
     <Box sx={{ width: '100%', overflow: 'hidden', bgcolor: '#FAFBFC' }}>
-      {/* HERO SECTION */}
-      <Box sx={{ bgcolor: 'white', pt: 4, pb: 8 }}>
+      {/* TOP BANNER AZUL */}
+      <Box
+        sx={{
+          background: 'linear-gradient(135deg, #2F80ED 0%, #1E6FCC 100%)',
+          py: 1.5,
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,.05) 10px, rgba(255,255,255,.05) 20px)',
+          }}
+        />
         <Container maxWidth="lg">
+          <Typography
+            variant="body2"
+            sx={{
+              textAlign: 'center',
+              color: 'white',
+              fontWeight: 600,
+              textShadow: '0 2px 4px rgba(0,0,0,0.2)',
+            }}
+          >
+            🚀 Plataforma #1 de Gestão de Marketplaces • Teste Grátis por 30 dias • Sem cartão de crédito
+          </Typography>
+        </Container>
+      </Box>
+
+      {/* HERO SECTION */}
+      <Box
+        sx={{
+          background: 'linear-gradient(180deg, #E6F3FF 0%, #FFFFFF 100%)',
+          pt: 4,
+          pb: 8,
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Decorative circles */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: -100,
+            right: -100,
+            width: 300,
+            height: 300,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(47,128,237,0.1) 0%, transparent 70%)',
+            display: { xs: 'none', md: 'block' },
+          }}
+        />
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: -80,
+            left: -80,
+            width: 250,
+            height: 250,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(47,128,237,0.1) 0%, transparent 70%)',
+            display: { xs: 'none', md: 'block' },
+          }}
+        />
+        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
           {/* Header/Logo */}
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 6 }}>
-            <img 
-              src="/jaspi-logo.png" 
-              alt="JASPI SISTEMAS" 
-              style={{ height: '36px' }}
-            />
+            <Box
+              sx={{
+                bgcolor: 'white',
+                p: 2,
+                borderRadius: 2,
+                boxShadow: '0 4px 12px rgba(47,128,237,0.15)',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <img 
+                src="/jaspi-logo.png" 
+                alt="JASPI SISTEMAS" 
+                style={{ height: '36px' }}
+              />
+            </Box>
           </Box>
 
           {/* Hero Content */}
@@ -181,13 +259,15 @@ export default function ProductInfoPage() {
                     textTransform: 'none',
                     fontSize: '1rem',
                     '&:hover': { 
-                      bgcolor: '#2666C5',
-                      boxShadow: '0 4px 12px rgba(47,128,237,0.3)',
+                      bgcolor: '#1E6FCC',
+                      boxShadow: '0 6px 20px rgba(47,128,237,0.4)',
+                      transform: 'translateY(-2px)',
                     },
                     px: 4,
                     py: 1.5,
                     borderRadius: 2,
-                    boxShadow: '0 2px 8px rgba(47,128,237,0.2)',
+                    boxShadow: '0 4px 12px rgba(47,128,237,0.3)',
+                    transition: 'all 0.3s ease',
                   }}
                 >
                   Começar agora
@@ -203,13 +283,17 @@ export default function ProductInfoPage() {
                     fontWeight: 600,
                     textTransform: 'none',
                     fontSize: '1rem',
+                    bgcolor: 'white',
                     '&:hover': { 
                       borderWidth: 2,
-                      bgcolor: 'rgba(47,128,237,0.04)',
+                      bgcolor: 'rgba(47,128,237,0.08)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px rgba(47,128,237,0.2)',
                     },
                     px: 4,
                     py: 1.5,
                     borderRadius: 2,
+                    transition: 'all 0.3s ease',
                   }}
                 >
                   Ver demonstração
@@ -241,6 +325,7 @@ export default function ProductInfoPage() {
                       bgcolor: '#2F80ED',
                       color: 'white',
                       borderRadius: 2,
+                      boxShadow: '0 4px 15px rgba(47,128,237,0.3)',
                     }}
                   >
                     <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
@@ -295,7 +380,9 @@ export default function ProductInfoPage() {
                           height: `${height}%`,
                           bgcolor: '#2F80ED',
                           borderRadius: 1,
-                          opacity: 0.7,
+                          opacity: idx === 6 ? 1 : 0.7,
+                          transition: 'opacity 0.3s ease',
+                          '&:hover': { opacity: 1 },
                         }}
                       />
                     ))}
@@ -308,14 +395,38 @@ export default function ProductInfoPage() {
       </Box>
 
       {/* SEÇÃO PROBLEMA */}
-      <Box sx={{ py: 10, bgcolor: '#F7FAFC' }}>
+      <Box
+        sx={{
+          py: 10,
+          background: 'linear-gradient(180deg, #F7FAFC 0%, #E6F0FF 100%)',
+          position: 'relative',
+        }}
+      >
         <Container maxWidth="lg">
+          <Box sx={{ textAlign: 'center', mb: 2 }}>
+            <Box
+              component="span"
+              sx={{
+                bgcolor: '#EBF4FF',
+                color: '#2F80ED',
+                px: 3,
+                py: 1,
+                borderRadius: 20,
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                border: '2px solid #2F80ED',
+              }}
+            >
+              ⚠️ PROBLEMAS COMUNS
+            </Box>
+          </Box>
           <Typography
             variant="h3"
             sx={{
               textAlign: 'center',
               fontWeight: 700,
               mb: 6,
+              mt: 3,
               fontSize: { xs: '1.75rem', md: '2.25rem' },
               color: '#1A202C',
             }}
@@ -364,14 +475,46 @@ export default function ProductInfoPage() {
       </Box>
 
       {/* SEÇÃO SOLUÇÃO */}
-      <Box sx={{ py: 10, bgcolor: 'white' }}>
-        <Container maxWidth="lg">
+      <Box sx={{ py: 10, bgcolor: 'white', position: 'relative', overflow: 'hidden' }}>
+        {/* Decorative gradient blob */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '800px',
+            height: '800px',
+            background: 'radial-gradient(circle, rgba(47,128,237,0.05) 0%, transparent 70%)',
+            borderRadius: '50%',
+            zIndex: 0,
+          }}
+        />
+        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
+          <Box sx={{ textAlign: 'center', mb: 2 }}>
+            <Box
+              component="span"
+              sx={{
+                bgcolor: '#2F80ED',
+                color: 'white',
+                px: 3,
+                py: 1,
+                borderRadius: 20,
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                boxShadow: '0 4px 12px rgba(47,128,237,0.3)',
+              }}
+            >
+              ✨ SOLUÇÃO COMPLETA
+            </Box>
+          </Box>
           <Typography
             variant="h3"
             sx={{
               textAlign: 'center',
               fontWeight: 700,
               mb: 2,
+              mt: 3,
               fontSize: { xs: '1.75rem', md: '2.25rem' },
               color: '#1A202C',
             }}
@@ -432,13 +575,14 @@ export default function ProductInfoPage() {
                       sx={{
                         width: 48,
                         height: 48,
-                        bgcolor: '#EBF4FF',
-                        color: '#2F80ED',
+                        bgcolor: '#2F80ED',
+                        color: 'white',
                         borderRadius: 2,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         mb: 2,
+                        boxShadow: '0 4px 12px rgba(47,128,237,0.3)',
                       }}
                     >
                       {solution.icon}
@@ -458,14 +602,37 @@ export default function ProductInfoPage() {
       </Box>
 
       {/* SEÇÃO BENEFÍCIOS */}
-      <Box sx={{ py: 10, bgcolor: '#F7FAFC' }}>
+      <Box
+        sx={{
+          py: 10,
+          background: 'linear-gradient(180deg, #F7FAFC 0%, #E6F0FF 50%, #F7FAFC 100%)',
+        }}
+      >
         <Container maxWidth="lg">
+          <Box sx={{ textAlign: 'center', mb: 2 }}>
+            <Box
+              component="span"
+              sx={{
+                bgcolor: '#EBF4FF',
+                color: '#2F80ED',
+                px: 3,
+                py: 1,
+                borderRadius: 20,
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                border: '2px solid #2F80ED',
+              }}
+            >
+              🎯 BENEFÍCIOS
+            </Box>
+          </Box>
           <Typography
             variant="h3"
             sx={{
               textAlign: 'center',
               fontWeight: 700,
               mb: 6,
+              mt: 3,
               fontSize: { xs: '1.75rem', md: '2.25rem' },
               color: '#1A202C',
             }}
@@ -492,6 +659,7 @@ export default function ProductInfoPage() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       flexShrink: 0,
+                      boxShadow: '0 4px 15px rgba(47,128,237,0.4)',
                     }}
                   >
                     {benefit.icon}
@@ -509,12 +677,30 @@ export default function ProductInfoPage() {
       {/* GALERIA DE SCREENSHOTS */}
       <Box sx={{ py: 10, bgcolor: 'white' }}>
         <Container maxWidth="lg">
+          <Box sx={{ textAlign: 'center', mb: 2 }}>
+            <Box
+              component="span"
+              sx={{
+                bgcolor: '#EBF4FF',
+                color: '#2F80ED',
+                px: 3,
+                py: 1,
+                borderRadius: 20,
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                border: '2px solid #2F80ED',
+              }}
+            >
+              📸 GALERIA
+            </Box>
+          </Box>
           <Typography
             variant="h3"
             sx={{
               textAlign: 'center',
               fontWeight: 700,
               mb: 2,
+              mt: 3,
               fontSize: { xs: '1.75rem', md: '2.25rem' },
               color: '#1A202C',
             }}
@@ -567,7 +753,7 @@ export default function ProductInfoPage() {
                     bottom: 0,
                     left: 0,
                     right: 0,
-                    bgcolor: 'rgba(47, 128, 237, 0.9)',
+                    bgcolor: 'rgba(47, 128, 237, 0.95)',
                     backdropFilter: 'blur(10px)',
                     p: 2,
                   }}
@@ -614,7 +800,7 @@ export default function ProductInfoPage() {
                     bottom: 0,
                     left: 0,
                     right: 0,
-                    bgcolor: 'rgba(47, 128, 237, 0.9)',
+                    bgcolor: 'rgba(47, 128, 237, 0.95)',
                     backdropFilter: 'blur(10px)',
                     p: 2,
                   }}
@@ -661,7 +847,7 @@ export default function ProductInfoPage() {
                     bottom: 0,
                     left: 0,
                     right: 0,
-                    bgcolor: 'rgba(47, 128, 237, 0.9)',
+                    bgcolor: 'rgba(47, 128, 237, 0.95)',
                     backdropFilter: 'blur(10px)',
                     p: 2,
                   }}
@@ -708,7 +894,7 @@ export default function ProductInfoPage() {
                     bottom: 0,
                     left: 0,
                     right: 0,
-                    bgcolor: 'rgba(47, 128, 237, 0.9)',
+                    bgcolor: 'rgba(47, 128, 237, 0.95)',
                     backdropFilter: 'blur(10px)',
                     p: 2,
                   }}
@@ -755,7 +941,7 @@ export default function ProductInfoPage() {
                     bottom: 0,
                     left: 0,
                     right: 0,
-                    bgcolor: 'rgba(47, 128, 237, 0.9)',
+                    bgcolor: 'rgba(47, 128, 237, 0.95)',
                     backdropFilter: 'blur(10px)',
                     p: 2,
                   }}
@@ -774,14 +960,37 @@ export default function ProductInfoPage() {
       </Box>
 
       {/* COMO FUNCIONA */}
-      <Box sx={{ py: 10, bgcolor: '#F7FAFC' }}>
+      <Box
+        sx={{
+          py: 10,
+          background: 'linear-gradient(180deg, #FFFFFF 0%, #F7FAFC 100%)',
+        }}
+      >
         <Container maxWidth="lg">
+          <Box sx={{ textAlign: 'center', mb: 2 }}>
+            <Box
+              component="span"
+              sx={{
+                bgcolor: '#EBF4FF',
+                color: '#2F80ED',
+                px: 3,
+                py: 1,
+                borderRadius: 20,
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                border: '2px solid #2F80ED',
+              }}
+            >
+              🚀 COMO FUNCIONA
+            </Box>
+          </Box>
           <Typography
             variant="h3"
             sx={{
               textAlign: 'center',
               fontWeight: 700,
               mb: 6,
+              mt: 3,
               fontSize: { xs: '1.75rem', md: '2.25rem' },
               color: '#1A202C',
             }}
@@ -800,7 +1009,7 @@ export default function ProductInfoPage() {
                     variant="h2"
                     sx={{
                       fontWeight: 700,
-                      color: '#EBF4FF',
+                      color: '#2F80ED',
                       fontSize: '4rem',
                       mb: 2,
                     }}
@@ -835,14 +1044,37 @@ export default function ProductInfoPage() {
       </Box>
 
       {/* INTEGRAÇÕES DISPONÍVEIS */}
-      <Box sx={{ py: 10, bgcolor: 'white' }}>
+      <Box
+        sx={{
+          py: 10,
+          background: 'linear-gradient(180deg, #F7FAFC 0%, #FFFFFF 100%)',
+        }}
+      >
         <Container maxWidth="lg">
+          <Box sx={{ textAlign: 'center', mb: 2 }}>
+            <Box
+              component="span"
+              sx={{
+                bgcolor: '#EBF4FF',
+                color: '#2F80ED',
+                px: 3,
+                py: 1,
+                borderRadius: 20,
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                border: '2px solid #2F80ED',
+              }}
+            >
+              🔗 INTEGRAÇÕES
+            </Box>
+          </Box>
           <Typography
             variant="h3"
             sx={{
               textAlign: 'center',
               fontWeight: 700,
               mb: 2,
+              mt: 3,
               fontSize: { xs: '1.75rem', md: '2.25rem' },
               color: '#1A202C',
             }}
@@ -1081,14 +1313,37 @@ export default function ProductInfoPage() {
       </Box>
 
       {/* PROVA SOCIAL */}
-      <Box sx={{ py: 10, bgcolor: '#F7FAFC' }}>
+      <Box
+        sx={{
+          py: 10,
+          background: 'linear-gradient(180deg, #FFFFFF 0%, #F7FAFC 100%)',
+        }}
+      >
         <Container maxWidth="lg">
+          <Box sx={{ textAlign: 'center', mb: 2 }}>
+            <Box
+              component="span"
+              sx={{
+                bgcolor: '#EBF4FF',
+                color: '#2F80ED',
+                px: 3,
+                py: 1,
+                borderRadius: 20,
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                border: '2px solid #2F80ED',
+              }}
+            >
+              📈 RESULTADOS
+            </Box>
+          </Box>
           <Typography
             variant="h3"
             sx={{
               textAlign: 'center',
               fontWeight: 700,
               mb: 6,
+              mt: 3,
               fontSize: { xs: '1.75rem', md: '2.25rem' },
               color: '#1A202C',
             }}
@@ -1103,9 +1358,14 @@ export default function ProductInfoPage() {
                   sx={{
                     p: 4,
                     textAlign: 'center',
-                    border: '1px solid #E2E8F0',
+                    border: '2px solid #E6F0FF',
                     bgcolor: 'white',
                     borderRadius: 2,
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      boxShadow: '0 8px 20px rgba(47, 128, 237, 0.15)',
+                      transform: 'translateY(-4px)',
+                    },
                   }}
                 >
                   <Typography
@@ -1138,6 +1398,17 @@ export default function ProductInfoPage() {
           overflow: 'hidden',
         }}
       >
+        {/* Decorative pattern */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,.03) 10px, rgba(255,255,255,.03) 20px)',
+          }}
+        />
         {/* Decorative elements */}
         <Box
           sx={{
@@ -1188,11 +1459,12 @@ export default function ProductInfoPage() {
                   '&:hover': {
                     bgcolor: '#F7FAFC',
                     transform: 'translateY(-2px)',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
                   },
                   px: 6,
                   py: 2,
                   borderRadius: 2,
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                   transition: 'all 0.3s ease',
                 }}
               >

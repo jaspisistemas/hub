@@ -1,4 +1,5 @@
 import { Injectable, HttpException, HttpStatus, Inject, forwardRef } from '@nestjs/common';
+import { DATE_CONSTANTS } from '@hub/shared';
 import { MercadoLivreAdapter } from './adapters/mercadolivre.adapter';
 import { ShopeeAdapter } from './adapters/shopee.adapter';
 import { StoresService } from '../../domains/stores/stores.service';
@@ -535,6 +536,18 @@ export class MarketplaceService {
    */
   async createMercadoLivreProduct(product: any, accessToken: string) {
     try {
+      // Gerar family_name (obrigatório em algumas categorias)
+      // Usa as primeiras 2-3 palavras do título ou o nome do produto
+      const generateFamilyName = (productData: any): string => {
+        const baseName = productData.name || productData.title || 'Produto';
+        const words = baseName.trim().split(/\s+/);
+        // Se tem 3+ palavras, pega as 2-3 primeiras; senão usa o nome completo
+        if (words.length >= 3) {
+          return words.slice(0, 3).join(' ');
+        }
+        return baseName.substring(0, 50); // Limita a 50 caracteres
+      };
+
       // Montar payload no formato do ML
       const listing = {
         title: this.buildProductTitle(product), // Melhorar título automaticamente
@@ -545,6 +558,7 @@ export class MarketplaceService {
         buying_mode: 'buy_it_now',
         condition: 'new',
         listing_type_id: 'gold_special', // free, bronze, silver, gold_special, gold_premium, gold_pro
+        family_name: product.familyName || generateFamilyName(product), // Campo obrigatório em algumas categorias
         description: {
           plain_text: product.description || `${product.name}\n\nSKU: ${product.sku}`,
         },
@@ -631,6 +645,15 @@ export class MarketplaceService {
           });
         }
       }
+
+      console.log('📦 Payload para criar produto no ML:', {
+        title: listing.title,
+        category_id: listing.category_id,
+        family_name: listing.family_name,
+        price: listing.price,
+        attributes_count: listing.attributes.length,
+        pictures_count: listing.pictures.length,
+      });
 
       const response = await fetch('https://api.mercadolibre.com/items', {
         method: 'POST',
@@ -915,10 +938,10 @@ export class MarketplaceService {
       
       // Buscar perguntas do mês atual (últimos 30 dias)
       const dateFrom = new Date();
-      dateFrom.setDate(dateFrom.getDate() - 30);
+      dateFrom.setDate(dateFrom.getDate() - DATE_CONSTANTS.DEFAULT_DATE_RANGE_DAYS);
       const dateFromISO = dateFrom.toISOString();
       
-      console.log(`\n   📝 Buscando perguntas dos últimos 30 dias (desde ${dateFrom.toLocaleDateString('pt-BR')})...`);
+      console.log(`\n   📝 Buscando perguntas dos últimos ${DATE_CONSTANTS.DEFAULT_DATE_RANGE_DAYS} dias (desde ${dateFrom.toLocaleDateString('pt-BR')})...`);
       
       let offset = 0;
       const limit = 50; // Limite padrão da API

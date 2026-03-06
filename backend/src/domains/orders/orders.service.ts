@@ -8,6 +8,7 @@ import { Order } from './entities/order.entity';
 import { WebsocketGateway } from '../../infra/websocket/websocket.gateway';
 import { Store } from '../stores/entities/store.entity';
 import { MarketplaceService } from '../../integrations/marketplace/marketplace.service';
+import { DATE_CONSTANTS, normalizeStatus, normalizeMarketplace, matchesCancelledStatus } from '@hub/shared';
 
 /**
  * OrdersService: contém APENAS regras de negócio.
@@ -25,12 +26,6 @@ export class OrdersService {
     @Inject(forwardRef(() => MarketplaceService))
     private readonly marketplaceService: MarketplaceService,
   ) {}
-
-  private normalizeMarketplace(value?: string) {
-    return (value || '')
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, '');
-  }
 
   private extractMarketplaceStatus(dto: CreateOrderDto): string | undefined {
     const raw: any = dto.raw || {};
@@ -143,7 +138,6 @@ export class OrdersService {
     const stores = await this.storesRepository.find({ where: { userId } });
     const storeIds = stores.map((s) => s.id);
 
-    const normalizeStatus = (value?: string) => (value || '').toLowerCase().trim();
     const paidStatuses = ['paid', 'approved', 'delivered', 'completed'];
     const filteredStatuses = paidOnly
       ? paidStatuses
@@ -161,7 +155,7 @@ export class OrdersService {
 
     if (stores.length === 1) {
       const store = stores[0];
-      const normalizedStoreMarketplace = this.normalizeMarketplace(store.marketplace);
+      const normalizedStoreMarketplace = normalizeMarketplace(store.marketplace);
 
       const orphanOrders = await this.ordersRepository.find({
         where: { storeId: IsNull() },
@@ -169,7 +163,7 @@ export class OrdersService {
       });
 
       const matchedOrphans = orphanOrders.filter((order) =>
-        this.normalizeMarketplace(order.marketplace) === normalizedStoreMarketplace,
+        normalizeMarketplace(order.marketplace) === normalizedStoreMarketplace,
       );
 
       if (matchedOrphans.length) {
@@ -224,7 +218,6 @@ export class OrdersService {
     const stores = await this.storesRepository.find({ where: { companyId } });
     const storeIds = stores.map((s) => s.id);
 
-    const normalizeStatus = (value?: string) => (value || '').toLowerCase().trim();
     const paidStatuses = ['paid', 'approved', 'delivered', 'completed'];
     const filteredStatuses = paidOnly
       ? paidStatuses
@@ -327,7 +320,7 @@ export class OrdersService {
     console.warn('[event] order.integration_failed', event);
   }
 
-  async getDashboardMetrics(userId: string, days: number = 30) {
+  async getDashboardMetrics(userId: string, days: number = DATE_CONSTANTS.DEFAULT_DATE_RANGE_DAYS) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
@@ -339,12 +332,7 @@ export class OrdersService {
       relations: ['store'],
     });
 
-    const isCancelled = (status?: string) => {
-      const normalized = (status || '').toLowerCase();
-      return normalized === 'cancelled' || normalized === 'canceled' || normalized === 'cancelado';
-    };
-
-    const revenueOrders = orders.filter((order) => !isCancelled(order.status));
+    const revenueOrders = orders.filter((order) => !matchesCancelledStatus(order.status));
 
     // Calcular overview
     const totalRevenue = revenueOrders.reduce((sum, order) => sum + Number(order.total), 0);
@@ -470,7 +458,7 @@ export class OrdersService {
     };
   }
 
-  async getStoreMetrics(storeId: string, userId: string, days: number = 30) {
+  async getStoreMetrics(storeId: string, userId: string, days: number = DATE_CONSTANTS.DEFAULT_DATE_RANGE_DAYS) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 

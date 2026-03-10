@@ -212,8 +212,8 @@ export default function ProductInfoPage() {
               }}
             >
               <img 
-                src="/jaspi-logo.png" 
-                alt="JASPI SISTEMAS" 
+                src="/jaspi-mascot.png" 
+                alt="VendaMais" 
                 style={{ height: '36px' }}
               />
             </Box>
@@ -717,11 +717,11 @@ export default function ProductInfoPage() {
               mx: 'auto',
             }}
           >
-            Capturas de tela reais das principais funcionalidades do JASPI SISTEMAS
+            Capturas de tela reais das principais funcionalidades do VendaMais
           </Typography>
 
-          <Grid container spacing={3}>
-            {/* Screenshot 1 - Dashboard */}
+          <Grid container spacing={4}>
+            {/* Screenshot 1 -Dashboard */}
             <Grid item xs={12} md={6}>
               <Box
                 sx={{
@@ -1351,7 +1351,7 @@ export default function ProductInfoPage() {
             Resultados reais
           </Typography>
           <Grid container spacing={4}>
-            {data.socialProof.map((proof, idx) => (
+            {data?.socialProof?.map((proof, idx) => (
               <Grid item xs={12} sm={4} key={idx}>
                 <Paper
                   elevation={0}
@@ -1482,7 +1482,7 @@ export default function ProductInfoPage() {
               >
                 <img 
                   src="/jaspi-mascot.png" 
-                  alt="Mascote Jaspi" 
+                  alt="Mascote VendaMais" 
                   style={{ 
                     maxWidth: '100%', 
                     height: 'auto',
@@ -1517,8 +1517,8 @@ export default function ProductInfoPage() {
           <Grid container spacing={4}>
             <Grid item xs={12} md={4}>
               <img 
-                src="/jaspi-logo.png" 
-                alt="JASPI SISTEMAS" 
+                src="/jaspi-mascot.png" 
+                alt="VendaMais" 
                 style={{ height: '32px', marginBottom: '16px', filter: 'brightness(0) invert(1)' }}
               />
               <Typography variant="body2" sx={{ color: '#A0AEC0', mb: 2 }}>
@@ -1571,7 +1571,7 @@ export default function ProductInfoPage() {
           </Grid>
           <Divider sx={{ borderColor: '#2D3748', my: 4 }} />
           <Typography variant="body2" sx={{ textAlign: 'center', color: '#A0AEC0' }}>
-            © 2026 JASPI SISTEMAS. Todos os direitos reservados.
+            © 2026 VendaMais. Todos os direitos reservados.
           </Typography>
         </Container>
       </Box>

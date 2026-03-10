@@ -916,7 +916,7 @@ export default function ProfilePage() {
                     WebkitTextFillColor: 'transparent',
                   }}
                 >
-                  JASPI HUB
+                  VENDAMAIS
                 </Typography>
                 <Typography variant="body2" color="text.secondary" paragraph>
                   Sistema para gerenciamento de marketplaces
@@ -926,13 +926,13 @@ export default function ProfilePage() {
                 </Typography>
                 <Divider sx={{ my: 3 }} />
                 <Typography variant="body2" color="text.secondary" paragraph>
-                  Desenvolvido por <strong>JASPI Sistemas</strong>
+                  Desenvolvido por <strong>VendaMais</strong>
                 </Typography>
                 <Typography variant="body2" color="text.secondary" paragraph>
                   © 2026 Todos os direitos reservados
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  contato@jaspi.com.br | www.jaspi.com.br
+                  contato@vendamais.com.br | www.vendamais.com.br
                 </Typography>
               </Box>
             </Box>

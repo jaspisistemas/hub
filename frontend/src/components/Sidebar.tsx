@@ -134,7 +134,7 @@ export default function Sidebar() {
             }}
             onClick={() => navigate('/')}
           >
-            JASPI Hub
+            VendaMais
           </Typography>
         )}
       </Box>

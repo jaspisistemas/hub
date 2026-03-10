@@ -99,8 +99,8 @@ export default function StoresPage() {
         data.map(async (store) => {
           try {
             const [products, orders] = await Promise.all([
-              productsService.getAll({ storeId: store.id }).catch(() => []),
-              ordersService.getAll({ storeId: store.id }).catch(() => []),
+              productsService.getAll().catch(() => []),
+              ordersService.getAll().catch(() => []),
             ]);
             
             // Calcular receita total dos pedidos

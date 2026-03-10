@@ -324,7 +324,7 @@ GET    /invoices/order/:orderId                     - Buscar nota por pedido
 
 ## 💡 Dica: Salvar Collection no Postman
 
-1. Crie uma **Collection** chamada "Jaspi Hub"
+1. Crie uma **Collection** chamada "VendaMais"
 2. Salve todas as requisições
 3. Configure uma **Variable** `{{token}}` para o accessToken
 4. Configure uma **Variable** `{{baseUrl}}` = `${BACKEND_URL}`

@@ -187,8 +187,7 @@ const HelpCenterPage: React.FC = () => {
     >
       <PageHeader
         title="Central de Ajuda"
-        subtitle="Dúvidas frequentes e guias rápidos para usar o hub"
-        icon={<HelpIcon />}
+        subtitle="Dúvidas frequentes e guias rápidos para usar o VendaMais"
       />
 
       <Container maxWidth="lg" sx={{ mt: 4 }}>

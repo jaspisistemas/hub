@@ -184,7 +184,7 @@ export default function DataTable<T = any>({
 
   // Se não tem dados, mostra empty state
   if (!data || data.length === 0) {
-    return <EmptyState message={emptyMessage} icon={emptyIcon} />;
+    return <EmptyState title={emptyMessage} icon={emptyIcon} description={emptyMessage} />;
   }
 
   const numSelected = selectedRows.length;

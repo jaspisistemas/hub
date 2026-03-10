@@ -1,6 +1,6 @@
 # Backend (NestJS)
 
-Esta pasta contém o backend NestJS do Hub de Integrações Marketplaces (MVP).
+Esta pasta contém o backend NestJS do VendaMais - Integração de Marketplaces (MVP).
 
 Princípios orientadores:
 - Regras de negócio vivem nos serviços de domínio (ex.: `OrdersService`).

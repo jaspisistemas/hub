@@ -9,7 +9,6 @@ import {
   Alert,
   InputAdornment,
   Grid,
-  Avatar,
   IconButton,
 } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -155,21 +154,24 @@ export default function LoginPage() {
             >
               <Box sx={{ width: '100%', maxWidth: '400px' }}>
               <Box sx={{ textAlign: 'center', mb: 4 }}>
-                <Avatar
+                <Box
+                  component="img"
+                  src="/favicon/android-chrome-192x192.png"
+                  alt="Logo VendaMais"
                   sx={{
                     width: 80,
                     height: 80,
-                    bgcolor: '#0099FF',
+                    objectFit: 'contain',
                     margin: '0 auto',
                     mb: 2,
+                    display: 'block',
                   }}
-                >
-                  <PersonIcon sx={{ fontSize: 50 }} />
-                </Avatar>
+                />
                 <Typography
                   variant="h4"
                   sx={{
                     fontWeight: 700,
+                    lineHeight: 2,
                     background: 'linear-gradient(135deg, #0099FF 0%, #667eea 100%)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
@@ -403,7 +405,7 @@ export default function LoginPage() {
                 <Box
                   component="img"
                   src="/jaspi-mascot.png"
-                  alt="Jaspi Mascot"
+                  alt="Mascote VendaMais"
                   sx={{
                     width: '100%',
                     maxWidth: '400px',

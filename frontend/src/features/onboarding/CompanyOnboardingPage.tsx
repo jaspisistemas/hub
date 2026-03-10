@@ -227,7 +227,7 @@ export default function CompanyOnboardingPage() {
               sx={{ mb: 3 }}
             >
               Preencha as informações da sua empresa para começar a usar o
-              JASPI HUB
+              VENDAMAIS
             </Typography>
           </Box>
 

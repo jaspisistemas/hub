@@ -1,4 +1,4 @@
-# Jaspi Hub - Integração de Marketplaces
+# VendaMais - Integração de Marketplaces
 
 Sistema completo de integração com marketplaces (Mercado Livre, Shopee, etc.) para centralizar pedidos, produtos e lojas em uma única plataforma.
 
@@ -458,5 +458,5 @@ Este projeto está sob a licença MIT.
 
 ## 👥 Equipe
 
-Desenvolvido por [Jaspi Team] <img width="1080" height="720" alt="jaspi-logo png" src="https://github.com/user-attachments/assets/46387307-8e64-474b-8d6b-702051258d52" />
+Desenvolvido por [Equipe VendaMais]
 

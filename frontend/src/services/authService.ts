@@ -31,6 +31,13 @@ export interface RegisterRequest {
 
 export interface RegisterResponse {
   message: string;
+  verificationToken?: string;
+  verificationUrl?: string;
+}
+
+export interface ResendVerificationResponse {
+  message: string;
+  verificationToken?: string;
   verificationUrl?: string;
 }
 
@@ -85,6 +92,37 @@ export const authService = {
     }
 
     return { message: rawText || 'Email verificado com sucesso' };
+  },
+
+  async resendVerification(email: string): Promise<ResendVerificationResponse> {
+    const response = await fetch(`${getApiUrl()}/auth/resend-verification`, {
+      method: 'POST',
+      headers: buildHeaders(),
+      body: JSON.stringify({ email }),
+    });
+
+    const rawText = await response.text();
+
+    const parseJson = () => {
+      try {
+        return JSON.parse(rawText);
+      } catch (parseError) {
+        return null;
+      }
+    };
+
+    if (!response.ok) {
+      const parsed = parseJson();
+      const message = parsed?.message || rawText || 'Erro ao reenviar verificacao';
+      throw new Error(message);
+    }
+
+    const parsed = parseJson();
+    if (parsed?.message) {
+      return parsed;
+    }
+
+    return { message: rawText || 'Novo link de verificacao enviado.' };
   },
 
   async login(data: LoginRequest): Promise<LoginResponse> {

@@ -7,6 +7,7 @@ import { QueueModule } from './infra/queue/queue.module';
 import { WebsocketModule } from './infra/websocket/websocket.module';
 import { AuthModule } from './domains/auth/auth.module';
 import { User } from './domains/auth/entities/user.entity';
+import { EmailVerificationToken } from './domains/auth/entities/email-verification-token.entity';
 import { Product } from './domains/products/entities/product.entity';
 import { Store } from './domains/stores/entities/store.entity';
 import { Order } from './domains/orders/entities/order.entity';
@@ -31,7 +32,7 @@ import { AppVersionModule } from './domains/app-version/app-version.module';
       username: process.env.DB_USERNAME || 'postgres',
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME || 'jaspi_hub',
-      entities: [User, Product, Store, Order, Support, Invoice, Company, CompanyMember],
+      entities: [User, EmailVerificationToken, Product, Store, Order, Support, Invoice, Company, CompanyMember],
       synchronize: false, // Usar migrations em vez de sincronizar automaticamente
     }),
     AuthModule,

@@ -32,6 +32,7 @@ export default function LoginPage() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [infoMessage, setInfoMessage] = useState('');
+  const [isResendingVerification, setIsResendingVerification] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -44,6 +45,47 @@ export default function LoginPage() {
       setInfoMessage('');
     }
   }, [location.search]);
+
+  const canResendVerification =
+    !isRegistering &&
+    infoMessage.toLowerCase().includes('email nao verificado') &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  const handleResendVerification = async () => {
+    setError('');
+    setIsResendingVerification(true);
+
+    try {
+      const response = await authService.resendVerification(email);
+      const baseMessage = response.message || 'Novo link de verificacao enviado.';
+
+      if (response.verificationToken || response.verificationUrl) {
+        const verifyUrl = response.verificationToken
+          ? `${window.location.origin}/verificar-email/${response.verificationToken}`
+          : response.verificationUrl!;
+
+        if (navigator.clipboard?.writeText) {
+          try {
+            await navigator.clipboard.writeText(verifyUrl);
+            setInfoMessage(`${baseMessage} Link copiado para a area de transferencia.`);
+          } catch (copyError) {
+            setInfoMessage(`${baseMessage} Link: ${verifyUrl}`);
+          }
+        } else {
+          setInfoMessage(`${baseMessage} Link: ${verifyUrl}`);
+        }
+      } else {
+        setInfoMessage(baseMessage);
+      }
+    } catch (err) {
+      const message = err instanceof Error
+        ? err.message
+        : 'Erro ao reenviar verificacao. Tente novamente.';
+      setError(message);
+    } finally {
+      setIsResendingVerification(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,16 +119,19 @@ export default function LoginPage() {
         const response = await authService.register({ email, password, name, phone });
         const baseMessage = response.message || 'Conta criada. Verifique seu email para ativar o acesso.';
 
-        if (response.verificationUrl) {
+        if (response.verificationToken || response.verificationUrl) {
+          const verifyUrl = response.verificationToken
+            ? `${window.location.origin}/verificar-email/${response.verificationToken}`
+            : response.verificationUrl!;
           if (navigator.clipboard?.writeText) {
             try {
-              await navigator.clipboard.writeText(response.verificationUrl);
+              await navigator.clipboard.writeText(verifyUrl);
               setInfoMessage(`${baseMessage} Link copiado para a area de transferencia.`);
             } catch (copyError) {
-              setInfoMessage(`${baseMessage} Link: ${response.verificationUrl}`);
+              setInfoMessage(`${baseMessage} Link: ${verifyUrl}`);
             }
           } else {
-            setInfoMessage(`${baseMessage} Link: ${response.verificationUrl}`);
+            setInfoMessage(`${baseMessage} Link: ${verifyUrl}`);
           }
         } else {
           setInfoMessage(baseMessage);
@@ -190,8 +235,29 @@ export default function LoginPage() {
               </Box>
 
           {infoMessage && (
-            <Alert severity="warning" sx={{ mb: 2, borderRadius: 1.5 }}>
-              {infoMessage}
+            <Alert
+              severity="warning"
+              sx={{
+                mb: 2,
+                borderRadius: 1.5,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                gap: 1,
+              }}
+            >
+              <Typography variant="body2">{infoMessage}</Typography>
+              {canResendVerification && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={handleResendVerification}
+                  disabled={isResendingVerification}
+                  sx={{ textTransform: 'none' }}
+                >
+                  {isResendingVerification ? 'Reenviando...' : 'Reenviar verificacao'}
+                </Button>
+              )}
             </Alert>
           )}
 

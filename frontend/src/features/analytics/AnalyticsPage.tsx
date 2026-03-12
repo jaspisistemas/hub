@@ -139,7 +139,6 @@ export default function AnalyticsPage() {
       <PageHeader
         title="Relatórios e Analytics"
         subtitle="Análise detalhada de vendas, produtos e performance"
-        icon={<ChartIcon />}
       />
 
       {/* Filtros */}
@@ -200,14 +199,7 @@ export default function AnalyticsPage() {
             title="Receita Total"
             value={formatCurrency(data.salesOverview.totalRevenue)}
             icon={<ChartIcon />}
-            trend={
-              data.salesOverview.revenueGrowth !== 0
-                ? {
-                    value: formatPercentage(data.salesOverview.revenueGrowth),
-                    isPositive: data.salesOverview.revenueGrowth > 0,
-                  }
-                : undefined
-            }
+            subtitle={data.salesOverview.revenueGrowth !== 0 ? formatPercentage(data.salesOverview.revenueGrowth) : undefined}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
@@ -215,14 +207,7 @@ export default function AnalyticsPage() {
             title="Total de Pedidos"
             value={data.salesOverview.totalOrders.toString()}
             icon={<ChartIcon />}
-            trend={
-              data.salesOverview.ordersGrowth !== 0
-                ? {
-                    value: formatPercentage(data.salesOverview.ordersGrowth),
-                    isPositive: data.salesOverview.ordersGrowth > 0,
-                  }
-                : undefined
-            }
+            subtitle={data.salesOverview.ordersGrowth !== 0 ? formatPercentage(data.salesOverview.ordersGrowth) : undefined}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
@@ -266,7 +251,7 @@ export default function AnalyticsPage() {
               <YAxis yAxisId="right" orientation="right" />
               <Tooltip
                 labelFormatter={(date) => new Date(date).toLocaleDateString('pt-BR')}
-                formatter={(value: any, name: string) =>
+                formatter={(value: any, name: string | undefined) =>
                   name === 'revenue'
                     ? [formatCurrency(value), 'Receita']
                     : [value, 'Pedidos']
@@ -313,7 +298,7 @@ export default function AnalyticsPage() {
                   <XAxis dataKey="productName" angle={-45} textAnchor="end" height={100} />
                   <YAxis />
                   <Tooltip
-                    formatter={(value: any, name: string) =>
+                    formatter={(value: any, name: string | undefined) =>
                       name === 'revenue'
                         ? [formatCurrency(value), 'Receita']
                         : [value, 'Quantidade']
@@ -346,7 +331,7 @@ export default function AnalyticsPage() {
                     cx="50%"
                     cy="50%"
                     outerRadius={100}
-                    label={(entry) => `${entry.marketplace} (${entry.percentage}%)`}
+                    label={(entry: any) => `${entry.marketplace} (${entry.percentage}%)`}
                   >
                     {data.marketplacePerformance.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

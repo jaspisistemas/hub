@@ -61,6 +61,19 @@ export class AuthController {
     }
   }
 
+  @Post('resend-verification')
+  async resendVerification(@Body() body: { email: string }) {
+    try {
+      return await this.authService.resendVerification(body.email);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Erro ao reenviar verificacao';
+      throw new HttpException(
+        message,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
   @Get('verify-email/:token')
   async verifyEmail(@Param('token') token: string) {
     try {

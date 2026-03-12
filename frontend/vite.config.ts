@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       port: 10311,
-      allowedHosts: ['localhost'],
+      allowedHosts: ['localhost', '.trycloudflare.com'],
       proxy: {
         '/api': {
           target: 'http://localhost:10302',

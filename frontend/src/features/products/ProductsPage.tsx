@@ -208,7 +208,7 @@ export default function ProductsPage() {
     setEditingId(product.id);
     setImageFiles([]);
     const productImageUrls = product.imageUrls || (product.imageUrl ? [product.imageUrl] : []);
-    setImagePreviews(productImageUrls.map(url => getImageUrl(url)));
+    setImagePreviews(productImageUrls.map(url => getImageUrl(url)).filter(Boolean) as string[]);
     setFormData({
       sku: product.sku,
       name: product.name,

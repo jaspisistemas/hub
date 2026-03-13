@@ -142,6 +142,9 @@ export default function ProfilePage() {
   const [avatarPreview, setAvatarPreview] = useState<string>('');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
+  const sanitizeName = (value: string) => value.replace(/[^\p{L}\s]/gu, '');
+  const sanitizePhone = (value: string) => value.replace(/\D/g, '').slice(0, 11);
+
   useEffect(() => {
     loadProfile();
   }, []);
@@ -192,8 +195,8 @@ export default function ProfilePage() {
       }
       
       setFormData({
-        name: data.name,
-        phone: data.phone || '',
+        name: sanitizeName(data.name || ''),
+        phone: sanitizePhone(data.phone || ''),
         role: data.role || '',
       });
       
@@ -218,23 +221,15 @@ export default function ProfilePage() {
     setTabValue(newValue);
   };
 
-  const formatPhoneNumber = (value: string): string => {
-    // Remove tudo que não é número
-    const numbers = value.replace(/\D/g, '');
-    
-    // Limita a 11 dígitos (padrão brasileiro)
-    if (numbers.length === 0) return '';
-    if (numbers.length <= 2) return `(${numbers}`;
-    if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
-    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
-  };
-
   const handleInputChange = (field: string) => (event: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
     let value = String(event.target.value);
-    
-    // Aplicar formatação para telefone
+
+    if (field === 'name') {
+      value = sanitizeName(value);
+    }
+
     if (field === 'phone') {
-      value = formatPhoneNumber(value);
+      value = sanitizePhone(value);
     }
     
     setFormData(prev => ({
@@ -253,13 +248,18 @@ export default function ProfilePage() {
   const handleSaveProfile = async () => {
     try {
       setSaving(true);
+      const sanitizedFormData = {
+        ...formData,
+        name: sanitizeName(formData.name || '').trim(),
+        phone: sanitizePhone(formData.phone || ''),
+      };
       
       if (avatarFile) {
         // Se houver um arquivo de avatar, fazer upload usando FormData
         const formDataWithAvatar = new FormData();
-        formDataWithAvatar.append('name', formData.name || '');
-        formDataWithAvatar.append('phone', formData.phone || '');
-        formDataWithAvatar.append('role', formData.role || '');
+        formDataWithAvatar.append('name', sanitizedFormData.name || '');
+        formDataWithAvatar.append('phone', sanitizedFormData.phone || '');
+        formDataWithAvatar.append('role', sanitizedFormData.role || '');
         formDataWithAvatar.append('avatar', avatarFile);
         
         console.log('Sending avatar with form data'); // Debug
@@ -271,7 +271,7 @@ export default function ProfilePage() {
         setSuccess('Perfil atualizado com sucesso!');
       } else {
         // Se não houver arquivo, usar o método normal com JSON
-        await profileService.updateProfile(formData);
+        await profileService.updateProfile(sanitizedFormData);
         setSuccess('Perfil atualizado com sucesso!');
       }
       
@@ -365,7 +365,7 @@ export default function ProfilePage() {
   // Validar telefone (formato brasileiro)
   const isValidPhone = (phone: string) => {
     if (!phone) return true; // Campo opcional
-    const phoneRegex = /^(\(\d{2}\)\s)?9?\d{4}-\d{4}$/;
+    const phoneRegex = /^\d{10,11}$/;
     return phoneRegex.test(phone);
   };
 
@@ -629,6 +629,7 @@ export default function ProfilePage() {
                     label="Nome Completo"
                     value={formData.name || ''}
                     onChange={handleInputChange('name')}
+                    inputProps={{ maxLength: 80 }}
                     variant="outlined"
                     sx={{
                       '& .MuiOutlinedInput-root': {
@@ -673,9 +674,14 @@ export default function ProfilePage() {
                     label="Telefone"
                     value={formData.phone || ''}
                     onChange={handleInputChange('phone')}
-                    placeholder="(00) 00000-0000"
+                    placeholder="Telefone"
                     error={!!formData.phone && !isValidPhone(formData.phone)}
-                    helperText={formData.phone && !isValidPhone(formData.phone) ? 'Formato inválido. Use: (00) 00000-0000' : ''}
+                    helperText={formData.phone && !isValidPhone(formData.phone) ? 'Telefone inválido. Use apenas números (10 ou 11 dígitos)' : ''}
+                    inputProps={{
+                      inputMode: 'numeric',
+                      pattern: '[0-9]*',
+                      maxLength: 11,
+                    }}
                     variant="outlined"
                     sx={{
                       '& .MuiOutlinedInput-root': {

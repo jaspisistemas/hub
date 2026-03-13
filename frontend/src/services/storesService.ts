@@ -100,34 +100,12 @@ export const storesService = {
       }
     });
     
-    // Abrir autenticação em uma POPUP separada
+    // Abrir autenticação na mesma aba para evitar popups que podem não fechar automaticamente
     const timestamp = Date.now();
     const baseUrl = getApiBaseUrl();
     const authUrl = `${baseUrl}/marketplace/mercadolivre/auth?userId=${user.id}&companyId=${user.companyId}&t=${timestamp}`;
-    
-    // Abrir em popup (força novo contexto isolado)
-    const popup = window.open(
-      authUrl,
-      'MercadoLivreAuth',
-      'width=800,height=600,left=200,top=200'
-    );
-    
-    if (!popup) {
-      throw new Error('Não foi possível abrir a janela de autenticação. Verifique as permissões de popup do navegador.');
-    }
-    
-    // Aguardar resposta da popup
-    const checkPopup = setInterval(() => {
-      try {
-        // Verificar se popup foi fechada
-        if (popup.closed) {
-          clearInterval(checkPopup);
-          console.log('Popup fechada. Recarregando lojas...');
-        }
-      } catch (e) {
-        console.error('Erro ao monitorar popup:', e);
-      }
-    }, 1000);
+
+    window.location.assign(authUrl);
   },
 
   disconnectMercadoLivre: async (storeId: string): Promise<void> => {

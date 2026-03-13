@@ -36,6 +36,9 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const sanitizeName = (value: string) => value.replace(/[^\p{L}\s]/gu, '');
+  const sanitizePhone = (value: string) => value.replace(/\D/g, '').slice(0, 11);
+
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const reason = params.get('reason');
@@ -90,6 +93,9 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    const normalizedName = sanitizeName(name).trim();
+    const normalizedPhone = sanitizePhone(phone);
     
     // Validação rápida
     if (!email || !password) {
@@ -102,13 +108,23 @@ export default function LoginPage() {
       return;
     }
 
-    if (isRegistering && !name) {
+    if (isRegistering && !normalizedName) {
       setError('Por favor, informe seu nome');
       return;
     }
 
-    if (isRegistering && !phone) {
+    if (isRegistering && !normalizedPhone) {
       setError('Por favor, informe seu telefone');
+      return;
+    }
+
+    if (isRegistering && /[^\p{L}\s]/gu.test(normalizedName)) {
+      setError('Nome deve conter apenas letras');
+      return;
+    }
+
+    if (isRegistering && !/^\d{10,11}$/.test(normalizedPhone)) {
+      setError('Telefone deve conter apenas números (10 ou 11 dígitos)');
       return;
     }
 
@@ -116,7 +132,12 @@ export default function LoginPage() {
 
     try {
       if (isRegistering) {
-        const response = await authService.register({ email, password, name, phone });
+        const response = await authService.register({
+          email,
+          password,
+          name: normalizedName,
+          phone: normalizedPhone,
+        });
         const baseMessage = response.message || 'Conta criada. Verifique seu email para ativar o acesso.';
 
         if (response.verificationToken || response.verificationUrl) {
@@ -273,7 +294,7 @@ export default function LoginPage() {
                 fullWidth
                 label="Nome"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => setName(sanitizeName(e.target.value))}
                 margin="normal"
                 required
                 placeholder="Seu nome completo"
@@ -318,10 +339,15 @@ export default function LoginPage() {
                 fullWidth
                 label="Telefone"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => setPhone(sanitizePhone(e.target.value))}
                 margin="normal"
                 required
-                placeholder="(00) 00000-0000"
+                placeholder="Telefone"
+                inputProps={{
+                  inputMode: 'numeric',
+                  pattern: '[0-9]*',
+                  maxLength: 11,
+                }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
